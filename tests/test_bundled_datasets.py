@@ -4,7 +4,7 @@ from dataclasses import replace
 from hashlib import sha256
 from pathlib import Path
 from unittest.mock import Mock
-from zipfile import ZipFile, ZipInfo
+from zipfile import ZIP_STORED, ZipFile, ZipInfo
 
 import pytest
 
@@ -89,6 +89,23 @@ def test_zip_lookup_never_extracts_traversal_members(tmp_path):
     assert not (tmp_path.parent / "outside.svg").exists()
 
 
+def test_kanjidic_bundle_uses_canonical_xml_without_compression(tmp_path, monkeypatch):
+    from scripts import bundle_datasets
+
+    source = Path(__file__).parent / "fixtures/kanjidic2.xml"
+    target = tmp_path / "kanjidic2.xml"
+    monkeypatch.setattr("zlib.compressobj", Mock(side_effect=AssertionError("Compression used")))
+    version, count = bundle_datasets.write_kanjidic(source, target)
+    original = bundle_datasets.KanjidicXml(source)
+    generated = bundle_datasets.KanjidicXml(target)
+    assert generated.entries == original.entries
+    assert version == original.version
+    assert count == len(original.entries)
+    payload = target.read_bytes()
+    bundle_datasets.write_kanjidic(source, target)
+    assert target.read_bytes() == payload
+
+
 def test_kanjivg_bundle_is_identical_across_creator_platforms(tmp_path, monkeypatch):
     from scripts import bundle_datasets
 
@@ -100,8 +117,10 @@ def test_kanjivg_bundle_is_identical_across_creator_platforms(tmp_path, monkeypa
         archive.writestr("release/README.md", b"documentation")
     notices = tmp_path / "licenses"
     notices.mkdir()
+    monkeypatch.setattr("zlib.compressobj", Mock(side_effect=AssertionError("Compression used")))
     outputs = []
     for platform in (0, 3):  # Windows and Unix ZipInfo defaults.
+
         def host_zip_info(*args, platform=platform, **kwargs):
             member = ZipInfo(*args, **kwargs)
             member.create_system = platform
@@ -113,6 +132,7 @@ def test_kanjivg_bundle_is_identical_across_creator_platforms(tmp_path, monkeypa
         with ZipFile(target) as archive:
             assert archive.read("0666f.svg") == svg
             assert archive.getinfo("0666f.svg").create_system == 3
+            assert archive.getinfo("0666f.svg").compress_type == ZIP_STORED
         outputs.append(target.read_bytes())
     assert outputs[0] == outputs[1]
 

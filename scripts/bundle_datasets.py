@@ -1,7 +1,6 @@
 """Prepare ignored build-time defaults from locked upstream sources."""
 
 import argparse
-import gzip
 import json
 import re
 import shutil
@@ -11,7 +10,7 @@ from pathlib import Path
 from tempfile import TemporaryDirectory
 from urllib.request import HTTPRedirectHandler, Request, build_opener
 from xml.etree import ElementTree as ET
-from zipfile import ZIP_DEFLATED, ZipFile, ZipInfo
+from zipfile import ZIP_STORED, ZipFile, ZipInfo
 
 ROOT = Path(__file__).resolve().parents[1]
 sys.path.insert(0, str(ROOT / "src"))
@@ -101,20 +100,17 @@ def write_kanjidic(source: Path, target: Path):
         for meaning in entry.meanings:
             ET.SubElement(group, "meaning").text = meaning
     xml = ET.tostring(root, encoding="utf-8", xml_declaration=True)
-    with (
-        target.open("wb") as stream,
-        gzip.GzipFile(
-            fileobj=stream, filename="", mode="wb", mtime=0, compresslevel=9
-        ) as compressed,
-    ):
-        compressed.write(xml)
+    # Hash canonical bytes, independent of the host compression library.
+    target.write_bytes(xml)
     return provider.version, len(provider.entries)
 
 
 def write_kanjivg(source: Path, target: Path, notices: Path):
     """Copy only canonical SVG members; never extract upstream archive paths."""
     count = 0
-    with ZipFile(source) as upstream, ZipFile(target, "w", ZIP_DEFLATED) as output:
+    # The outer add-on ZIP compresses assets; inner compression would make
+    # dataset hashes depend on the host zlib implementation.
+    with ZipFile(source) as upstream, ZipFile(target, "w", ZIP_STORED) as output:
         if sum(info.file_size for info in upstream.infolist()) > 128 * 1024 * 1024:
             raise ValueError("Upstream KanjiVG ZIP exceeds expanded-size limit.")
         names = set()
@@ -134,7 +130,7 @@ def write_kanjivg(source: Path, target: Path, notices: Path):
             # ZipInfo defaults to the host OS; pin Unix to keep locked hashes
             # identical on Windows and to match the Unix permissions below.
             member.create_system = 3
-            member.compress_type = ZIP_DEFLATED
+            member.compress_type = ZIP_STORED
             member.external_attr = 0o644 << 16
             output.writestr(member, upstream.read(info))
             count += 1
@@ -158,9 +154,7 @@ def bundle(*, refresh=False, offline=False):
         for name, source in lock["resources"].items():
             if source["kind"] == "notice":
                 shutil.copyfile(CACHE / name, notices / name)
-        version, kanji_count = write_kanjidic(
-            CACHE / "kanjidic2.xml.gz", stage / "kanjidic2.xml.gz"
-        )
+        version, kanji_count = write_kanjidic(CACHE / "kanjidic2.xml.gz", stage / "kanjidic2.xml")
         stroke_count = write_kanjivg(CACHE / "kanjivg-source.zip", stage / "kanjivg.zip", notices)
         lock["derived_notices"] = {
             path.name: sha256(path.read_bytes()).hexdigest()
@@ -170,14 +164,14 @@ def bundle(*, refresh=False, offline=False):
         shutil.copyfile(ROOT / "THIRD_PARTY_NOTICES.md", stage / "NOTICE.txt")
         (stage / "SOURCES.json").write_text(json.dumps(lock, indent=2) + "\n", encoding="utf-8")
         # Exercise the derived assets before publishing them into the source package.
-        if len(KanjidicXml(stage / "kanjidic2.xml.gz").entries) != kanji_count:
+        if len(KanjidicXml(stage / "kanjidic2.xml").entries) != kanji_count:
             raise ValueError("Bundled KANJIDIC2 entry count changed during preparation.")
         with KanjiVgSvg(stage / "kanjivg.zip") as provider:
             if provider.lookup_strokes("景") is None:
                 raise ValueError("Bundled KanjiVG is missing the smoke-test character.")
         metadata = {}
         for dataset_id, filename, dataset_version, count in (
-            ("kanjidic2", "kanjidic2.xml.gz", version, kanji_count),
+            ("kanjidic2", "kanjidic2.xml", version, kanji_count),
             ("kanjivg", "kanjivg.zip", lock["kanjivg_release"], stroke_count),
         ):
             license_files = ["bundled/NOTICE.txt", "bundled/SOURCES.json"] + [

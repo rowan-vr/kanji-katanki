@@ -18,8 +18,8 @@
   },
   "default": true,
   "bundled": {
-    "path": "bundled/kanjidic2.xml.gz",
-    "sha256": "0f75139cbe2d3b9efab55fe0eb4b9739df2961d0e750eac91e6bd73c4ecbed31",
+    "path": "bundled/kanjidic2.xml",
+    "sha256": "95be75f98e6f6912c1621e6773233b3f84064c3751b37b2b71230532e43f7c5d",
     "version": "2026-10-22",
     "entries": 13108,
     "license_files": [

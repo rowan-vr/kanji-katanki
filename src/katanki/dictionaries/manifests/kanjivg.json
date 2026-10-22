@@ -20,7 +20,7 @@
   "default": true,
   "bundled": {
     "path": "bundled/kanjivg.zip",
-    "sha256": "a0ce1fe2e01422e13442f567a49c77bd5f75435d0e2d2a2a9ea8ab88598f32f0",
+    "sha256": "cddfb9b8097c159149e08515ae1d6437a72cce11bde69828a98f8a7c629d2821",
     "version": "r20260714",
     "entries": 6703,
     "license_files": [

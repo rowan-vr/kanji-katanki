@@ -12,10 +12,13 @@ Select decks, a note type, and fields in **Analyze Collection**, then scan offli
 JMdict is deferred until vocabulary-aware features need it. An unofficial JLPT
 source has not been selected. Neither is bundled speculatively.
 
-The current add-on archive is approximately 12 MiB. Compressed defaults live under
+The current add-on archive is approximately 5 MiB. Generated defaults live under
 `src/katanki/dictionaries/bundled/` and are generated during builds, not committed
 to Git. Only `SOURCES.json` and the dataset manifests track URLs, versions, hashes,
 and bundle metadata. Original downloads are cached under ignored `data/upstream/`.
+The derived XML and ZIP members are stored without inner compression so locked
+hashes do not depend on the host zlib implementation. The final add-on archive
+compresses these assets.
 The first build needs network access for missing inputs; subsequent builds reuse
 verified inputs and generated files. Installed add-ons never download datasets.
 

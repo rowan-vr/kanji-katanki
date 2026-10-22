@@ -22,7 +22,7 @@ def test_archive_is_installable_and_importable_without_anki(tmp_path):
         assert "dictionaries/manifests/kanjivg.json" in archive.namelist()
         assert "ui/discovery.py" in archive.namelist()
         assert "THIRD_PARTY_NOTICES.md" in archive.namelist()
-        assert "dictionaries/bundled/kanjidic2.xml.gz" in archive.namelist()
+        assert "dictionaries/bundled/kanjidic2.xml" in archive.namelist()
         assert "dictionaries/bundled/kanjivg.zip" in archive.namelist()
         assert "dictionaries/bundled/licenses/EDRDG-LICENCE.html" in archive.namelist()
         assert "dictionaries/bundled/licenses/CC-BY-SA-4.0.txt" in archive.namelist()

@@ -42,7 +42,7 @@ tools on the end user's machine. Anki provides Python and Qt; do not install `aq
 into the development environment. Kanji Katanki code is licensed under the
 [MIT License](LICENSE). Bundled dictionary and stroke data have separate
 CC BY-SA licenses; see [third-party notices](THIRD_PARTY_NOTICES.md). The current
-archive is about 12 MiB and includes dataset versions, checksums, and license copies.
+archive is about 5 MiB and includes dataset versions, checksums, and license copies.
 Builds fetch checksum-locked inputs when needed and generate ignored payloads;
 dataset binaries are not stored in Git. Use `scripts/build_addon.py --offline` to
 require prepared data or verified local cache. A fresh build needs network access;
