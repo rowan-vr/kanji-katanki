@@ -3,8 +3,9 @@
 Progress tracker based on [the implementation specification](SPECIFICATION.md).
 The specification defines requirements; this file tracks delivery and verification.
 
-Last reviewed: **2026-10-22**. Current milestone: **Phase 2 — identity and planning foundations in progress**.
-Phase 1 read-only discovery is delivered; ownership-count integration remains pending. Minimum
+Last reviewed: **2026-10-22**. Current milestone: **Phase 2 — generation implemented and verified locally**.
+Phase 1 ownership-count integration is delivered. Production uses kanji meanings
+and blanked examples copied from selected source vocabulary. Minimum
 supported versions remain an open decision; the verified local baseline is Linux
 Anki 26.09.3 / Python 3.14.8. Bundled KANJIDIC2/KanjiVG defaults are now
 downloaded/prepared at build time and verified offline in the installed add-on.
@@ -77,12 +78,14 @@ and leave the collection unchanged. Covers FR-01 and the initial dictionary work
 - [x] Load KANJIDIC2 and KanjiVG through reusable format adapters.
   Evidence: [adapters](../src/katanki/dictionaries/adapters),
   [real-upstream check](DATASETS.md#verification-recorded-on-2026-10-22).
-- [ ] Preview scanned-note totals, distinct/existing/missing kanji, missing data,
+- [x] Preview scanned-note totals, distinct/existing/missing kanji, missing data,
   and a sample stroke SVG. Connect existing-note counts to Phase 2 identities.
   Implemented: scanned-note/candidate/supported/unmatched counts, dictionary details,
   missing strokes, components, SVG preview, and source attribution/fingerprints.
-  Remaining: existing/missing owned-note counts explicitly show **not assessed**;
-  these depend on the Phase 2 ownership contract and must not be guessed as zero.
+  Phase 2 integration: existing/missing counts now cover dictionary-supported
+  kanji recognition notes, deduplicated by character. Production is independent.
+  Counts remain **not assessed** when dictionaries or valid ownership data are absent.
+  Evidence: `anki/analysis.py`, `scripts/smoke_generation.py`.
 - [x] Document fetching/preparing sample data without committing unreviewed datasets.
   Evidence: [dataset preparation](DATASETS.md). Reviewed KANJIDIC2 subset and
   pinned KanjiVG data are bundled at build time with their own licenses; both raw
@@ -102,7 +105,7 @@ reported; this supplements the versioned automated host evidence above.
 
 Acceptance: the core POC is verified against a sample vocabulary deck, with
 synthetic dictionary/stroke fixtures and a separate official-upstream parser check.
-The phase's full checklist remains open only for ownership counts tied to Phase 2.
+The ownership counts deferred to Phase 2 are now implemented and host-verified.
 Runtime dataset download/update UI, persistent caches, and provider switching remain
 later-phase work. Bundling and a maintainer-only refresh tool were pulled forward
 at the user's request, with documented redistribution terms and offline tests. See [verification details](DATASETS.md#verification-recorded-on-2026-10-22).
@@ -120,28 +123,42 @@ follow in Phase 3, after generation and card content work end to end.
   Deduplication uses the NFC character/component key and registered note type.
   No synthetic identity field or configuration scope is stored. Detection
   reports duplicate IDs and fails closed on damaged owned metadata. Real-host
-  materialization and discovery-count integration are not implemented yet.
-- [ ] Extract graphical components with deterministic deduplication, including
+  materialization and discovery-count integration pass `scripts/smoke_generation.py`.
+- [x] Extract graphical components with deterministic deduplication, including
   primitives without Unicode characters.
+  Evidence: `dictionaries/adapters/kanjivg_svg.py`, `tests/test_generation.py`.
+  Nested/split groups are normalized; unnamed groups use source-qualified group
+  keys or path fingerprints. These are provider component keys, not note IDs.
 - [x] Detect graph cycles/missing nodes and produce stable prerequisite ordering.
   Evidence: `generation/planner.py`, `tests/test_planner.py`; explicit graph inputs,
   deterministic deduplication, missing-node/cycle/conflicting-definition rejection.
-  Dictionary-to-graph extraction is still pending.
-- [ ] Distinguish components, radicals, whole kanji, and mnemonic names; allow
+  Dictionary-to-graph extraction is connected through `generation/preview.py`.
+- [x] Distinguish components, radicals, whole kanji, and mnemonic names; allow
   primitive prerequisites to be enabled/disabled.
-- [ ] Create separate kanji/primitive recognition and production note types, each
+  The UI labels graphical components separately and accepts explicit mnemonic
+  names; unnamed/unencoded components without a supplied name are unavailable.
+  No dictionary-radical or curated mnemonic system is inferred from KanjiVG.
+- [x] Create separate kanji/primitive recognition and production note types, each
   with one card template and independent native Anki scheduling. Production is
   opt-in per character/primitive; recognition never generates production implicitly.
-- [ ] Resolve production prompt defaults and configurable ambiguity controls.
+  Evidence: `generation/cards.py`, `ui/generation.py`, packaged host smoke.
+- [x] Resolve production fronts and ambiguity controls.
+  User decision: kanji meaning plus all distinct matching words from selected
+  vocabulary fields, with every occurrence of the target replaced by `__`.
+  Production is a checkbox; manual prompts are removed. Missing meanings/examples
+  are unavailable. Identical clues are blocked within a plan and against existing
+  same-type notes (case/whitespace normalized). Primitive production uses an
+  explicitly supplied mnemonic name. Examples are immutable note content, not
+  vocabulary lifecycle links. Evidence: `tests/test_generation.py` and real host.
 - [x] Build a side-effect-free planner reporting create/skip/unavailable outcomes.
   Evidence: `generation/planner.py`, `tests/test_planner.py`; existing identities
   skip without updates, unavailable prerequisites propagate, and primitive
-  prerequisites can be disabled. This is a core preview contract; card content,
-  UI approval, and host writes remain pending.
-- [ ] Generate from the vocabulary sources selected for the current run. Reuse
+  prerequisites can be disabled. `generation/preview.py` connects normalized
+  dictionary data, per-mode choices, source-word examples and mnemonic names.
+- [x] Generate from the vocabulary sources selected for the current run. Reuse
   source selection from discovery; configuring and saving sources in the add-on
   settings belongs to Phase 3.
-- [ ] Fetch example words from the selected vocabulary list and include every
+- [x] Fetch example words from the selected vocabulary list and include every
   matching entry on the kanji card front, masking each occurrence of the asked
   kanji with `_`. Show the kanji's meaning on the front as well. For `時`,
   `時間` appears as `_間`; for `間`, entries `時間` and `間` appear as
@@ -149,21 +166,37 @@ follow in Phase 3, after generation and card content work end to end.
   entries; `真ん中` contributes to `真` and `中`, since it does not contain `間`.
   Examples come from the vocabulary list, rather than a separate dictionary
   example list.
-- [ ] Show the detailed plan and require explicit approval before writes.
-- [ ] Apply approved plans through Anki APIs with error handling and idempotency.
-- [ ] Preserve existing note/card IDs, scheduling, review history, and user edits
+- [x] Show the detailed plan and require explicit approval before writes.
+  Evidence: packaged Qt smoke drives Cancel (no writes), then approval; previews
+  list outcomes, modes, prompts, names, meanings/readings, components and strokes.
+- [x] Apply approved plans through Anki APIs with error handling and idempotency.
+  Evidence: `anki/generation.py`; stale previews recheck ownership, writes are
+  grouped into Anki Undo, partial failures report created counts and safely resume.
+  Injected partial-failure/retry and grouped Undo pass the host lifecycle harness.
+  Large-batch regression: `scripts/smoke_generation_batch.py` reproduces the
+  reported Undo-target eviction before the fix, then verifies 1,300 notes, single
+  Undo, idempotency, and recovery after 400 successful writes. Every write is
+  merged immediately so the bounded Anki Undo history retains the batch marker.
+- [x] Preserve existing note/card IDs, scheduling, review history, and user edits
   unless updates are explicitly opted into.
-- [ ] Show offline stroke SVGs, stroke numbers, playback, and relevant components
+- [x] Show offline stroke SVGs, stroke numbers, playback, and relevant components
   on card backs; handle missing SVGs gracefully.
-- [ ] Pass the critical lifecycle test: add `景色`, generate `景` and `色`, delete
+  Evidence: real Anki webview executes stroke numbering/toggle and animation;
+  cards embed sanitized SVGs and dataset attribution with no review-time downloads.
+- [x] Pass the critical lifecycle test: add `景色`, generate `景` and `色`, delete
   `景色`, rescan; generated notes, progress, and due dates stay untouched, with
   no duplicates.
 
-Verification, 2026-10-22: 63 unit tests pass after adding identity/planning tests.
-The source-deletion planning test verifies independence of core inputs only; it
-does not satisfy the critical real-host generation/progress lifecycle test.
+Verification, 2026-10-22: 75 unit tests pass; lint and formatting pass.
+`scripts/smoke_generation.py` passes with Linux Anki 26.09.3 / Python 3.14.8:
+actual native review history, note/card IDs, due/scheduling state and user edits
+match exact snapshots after source deletion and repeated/stale approved plans.
+The packaged Qt-offscreen smoke passes preview Cancel/approval, all four note
+types, and stroke controls executed in the real Anki webview. Human visual review
+and Windows/macOS verification remain pending. Persistent source configuration
+in add-on settings is the next requested step; session source selection is retained.
 
-Acceptance: selected sources produce the expected cards, with vocabulary-derived
+Local acceptance: selected sources produce the expected cards, with vocabulary-derived
 masked examples and the kanji meaning on the front. Approved generation is safe
 to rerun and remains independent of source vocabulary. No source lifecycle
 tracking or direct collection-database writes.
@@ -279,7 +312,8 @@ Resolved 2026-10-22 by the user: recognition and production use separate note
 types so production can be selected for a smaller set of characters. Deduplicate
 within each Katanki note type using the character/component field; no stored
 synthetic identity or configuration scope. Core planning and detection tests cover
-this policy; note type creation and the selection UI remain pending.
+this policy; note type creation and per-character/component selection are now
+implemented and pass the packaged host smoke.
 
 Record decisions and supporting evidence here when resolved; do not silently pick
 defaults for the specification's open questions.
@@ -292,7 +326,9 @@ defaults for the specification's open questions.
   required at first use. Explicit local overrides remain available. Versions,
   checksums, redistribution terms and refresh procedure: [datasets](DATASETS.md).
 - [ ] Unofficial JLPT source, validation, and coverage semantics.
-- [ ] Default kanji production prompt and ambiguity policy.
+- [x] Kanji production front and ambiguity policy.
+  User decision: dictionary meanings plus masked matching source vocabulary,
+  automatic from selected sources, with production opt-in per character.
 - [ ] Primitive naming system and component/radical distinctions.
 - [ ] Final packaging/resource approach for the embedded frontend.
   The Python `src/` layout already builds into a root-entrypoint archive.

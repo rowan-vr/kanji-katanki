@@ -8,6 +8,7 @@ from ..dictionaries.manager import DictionaryManager
 from ..generation.discovery import scan_notes
 from ..generation.discovery.report import classify_scan
 from .collection import selected_notes
+from .identities import owned_identities
 
 
 def analyze(
@@ -27,4 +28,24 @@ def analyze(
             )
         if "strokes" not in manager.status():
             warnings.append("KanjiVG not loaded: stroke previews are unavailable.")
-        return replace(report, provenance=manager.source_details(), warnings=tuple(warnings))
+        existing_count = missing_count = None
+        if report.dictionary_loaded:
+            try:
+                existing = owned_identities(collection, note_type="kanji-recognition")
+                existing_keys = {identity.key for identity in existing}
+                existing_count = sum(entry.character in existing_keys for entry in report.entries)
+                missing_count = len(report.entries) - existing_count
+                if any(len(ids) > 1 for ids in existing.values()):
+                    warnings.append(
+                        "Duplicate Katanki recognition notes found; counted once per character."
+                    )
+            except ValueError as error:
+                warnings.append(f"Owned-note counts unavailable: {error}")
+        return replace(
+            report,
+            provenance=manager.source_details(),
+            warnings=tuple(warnings),
+            existing_owned=existing_count,
+            missing_owned=missing_count,
+            attribution=manager.card_attribution(),
+        )

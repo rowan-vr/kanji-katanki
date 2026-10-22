@@ -1,4 +1,4 @@
-"""Only the contracts needed for read-only discovery and local dictionaries."""
+"""Normalized discovery, graphical component, and local dictionary contracts."""
 
 from dataclasses import dataclass
 from typing import Protocol
@@ -30,6 +30,7 @@ class NoteText:
 class ScanResult:
     scanned_notes: int
     candidates: tuple[str, ...]
+    vocabulary: tuple[str, ...] = ()
 
 
 @dataclass(frozen=True)
@@ -43,10 +44,20 @@ class KanjiEntry:
 
 
 @dataclass(frozen=True)
+class ComponentEntry:
+    key: str
+    label: str
+    svg: bytes
+    prerequisites: tuple[str, ...] = ()
+
+
+@dataclass(frozen=True)
 class StrokeEntry:
     character: str
     svg: bytes
     components: tuple[str, ...]
+    component_entries: tuple[ComponentEntry, ...] = ()
+    prerequisites: tuple[str, ...] = ()
 
 
 class KanjiProvider(Protocol):
@@ -66,6 +77,7 @@ class DiscoveryReport:
     dictionary_loaded: bool
     provenance: tuple[str, ...]
     warnings: tuple[str, ...] = ()
-    # Existing/missing owned notes cannot be measured until Phase 2 identities exist.
+    # Counts cover supported kanji recognition notes, not production mastery.
     existing_owned: int | None = None
     missing_owned: int | None = None
+    attribution: tuple[str, ...] = ()

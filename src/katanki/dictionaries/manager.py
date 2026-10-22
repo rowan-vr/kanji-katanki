@@ -19,6 +19,7 @@ class DictionaryManager:
             raise ValueError("Unknown dataset selection.")
         self.providers = {}
         self.provenance: list[str] = []
+        self.attributions: list[str] = []
         for manifest in self.manifests:
             if manifest.id not in sources:
                 continue
@@ -40,6 +41,11 @@ class DictionaryManager:
                 manifest.bundled["version"]
                 if is_bundled
                 else getattr(provider, "version", "local SVG files")
+            )
+            self.attributions.append(
+                f"{manifest.name} ({version}); {manifest.attribution}; "
+                f"{manifest.license_name}; {manifest.license_url}; source {manifest.source}; "
+                "adapted by Kanji Katanki (selected fields, sanitized stroke/component SVGs)."
             )
             fingerprint = ""
             if hasattr(provider, "source_bytes"):
@@ -69,6 +75,9 @@ class DictionaryManager:
                 f"KanjiVG {char}: SHA-256 {value}" for char, value in provider.hashes.items()
             )
         return tuple(lines)
+
+    def card_attribution(self) -> tuple[str, ...]:
+        return tuple(self.attributions)
 
     def close(self):
         for provider in {id(provider): provider for provider in self.providers.values()}.values():

@@ -126,4 +126,8 @@ def exercise_dialog(mw, action):
         raise errors[0]
     assert completed, "Discovery dialog check did not finish"
     assert snapshot(mw.col) == before, "UI scan changed collection data"
+    from scripts.smoke_generation import exercise_generation_dialog, exercise_stroke_controls
+
+    exercise_generation_dialog(mw, first)
+    exercise_stroke_controls(mw)
     return True

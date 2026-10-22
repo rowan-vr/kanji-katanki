@@ -142,7 +142,7 @@ A manifest might have `id`, `category`, `format`, `source`, `capabilities`, `lic
 
 - Generate permanent **Kanji Katanki-owned** notes for recognized kanji and optional primitives from the selected vocabulary sources.
 - Use separate recognition and production note types for kanji and primitives, each with one card template and native independent Anki scheduling. Generate only the modes explicitly selected for each character/primitive; production is opt-in.
-- Recognition: character → meaning/reading. Kanji production: meaning or mnemonic → character, with configurable ambiguity controls. **Vocabulary writing** is a separate optional template: reading + meaning/context → full written word; never rely on reading alone for homophones.
+- Recognition: character → meaning/reading. Kanji production: dictionary meanings plus matching words from selected source vocabulary, with every occurrence of the target kanji blanked (`時間` → `__間` for `時`). Include all distinct matching words; choose production with a checkbox, without entering a prompt. Missing meanings/examples or identical generated clues are reported as unavailable. **Vocabulary writing** is a separate optional template: reading + meaning/context → full written word; never rely on reading alone for homophones.
 - Kanji production card fronts show the asked kanji's meaning and example words
   fetched from the selected vocabulary list, with every occurrence of that kanji
   replaced by `_`. Include all matching vocabulary entries, including single-kanji
@@ -221,8 +221,8 @@ not established by this milestone.
 - [x] Vocabulary scanner as pure Python plus Anki read adapter.
 - [x] Registry and validated manifests; load KANJIDIC2 and KanjiVG using shared interfaces.
 - [x] Preview candidate/supported kanji counts, missing data, and sample stroke SVG.
-  Existing/missing owned-note counts remain explicitly unassessed until Phase 2
-  defines stable ownership identities; see the [roadmap](ROADMAP.md).
+  Existing/missing recognition counts are now connected to the Phase 2 note-type
+  and character-field detection; without a dictionary they remain unassessed.
 - [x] Verify the scan changes zero notes/cards; unit tests for token extraction and dedup.
 - [x] Document how to fetch/prepare sample datasets without checking unreviewed data into repo.
 
@@ -240,15 +240,20 @@ sources after a preview and consent, with masked vocabulary examples and kanji
 meanings on production card fronts. Saved source settings and streamlined refresh
 follow in Phase 3.
 
-- [ ] Select vocabulary sources for the current generation run.
-- [ ] Populate production card fronts with the kanji meaning and all matching
+- [x] Select vocabulary sources for the current generation run.
+- [x] Populate production card fronts with the kanji meaning and all matching
   vocabulary examples, masking each occurrence of the asked kanji with `_`.
-- [ ] Stable identity scheme and existing-note detection.
-- [ ] Component extraction, cycle checks and stable dependency order.
-- [ ] Separate kanji/primitive recognition and production note types, with production explicitly selected per character/primitive.
-- [ ] Planner produces a create/skip report without performing writes.
-- [ ] Anki adapter applies approved plans safely and idempotently.
-- [ ] **Critical test:** add `景色`, generate `景` and `色`, delete `景色`, rescan. Generated notes, card progress and due dates remain untouched; no duplicate notes.
+- [x] Note-type plus character/component-key deduplication and existing-note detection.
+- [x] Component extraction, cycle checks and stable dependency order.
+- [x] Separate kanji/primitive recognition and production note types, with production explicitly selected per character/primitive.
+- [x] Planner produces create/skip/unavailable outcomes without performing writes.
+- [x] Anki adapter applies approved plans safely and idempotently.
+- [x] **Critical test:** add `景色`, generate `景` and `色`, delete `景色`, rescan. Generated notes, card progress and due dates remain untouched; no duplicate notes.
+
+**Verified 2026-10-22:** real-host lifecycle, packaged preview approval/cancellation,
+all four separate note types and offline webview stroke controls pass locally.
+Kanji production automatically copies dictionary meanings and blanked source-word
+examples into independent notes. Persistent source settings are the next step. See the [roadmap](ROADMAP.md) for evidence and remaining checks.
 
 ### Phase 3 — UX, saved settings, and refresh
 
@@ -328,7 +333,7 @@ once, then run all configured steps with a refresh button.
   attribution, versions/checksums, and an explicit maintainer refresh procedure.
   First use is offline; runtime download/update UI and on-demand packs/assets remain later work.
 - Source and validation of unofficial JLPT levels; meaning of “coverage” when a dataset omits characters.
-- Whether default *kanji* production uses English meaning, mnemonic keyword or configurable context; guard against ambiguous prompt-answer mappings.
+- Kanji production fronts: **resolved** by user decision. Use kanji meanings plus all distinct matching words from selected vocabulary fields, blanking the target character; no manual prompts. Block identical generated clues and preserve copied examples after source deletion. Persistent source settings are next.
 - Primitive naming system and component-vs-radical distinctions.
 - Add-on folder/packaging approach for `src/` layout and embedded frontend resources.
 
