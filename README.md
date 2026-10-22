@@ -5,6 +5,7 @@ Offline-first kanji learning for desktop Anki. **Phase 0 complete: bootstrap and
 Kanji Katanki currently adds **Tools → Kanji Katanki → Analyze Collection** and opens a setup
 status dialog. It does not scan, generate cards, download dictionaries, or change
 notes. See [the implementation specification](docs/SPECIFICATION.md) for planned work.
+Track completed milestones and remaining work in [the roadmap](docs/ROADMAP.md).
 
 Inspired by [Migaku Kanji GOD](https://github.com/migaku-official/Migaku-Kanji-Addon).
 Kanji Katanki is an independent project and is not affiliated with Migaku.
