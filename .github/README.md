@@ -4,6 +4,10 @@ CI runs on pushes, pull requests, and manual dispatch. It checks the locked
 Python environment, tests, and add-on packaging on Linux, Windows, and macOS
 with Python 3.12 and 3.14. Ruff runs once on Linux/Python 3.12.
 
+Each CI job measures line and branch coverage for the add-on and maintenance
+scripts and uploads HTML and XML reports as `coverage-<os>-python-<version>`
+artifacts retained for 14 days. Coverage is reported without a minimum threshold.
+
 The Linux/Python 3.12 job uploads `kanji-katanki-addon`, containing the installable
 `kanji-katanki.ankiaddon`, as a workflow artifact retained for 14 days. Download it from
 the workflow run's Artifacts section and extract the outer ZIP before installing.

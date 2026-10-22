@@ -48,7 +48,17 @@ jobs:
         run: uv run --locked python scripts/build_addon.py
 
       - name: Run tests
-        run: uv run --locked pytest
+        run: uv run --locked pytest --cov --cov-report=term-missing --cov-report=html --cov-report=xml
+
+      - name: Upload coverage reports
+        uses: actions/upload-artifact@v7
+        with:
+          name: coverage-${{ matrix.os }}-python-${{ matrix.python }}
+          path: |
+            coverage.xml
+            htmlcov/
+          if-no-files-found: error
+          retention-days: 14
 
       - name: Upload installable add-on
         if: matrix.os == 'ubuntu-latest' && matrix.python == '3.12'

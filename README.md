@@ -24,6 +24,18 @@ uv run ruff check .
 uv run ruff format --check .
 ```
 
+To measure line and branch coverage for the add-on and maintenance scripts:
+
+```sh
+uv run --locked pytest --cov --cov-report=term-missing --cov-report=html --cov-report=xml
+```
+
+Open `htmlcov/index.html` for an interactive report; `coverage.xml` is available
+for IDEs and other tools. Generated reports are ignored by Git. No minimum
+coverage threshold is enforced. Tests that require bundled data still need a
+build first, as described below; coverage does not include the separate Anki
+host smoke test.
+
 The build produces `dist/kanji-katanki.ankiaddon`, with its entrypoint and manifest at
 the archive root. It contains all runtime Python code and requires no development
 tools on the end user's machine. Anki provides Python and Qt; do not install `aqt`
