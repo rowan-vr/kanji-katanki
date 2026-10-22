@@ -4,7 +4,7 @@ from dataclasses import replace
 from hashlib import sha256
 from pathlib import Path
 from unittest.mock import Mock
-from zipfile import ZipFile
+from zipfile import ZipFile, ZipInfo
 
 import pytest
 
@@ -87,6 +87,34 @@ def test_zip_lookup_never_extracts_traversal_members(tmp_path):
     with KanjiVgSvg(path) as provider:
         assert provider.lookup_strokes("景") is not None
     assert not (tmp_path.parent / "outside.svg").exists()
+
+
+def test_kanjivg_bundle_is_identical_across_creator_platforms(tmp_path, monkeypatch):
+    from scripts import bundle_datasets
+
+    svg = (Path(__file__).parent / "fixtures/kanjivg/0666f.svg").read_bytes()
+    source = tmp_path / "upstream.zip"
+    with ZipFile(source, "w") as archive:
+        archive.writestr("release/kanji/0666f.svg", svg)
+        archive.writestr("release/COPYING", b"license")
+        archive.writestr("release/README.md", b"documentation")
+    notices = tmp_path / "licenses"
+    notices.mkdir()
+    outputs = []
+    for platform in (0, 3):  # Windows and Unix ZipInfo defaults.
+        def host_zip_info(*args, platform=platform, **kwargs):
+            member = ZipInfo(*args, **kwargs)
+            member.create_system = platform
+            return member
+
+        monkeypatch.setattr(bundle_datasets, "ZipInfo", host_zip_info)
+        target = tmp_path / f"kanjivg-{platform}.zip"
+        assert bundle_datasets.write_kanjivg(source, target, notices) == 1
+        with ZipFile(target) as archive:
+            assert archive.read("0666f.svg") == svg
+            assert archive.getinfo("0666f.svg").create_system == 3
+        outputs.append(target.read_bytes())
+    assert outputs[0] == outputs[1]
 
 
 def test_failed_refresh_preserves_cached_inputs(tmp_path, monkeypatch):

@@ -131,6 +131,9 @@ def write_kanjivg(source: Path, target: Path, notices: Path):
             names.add(path.name)
             # Deterministic member timestamps and original, unmodified SVG bytes.
             member = ZipInfo(path.name, date_time=(1980, 1, 1, 0, 0, 0))
+            # ZipInfo defaults to the host OS; pin Unix to keep locked hashes
+            # identical on Windows and to match the Unix permissions below.
+            member.create_system = 3
             member.compress_type = ZIP_DEFLATED
             member.external_attr = 0o644 << 16
             output.writestr(member, upstream.read(info))
