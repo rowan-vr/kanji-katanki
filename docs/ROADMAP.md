@@ -3,8 +3,8 @@
 Progress tracker based on [the implementation specification](SPECIFICATION.md).
 The specification defines requirements; this file tracks delivery and verification.
 
-Last reviewed: **2026-10-22**. Current milestone: **Phase 1 — read-only discovery
-POC delivered**, with ownership-count integration deferred to Phase 2. Minimum
+Last reviewed: **2026-10-22**. Current milestone: **Phase 2 — identity and planning foundations in progress**.
+Phase 1 read-only discovery is delivered; ownership-count integration remains pending. Minimum
 supported versions remain an open decision; the verified local baseline is Linux
 Anki 26.09.3 / Python 3.14.8. Bundled KANJIDIC2/KanjiVG defaults are now
 downloaded/prepared at build time and verified offline in the installed add-on.
@@ -112,17 +112,30 @@ at the user's request, with documented redistribution terms and offline tests. S
 Deliverable: preview and explicitly approve independent, idempotent generation.
 Covers FR-02, FR-03, and initial FR-04.
 
-- [ ] Define normalized stable identities and detect existing owned notes by
-  character/primitive, applicable note type, and collection/configuration scope.
+- [x] Define normalized stable identities and detect existing owned notes by
+  character/component key within its Katanki note type in the collection.
+  Evidence: `generation/planner.py`, `anki/identities.py`, and their unit tests.
+  Deduplication uses the NFC character/component key and registered note type.
+  No synthetic identity field or configuration scope is stored. Detection
+  reports duplicate IDs and fails closed on damaged owned metadata. Real-host
+  materialization and discovery-count integration are not implemented yet.
 - [ ] Extract graphical components with deterministic deduplication, including
   primitives without Unicode characters.
-- [ ] Detect graph cycles/missing nodes and produce stable prerequisite ordering.
+- [x] Detect graph cycles/missing nodes and produce stable prerequisite ordering.
+  Evidence: `generation/planner.py`, `tests/test_planner.py`; explicit graph inputs,
+  deterministic deduplication, missing-node/cycle/conflicting-definition rejection.
+  Dictionary-to-graph extraction is still pending.
 - [ ] Distinguish components, radicals, whole kanji, and mnemonic names; allow
   primitive prerequisites to be enabled/disabled.
-- [ ] Create kanji/primitive templates with configurable recognition and production
-  cards and independent native Anki scheduling.
+- [ ] Create separate kanji/primitive recognition and production note types, each
+  with one card template and independent native Anki scheduling. Production is
+  opt-in per character/primitive; recognition never generates production implicitly.
 - [ ] Resolve production prompt defaults and configurable ambiguity controls.
-- [ ] Build a side-effect-free planner reporting create/skip/unavailable outcomes.
+- [x] Build a side-effect-free planner reporting create/skip/unavailable outcomes.
+  Evidence: `generation/planner.py`, `tests/test_planner.py`; existing identities
+  skip without updates, unavailable prerequisites propagate, and primitive
+  prerequisites can be disabled. This is a core preview contract; card content,
+  UI approval, and host writes remain pending.
 - [ ] Show the detailed plan and require explicit approval before writes.
 - [ ] Apply approved plans through Anki APIs with error handling and idempotency.
 - [ ] Preserve existing note/card IDs, scheduling, review history, and user edits
@@ -132,6 +145,10 @@ Covers FR-02, FR-03, and initial FR-04.
 - [ ] Pass the critical lifecycle test: add `景色`, generate `景` and `色`, delete
   `景色`, rescan; generated notes, progress, and due dates stay untouched, with
   no duplicates.
+
+Verification, 2026-10-22: 63 unit tests pass after adding identity/planning tests.
+The source-deletion planning test verifies independence of core inputs only; it
+does not satisfy the critical real-host generation/progress lifecycle test.
 
 Acceptance: approved generation is safe to rerun and remains independent of source
 vocabulary. No source lifecycle tracking or direct collection-database writes.
@@ -144,8 +161,8 @@ detail-view portion of FR-04.
 - [ ] Normalize Anki review snapshots without adding a separate scheduler.
 - [ ] Aggregate unique kanji/primitive states: unseen, learning, young, mature,
   and relearning; include retention and progress history.
-- [ ] Separate recognition and writing evidence; distinguish missing writing
-  templates from failed writing cards.
+- [ ] Separate recognition and writing evidence; distinguish missing production
+  notes from failed writing cards.
 - [ ] Select and validate an unofficial JLPT source; expose provenance/version and
   define coverage for omitted characters.
 - [ ] Implement classification registry, N5–N1 coverage graphs, and mode toggle.
@@ -217,6 +234,12 @@ accounts, telemetry, or network-required reviews.
 - [ ] Public third-party extension API after internal interfaces stabilize.
 
 ## Decision log — unresolved
+
+Resolved 2026-10-22 by the user: recognition and production use separate note
+types so production can be selected for a smaller set of characters. Deduplicate
+within each Katanki note type using the character/component field; no stored
+synthetic identity or configuration scope. Core planning and detection tests cover
+this policy; note type creation and the selection UI remain pending.
 
 Record decisions and supporting evidence here when resolved; do not silently pick
 defaults for the specification's open questions.

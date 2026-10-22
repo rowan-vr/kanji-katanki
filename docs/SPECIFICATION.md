@@ -10,8 +10,8 @@ Kanji Katanki is a modular, offline-first, open-source **desktop Anki add-on** f
 
 1. **Use Anki for scheduling and review history.** Kanji Katanki must not implement its own SRS or directly edit Anki's underlying collection database.
 2. **Generated content is independent.** Vocabulary notes are discovery inputs, not owners of generated kanji/primitive notes. Removing source vocabulary must **never** remove, suspend, reset, or otherwise change generated material.
-3. **No source-to-generated lifecycle tracking.** No parent-child relationships, cascade deletion, orphan cleanup, or continuous synchronization with source notes. Persistent identities for Kanji Katanki-owned notes are still required for deduplication and safe updates.
-4. **One canonical Kanji Katanki identity per character/primitive per applicable note type** within a chosen collection/configuration, with recognition and production as separate *card templates* when appropriate. Never create duplicates on rescanning.
+3. **No source-to-generated lifecycle tracking.** No parent-child relationships, cascade deletion, orphan cleanup, or continuous synchronization with source notes. Katanki note types and their character/component fields establish ownership and deduplication.
+4. **Deduplicate by Katanki note type plus character/component key within the collection.** Recognition and production use separate note types, each with one card template. Production is explicitly selected per character/primitive; recognizing a character never requires generating its production note. No synthetic identity field or configuration scope is stored. Never create duplicates on rescanning.
 5. **Data-driven dictionaries.** A registry of small JSON manifests describes datasets, URLs, capabilities, licensing and formats. Generic download/cache/import logic uses reusable format adapters; **do not create one bespoke Python module per dictionary** unless its file format requires a new parser.
 6. **Working defaults first, customization second.** Ship a tested default dictionary stack; provider replacement is an extensibility feature, not a first-run requirement.
 7. **Clear package boundaries.** Top-level feature packages are `common`, `dictionaries`, `generation`, `statistics`, `anki`, and `ui`. **No miscellaneous `modules/` directory.**
@@ -141,10 +141,10 @@ A manifest might have `id`, `category`, `format`, `source`, `capabilities`, `lic
 ### FR-03 — Generation
 
 - Generate permanent **Kanji Katanki-owned** notes for recognized kanji and optional primitives.
-- Initial kanji note type can create separate recognition and production *cards*; each gets native independent Anki scheduling.
+- Use separate recognition and production note types for kanji and primitives, each with one card template and native independent Anki scheduling. Generate only the modes explicitly selected for each character/primitive; production is opt-in.
 - Recognition: character → meaning/reading. Kanji production: meaning or mnemonic → character, with configurable ambiguity controls. **Vocabulary writing** is a separate optional template: reading + meaning/context → full written word; never rely on reading alone for homophones.
 - Preserve source deck data; no source-to-generated lifecycle tracking.
-- Deduplicate by normalized stable identity (e.g., character + Kanji Katanki note type and profile scope), **not** by note ID or source vocabulary origin. Make reruns idempotent.
+- Deduplicate by NFC-normalized character/component key within its Katanki note type, **not** by note ID or source vocabulary origin. Store the character or component key directly; no synthetic identity field or configuration scope. Make reruns idempotent.
 - Before writes, show a detailed plan (create/skip/unavailable) and require explicit approval.
 - Preserve all existing Kanji Katanki note IDs, card IDs, scheduling and review history on rerun. Do not overwrite user edits without opt-in.
 - Deleting source vocabulary must not change generated kanji/primitive cards, even when no other source contains the character.
@@ -162,7 +162,7 @@ A manifest might have `id`, `category`, `format`, `source`, `capabilities`, `lic
 - N5–N1 JLPT coverage by versioned unofficial dataset; other classification packs (Jōyō, school grade, frequency lists) later.
 - Interactive searchable kanji grid with per-character details and stroke links.
 - Calculate counts on **unique identities**, not the number of vocabulary occurrences or review cards.
-- Derive review state from Anki data; no shadow scheduler. Clearly distinguish cards without a writing template from failed writing cards.
+- Derive review state from Anki data; no shadow scheduler. Clearly distinguish characters without a production note from failed writing cards.
 
 ### FR-06 — Settings and distribution
 
@@ -219,7 +219,7 @@ without bundling data. See [dataset setup and evidence](DATASETS.md).
 
 - [ ] Stable identity scheme and existing-note detection.
 - [ ] Component extraction, cycle checks and stable dependency order.
-- [ ] Kanji/primitive recognition and production card templates, with configurable inclusion.
+- [ ] Separate kanji/primitive recognition and production note types, with production explicitly selected per character/primitive.
 - [ ] Planner produces a create/skip report without performing writes.
 - [ ] Anki adapter applies approved plans safely and idempotently.
 - [ ] **Critical test:** add `景色`, generate `景` and `色`, delete `景色`, rescan. Generated notes, card progress and due dates remain untouched; no duplicate notes.
