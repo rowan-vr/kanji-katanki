@@ -65,6 +65,10 @@ and leave the collection unchanged. Covers FR-01 and the initial dictionary work
   Evidence: [adapter](../src/katanki/anki/collection.py), [tests](../tests/test_discovery.py).
 - [x] Distinguish dictionary-supported kanji from unmatched/unclassified candidates.
   Evidence: [classification](../src/katanki/generation/discovery/report.py).
+- [x] Manually review the “no dictionary loaded” state and results shown as
+  “not classified”.
+  Evidence: user confirmed review on 2026-10-22; exact host/runtime versions
+  were not separately reported.
 - [x] Validate dataset manifests and expose normalized dictionary interfaces.
   Evidence: [registry](../src/katanki/dictionaries/registry.py),
   [manager](../src/katanki/dictionaries/manager.py), [tests](../tests/test_dictionaries.py).
