@@ -38,8 +38,8 @@ def test_defaults_load_offline_with_licenses_and_versioned_fingerprints(monkeypa
     for manifest in list_datasets():
         verify_bundle(manifest)
         assert manifest.bundled["entries"] > 6000
-    assert "CC BY-SA 4.0" in bundled_path("bundled/NOTICE.txt").read_text()
-    assert "CC BY-SA 3.0" in bundled_path("bundled/NOTICE.txt").read_text()
+    assert "CC BY-SA 4.0" in bundled_path("bundled/NOTICE.txt").read_text(encoding="utf-8")
+    assert "CC BY-SA 3.0" in bundled_path("bundled/NOTICE.txt").read_text(encoding="utf-8")
 
 
 @requires_datasets
@@ -160,7 +160,7 @@ def test_failed_refresh_preserves_cached_inputs(tmp_path, monkeypatch):
 
 @requires_datasets
 def test_bundled_notice_copies_match_locked_upstream_sources():
-    lock = json.loads(bundled_path("bundled/SOURCES.json").read_text())
+    lock = json.loads(bundled_path("bundled/SOURCES.json").read_text(encoding="utf-8"))
     for filename, resource in lock["resources"].items():
         if resource["kind"] == "notice":
             path = bundled_path(f"bundled/licenses/{filename}")

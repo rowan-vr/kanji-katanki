@@ -36,10 +36,10 @@ def test_registry_loads_default_data_only_manifests():
 )
 def test_invalid_manifests_rejected(tmp_path, change):
     path = Path(__file__).parents[1] / "src/katanki/dictionaries/manifests/kanjidic2.json"
-    raw = json.loads(path.read_text())
+    raw = json.loads(path.read_text(encoding="utf-8"))
     raw.update(change)
     path = tmp_path / "invalid.json"
-    path.write_text(json.dumps(raw))
+    path.write_text(json.dumps(raw), encoding="utf-8")
     with pytest.raises(ValueError):
         read_manifest(path)
 
