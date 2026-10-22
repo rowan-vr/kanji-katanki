@@ -58,7 +58,7 @@ def test_unnamed_nested_and_split_components_are_stable_and_sanitized(tmp_path):
     <g k:element="景"><g id="shape"><g k:element="日"><path d="M1,2 L3,4"/></g></g>
     <g k:element="日"><path d="M5,6 L7,8"/></g><g><path d="M9,0 L1,2"/></g></g>
     <script>bad()</script></svg>"""
-    (tmp_path / "0666f.svg").write_text(svg)
+    (tmp_path / "0666f.svg").write_text(svg, encoding="utf-8")
     with KanjiVgSvg(tmp_path) as provider:
         first = provider.lookup_strokes("景")
         assert provider.lookup_strokes("景") == first
