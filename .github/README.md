@@ -12,5 +12,14 @@ These checks do not launch Anki or establish host compatibility on those operati
 systems. Run the isolated real-host smoke test documented in the project README
 for changes affecting Anki integration.
 
+The Release workflow runs when a GitHub release or prerelease is published, including
+one published from a draft. It checks out the release's tagged commit, runs Ruff and
+tests on Linux/Python 3.12, builds the add-on, and uploads
+`kanji-katanki.ankiaddon` directly to that release's Assets section. Drafts do not
+trigger a build. The workflow uses the automatic `GITHUB_TOKEN`; no extra secret
+is required. Include this workflow in the tagged commit before publishing a release.
+An existing asset with the same name is not overwritten; remove it before rerunning
+the upload if a replacement is needed.
+
 Dependabot checks GitHub Actions monthly. Issue and pull request templates collect
 reproduction details, validation, and collection impact.
