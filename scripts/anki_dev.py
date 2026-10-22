@@ -68,8 +68,8 @@ def smoke(base: Path) -> None:
 
             passed = exercise_dialog(mw, menu.actions()[0])
             print(
-                "PASS: packaged discovery dialog, dictionary/SVG preview, source filtering, "
-                "repeat scans, and unchanged notes/cards/review history."
+                "PASS: packaged discovery preserves data; generation preview cancel/approve, "
+                "card creation, stroke-number toggle and playback pass in real Qt/Anki."
             )
         finally:
             aqt.mw.unloadProfileAndExit()

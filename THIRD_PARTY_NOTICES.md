@@ -51,6 +51,16 @@ no coverage beyond the supplied data is implied. In the pinned r20260714 source,
 06a45.svg (橅) identifies its root element as 機. The adapter reports that metadata
 mismatch and withholds the preview; the upstream file is not silently corrected.
 
+## Generated cards
+
+Generated notes copy the selected readings/meanings and embed adapted SVG stroke
+paths/component diagrams. Their backs retain the respective dataset attribution,
+source and license links, version information, and modification disclosure.
+KANJIDIC2-derived content remains CC BY-SA 4.0; KanjiVG-derived diagrams remain
+CC BY-SA 3.0. Keep those notices and applicable licenses when sharing exported
+notes/decks. Generated diagrams remove original SVG styling and metadata and
+add optional playback and stroke-number controls; the data is not relicensed MIT.
+
 ## Disclaimer
 
 The datasets and adapted data/visuals are supplied without warranties. See their

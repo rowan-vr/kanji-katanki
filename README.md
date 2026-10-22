@@ -1,12 +1,16 @@
 # Kanji Katanki
 
-Offline-first kanji learning for desktop Anki. **Phase 1 POC: read-only kanji discovery.**
+Offline-first kanji learning for desktop Anki. **Phase 2: preview and approve independent kanji/component cards.**
 
 Open **Tools → Kanji Katanki → Analyze Collection** to select source decks, one
 note type, and vocabulary fields. The read-only report shows distinct candidate
 ideographs, dictionary-supported entries, readings/meanings, and available stroke
 diagrams using bundled KANJIDIC2 and KanjiVG defaults, offline from first launch.
-It does not generate cards or modify source notes. See [the implementation specification](docs/SPECIFICATION.md) for planned work.
+Scanning is read-only. Choose **Generate cards…** after scanning to select
+recognition notes and opt into production per character or component. Kanji
+production shows its meaning and matching source words with the target blanked out. Review the
+detailed plan before approving writes. Existing notes, edits and progress are
+preserved. See [the implementation specification](docs/SPECIFICATION.md).
 Track completed milestones and remaining work in [the roadmap](docs/ROADMAP.md).
 
 Inspired by [Migaku Kanji GOD](https://github.com/migaku-official/Migaku-Kanji-Addon).
@@ -108,9 +112,62 @@ character to inspect its details. See [dataset setup and fixtures](docs/DATASETS
 
 If bundled dictionaries are disabled and no local KANJIDIC2 is supplied, candidates
 remain unclassified; a missing entry does not mean
-an invalid character. Existing/missing Katanki-owned note counts are explicitly
-not assessed until Phase 2 introduces stable ownership identities. Each scan uses
+an invalid character. Existing/missing recognition counts are also
+not assessed without a dictionary. With a dictionary, they count supported kanji
+within the Katanki recognition note type and report damaged ownership metadata. Production is independent. Each scan uses
 one note type; scan other note types separately. Source choices are not persisted yet.
+
+### Generate and test cards
+
+In the isolated development profile, scan vocabulary containing `景色`, then:
+
+1. Click **Generate cards…**. Recognition is checked for supported kanji.
+2. To practice writing only `景`, check **Production** beside `景`; leave it
+   unchecked beside `色`. The front shows its meaning and `__色`, copied from
+   the source word `景色`. Recognition and production use
+   separate note types, each with one card and native Anki scheduling.
+3. Optionally select graphical component prerequisites or use the components tab
+   to choose individual recognition/production notes. Give unencoded shapes a
+   mnemonic name; component production uses that name as its clue. Names and
+   examples apply to new notes only.
+4. Select an existing destination deck and click **Preview generation…**. Check
+   create/skip/unavailable outcomes and the displayed content. Cancel performs no
+   writes. Only **Approve and create … notes** writes to the collection.
+5. Review the generated cards. Backs include readings/meanings, components,
+   offline stroke diagrams, playback, stroke numbers and dataset attribution.
+   Missing diagrams have a text fallback. Names are graphical/mnemonic labels,
+   not dictionary-radical classifications.
+6. Generate again: existing same-type characters/components are skipped. Delete
+   the source `景色` note and rescan: generated notes and progress remain intact.
+
+Kanji production fronts are generated automatically: the kanji's dictionary
+meanings plus every distinct matching word from the selected vocabulary fields.
+For sources `時間`, `間`, and `真ん中`, production for `時` shows `__間`; production
+for `間` shows `時__` and `__`. `真ん中` supplies an example for `中`, not `時` or `間`.
+Every occurrence of the target in a word is blanked. HTML, media references, ruby
+readings and bracketed furigana are excluded from example words. Select vocabulary
+expression fields; no morphological word segmentation of sentences is performed.
+
+No manual production prompt is required. A missing meaning or matching source
+word makes production unavailable. Identical generated clues within a note type
+are blocked; add distinguishing source vocabulary (or mnemonic names for
+components). Prerequisites generate recognition only. Examples are copied when
+creating notes and remain available after source deletion. Source selections are
+currently made in Analyze Collection; persistent source configuration in add-on
+settings is the next step.
+
+Writes are grouped under **Anki Undo**. If a write fails partway through, the error
+reports the created count; undo the operation or preview again to resume safely.
+Existing notes are never updated automatically, including after changing source vocabulary
+or mnemonic names. Recognition counts refresh on your next scan.
+
+Run the critical lifecycle harness against a disposable temporary collection:
+
+```sh
+/usr/bin/python scripts/smoke_generation.py
+/usr/bin/python scripts/smoke_generation_batch.py
+```
+
 For an automated real-host smoke test that opens the dialog and exits:
 
 ```sh
@@ -121,7 +178,9 @@ The smoke test creates a disposable temporary profile with a separate process
 identity, leaving the persistent development profile alone. It loads the built
 archive through Anki's add-on loader, verifies that repeated registration creates
 only one menu/command, checks the add-on log file, opens a real Qt dialog, and
-compares complete notes/cards/revlog snapshots before and after scanning. The temporary profile is removed on exit. It uses Anki's private
+compares complete notes/cards/revlog snapshots before and after scanning. It then
+checks generation cancellation/approval, all four note types, and stroke playback
+and numbering in the real webview. The temporary profile is removed on exit. It uses Anki's private
 `_run` test entrypoint, so the helper may need adjustment with future host releases.
 
 To install the archive manually, launch Anki with the isolated base above, open
@@ -146,6 +205,13 @@ Menu registration and per-add-on logging passed. The successful check ran outsid
 the restricted sandbox against a disposable temporary profile only. See
 [dataset verification](docs/DATASETS.md#verification-recorded-on-2026-10-22) for the
 separate real-upstream format check. Cross-platform host compatibility is unverified.
+
+**Phase 2 verification (2026-10-22): passed** on the same Linux host. A disposable
+real collection verified native review history and scheduling preservation after
+source deletion, selective production, idempotent reruns, prompt collision checks,
+partial-failure recovery and grouped Undo. The packaged Qt-offscreen check verified
+Cancel/approval, all four note types, and offline stroke playback/numbering in the
+real Anki webview. Human visual review and other platforms remain unverified.
 
 ## Logging and failure handling
 

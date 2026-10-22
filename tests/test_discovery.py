@@ -63,3 +63,16 @@ def test_invalid_fields_fail_before_note_search():
 def test_invalid_source_selections_are_rejected(decks, model, fields):
     with pytest.raises(ValueError):
         ScanSelection(decks, model, fields)
+
+
+def test_vocabulary_examples_are_deduplicated_from_selected_fields_without_ruby_or_media():
+    from katanki.generation.discovery import extract_vocabulary
+
+    text = (
+        "<div><ruby>時間<rt>じかん</rt></ruby></div><div>間</div>"
+        "真ん中<br>時間[じかん] [sound:時計.mp3]"
+        '<img src="秘密.svg"><script>隠す</script>'
+    )
+    assert extract_vocabulary(text) == {"時間", "間", "真ん中"}
+    result = scan_notes([NoteText((text,)), NoteText(("時間",))])
+    assert result.vocabulary == tuple(sorted(("時間", "間", "真ん中")))

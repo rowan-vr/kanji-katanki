@@ -134,6 +134,10 @@ class DiscoveryDialog(QDialog):
         self.provenance.setMaximumHeight(100)
         self.provenance.setPlaceholderText("Dataset provenance and warnings appear after scanning.")
         layout.addWidget(self.provenance)
+        self.generate_button = QPushButton("Generate cards…")
+        self.generate_button.setEnabled(False)
+        self.generate_button.clicked.connect(self._generate)
+        layout.addWidget(self.generate_button)
         close = QPushButton("Close")
         close.clicked.connect(self.reject)
         layout.addWidget(close)
@@ -197,6 +201,7 @@ class DiscoveryDialog(QDialog):
             return
         self.busy = True
         self.scan_button.setEnabled(False)
+        self.generate_button.setEnabled(False)
         self.summary.setText("Scanning selected notes and loading local dictionaries…")
         QueryOp(
             parent=self.mw,
@@ -208,17 +213,23 @@ class DiscoveryDialog(QDialog):
         self.busy = False
         self.scan_button.setEnabled(True)
         self.report = report
+        self.generate_button.setEnabled(bool(report.entries))
         self.characters.clear()
         self.detail.clear()
         self.preview.clear()
         supported = str(len(report.entries)) if report.dictionary_loaded else "not assessed"
         unmatched_label = "No dictionary entry" if report.dictionary_loaded else "Unclassified"
         missing_strokes = len(report.entries) - len(report.strokes)
+        owned = (
+            f"{report.existing_owned}/{report.missing_owned}"
+            if report.existing_owned is not None
+            else "not assessed"
+        )
         self.summary.setText(
             f"Scanned notes: {report.scan.scanned_notes} | Distinct CJK candidates: "
             f"{len(report.scan.candidates)} | Dictionary-supported kanji: {supported}\n"
             f"{unmatched_label}: {len(report.unmatched)} | Missing stroke data: {missing_strokes}\n"
-            "Existing/missing Katanki-owned notes: not assessed (Phase 2 identities)."
+            f"Existing/missing recognition notes (supported kanji): {owned}"
         )
         self.provenance.setPlainText("\n".join((*report.warnings, *report.provenance)))
         self.characters.addItems(list(report.scan.candidates))
@@ -232,9 +243,17 @@ class DiscoveryDialog(QDialog):
             len(report.scan.candidates),
         )
 
+    def _generate(self):
+        from .generation import GenerationDialog
+
+        if self.report and not self.busy:
+            if GenerationDialog(self.mw, self.report).exec() == QDialog.DialogCode.Accepted:
+                self.accept()
+
     def _failed(self, error):
         self.busy = False
         self.scan_button.setEnabled(True)
+        self.generate_button.setEnabled(bool(self.report and self.report.entries))
         self.summary.setText("Scan failed. Previous results, if any, have been preserved.")
         logger.error("Read-only scan failed", exc_info=(type(error), error, error.__traceback__))
         showWarning(f"Kanji Katanki could not scan these sources:\n{error}", parent=self)

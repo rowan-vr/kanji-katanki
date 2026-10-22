@@ -1,12 +1,13 @@
 """Extract ordered stroke paths; rebuild SVG without active/external content."""
 
 import re
+import unicodedata
 from hashlib import sha256
 from pathlib import Path
 from xml.etree import ElementTree as ET
 from zipfile import BadZipFile, ZipFile
 
-from ...common.models import StrokeEntry
+from ...common.models import ComponentEntry, StrokeEntry
 from .xml_data import parse_xml, read_xml
 
 SVG = "http://www.w3.org/2000/svg"
@@ -66,23 +67,8 @@ class KanjiVgSvg:
         strokes = list(matching[0].iter(f"{{{SVG}}}path"))
         if not strokes:
             raise ValueError(f"No stroke paths found for {character}.")
-        svg = ET.Element("svg", xmlns=SVG, width="240", height="240", viewBox="0 0 109 109")
-        group = ET.SubElement(
-            svg,
-            "g",
-            {
-                "fill": "none",
-                "stroke": "#202020",
-                "stroke-width": "3",
-                "stroke-linecap": "round",
-                "stroke-linejoin": "round",
-            },
-        )
-        for stroke in strokes:
-            d = stroke.get("d", "")
-            if not PATH_DATA.fullmatch(d):
-                raise ValueError(f"Invalid stroke path for {character}.")
-            ET.SubElement(group, "path", {"d": d})
+        svg = render_paths(strokes, character)
+        component_entries, prerequisites = extract_components(matching[0], character)
         components = tuple(
             dict.fromkeys(
                 element
@@ -91,7 +77,7 @@ class KanjiVgSvg:
             )
         )
         self.hashes[character] = sha256(data).hexdigest()
-        return StrokeEntry(character, ET.tostring(svg, encoding="utf-8"), components)
+        return StrokeEntry(character, svg, components, component_entries, prerequisites)
 
     def close(self):
         if self.archive is not None:
@@ -103,3 +89,72 @@ class KanjiVgSvg:
 
     def __exit__(self, *args):
         self.close()
+
+
+def render_paths(strokes, character):
+    """Rebuild paths without external references, active content or metadata."""
+    svg = ET.Element("svg", xmlns=SVG, width="240", height="240", viewBox="0 0 109 109")
+    group = ET.SubElement(
+        svg,
+        "g",
+        {
+            "fill": "none",
+            "stroke": "#202020",
+            "stroke-width": "3",
+            "stroke-linecap": "round",
+            "stroke-linejoin": "round",
+        },
+    )
+    for stroke in strokes:
+        d = stroke.get("d", "")
+        if not PATH_DATA.fullmatch(d):
+            raise ValueError(f"Invalid stroke path for {character}.")
+        ET.SubElement(group, "path", {"d": d})
+    return ET.tostring(svg, encoding="utf-8")
+
+
+def extract_components(root, character):
+    """Preserve graphical hierarchy, without inventing radical or mnemonic names.
+
+    Encoded labels use their NFC character. Unlabelled groups use an upstream
+    group ID qualified by the source character, or a path-content fingerprint.
+    Split groups are combined in stroke order and deduplicated before planning.
+    These provider keys are ordinary Component field content, not note IDs.
+    """
+    groups = {}
+
+    def visit(node):
+        children = []
+        for child in node:
+            if child.tag == f"{{{SVG}}}g" and list(child.iter(f"{{{SVG}}}path")):
+                children.append(visit(child))
+        if node is root:
+            return tuple(dict.fromkeys(children))
+        label = unicodedata.normalize("NFC", node.get(f"{{{KVG}}}element", ""))
+        paths = tuple(stroke.get("d", "") for stroke in node.iter(f"{{{SVG}}}path"))
+        if label and len(label) == 1 and label != character:
+            key = label
+        else:
+            group_id = node.get("id")
+            if group_id:
+                key = f"kanjivg:{ord(character):05x}:{group_id}"
+            else:
+                fingerprint = sha256("\n".join(paths).encode()).hexdigest()
+                key = f"kanjivg:paths:{fingerprint}"
+        record = groups.setdefault(key, [label, [], []])
+        # The same named component may be split across separate graphical groups.
+        record[1].extend(node.iter(f"{{{SVG}}}path"))
+        record[2].extend(child for child in children if child != key)
+        return key
+
+    prerequisites = visit(root)
+    entries = tuple(
+        ComponentEntry(
+            key,
+            label or "Unencoded graphical component",
+            render_paths(paths, character),
+            tuple(dict.fromkeys(children)),
+        )
+        for key, (label, paths, children) in sorted(groups.items())
+    )
+    return entries, prerequisites
