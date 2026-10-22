@@ -40,6 +40,36 @@ checks until the first build. See [dataset maintenance](docs/DATASETS.md).
 `src/katanki/anki/` owns host integration. Other feature packages will be added as
 needed. Anki loads the packaged `__init__.py`. Existing IDE settings are preserved.
 
+### Commit messages
+
+Use `<type>: <short summary>` for commit messages. Write the summary in the
+imperative (for example, "add" or "fix"), without a trailing period.
+
+| Prefix | Use for |
+| --- | --- |
+| `feat:` | New features |
+| `fix:` | Bug fixes |
+| `docs:` | Documentation changes |
+| `refactor:` | Code restructuring without changing behavior |
+| `test:` | Adding or updating tests |
+| `style:` | Formatting changes without changing behavior |
+| `build:` | Build tooling or dependency changes |
+| `ci:` | Continuous integration changes |
+| `chore:` | Other maintenance |
+
+Examples:
+
+```text
+feat: add kanji reading filters
+fix: include subdecks when scanning vocabulary
+docs: clarify offline dataset setup
+```
+
+An optional scope can identify the affected area, such as
+`fix(scanner): ignore duplicate vocabulary`. For a breaking change, add `!`
+before the colon (for example, `feat(config)!: rename dictionary path settings`)
+and explain the migration in the commit body.
+
 ## Isolated Anki development profile
 
 Use the Python interpreter that can import your installed Anki and Qt. On this
