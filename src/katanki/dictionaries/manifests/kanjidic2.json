@@ -1,0 +1,35 @@
+{
+  "id": "kanjidic2",
+  "name": "KANJIDIC2",
+  "format": "kanjidic2_xml",
+  "source": "https://www.edrdg.org/kanjidic/kanjidic2.xml.gz",
+  "capabilities": [
+    "kanji"
+  ],
+  "compression": [
+    "none",
+    "gzip"
+  ],
+  "version": "header date_of_creation and local SHA-256",
+  "license": {
+    "name": "CC BY-SA 4.0; see EDRDG attribution terms",
+    "url": "https://www.edrdg.org/edrdg/licence.html",
+    "attribution": "James William Breen and the Electronic Dictionary Research and Development Group (EDRDG)"
+  },
+  "default": true,
+  "bundled": {
+    "path": "bundled/kanjidic2.xml.gz",
+    "sha256": "0f75139cbe2d3b9efab55fe0eb4b9739df2961d0e750eac91e6bd73c4ecbed31",
+    "version": "2026-10-22",
+    "entries": 13108,
+    "license_files": [
+      "bundled/NOTICE.txt",
+      "bundled/SOURCES.json",
+      "bundled/licenses/CC-BY-SA-4.0.txt",
+      "bundled/licenses/EDRDG-LICENCE.html",
+      "bundled/licenses/KANJIDIC-Documentation.html",
+      "bundled/licenses/KanjiVG-COPYING",
+      "bundled/licenses/KanjiVG-README.md"
+    ]
+  }
+}

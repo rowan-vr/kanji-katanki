@@ -1,0 +1,40 @@
+{
+  "schema_version": 1,
+  "kanjivg_release": "r20260714",
+  "resources": {
+    "kanjidic2.xml.gz": {
+      "kind": "data",
+      "url": "https://www.edrdg.org/kanjidic/kanjidic2.xml.gz",
+      "sha256": "de62d4185ad8ac2921b37733f1effcb937b04aade11780920f14cf9fed79c08d",
+      "bytes": 1488573
+    },
+    "kanjivg-source.zip": {
+      "kind": "data",
+      "url": "https://codeload.github.com/KanjiVG/kanjivg/zip/refs/tags/r20260714",
+      "sha256": "220782dda2204b0f595c5051e80c5b8505e77bd91e5bfab27cb62a431729a8fc",
+      "bytes": 22776704
+    },
+    "EDRDG-LICENCE.html": {
+      "kind": "notice",
+      "url": "https://www.edrdg.org/edrdg/licence.html",
+      "sha256": "52f60ea9ca68170a2f0663d7dba381ebf1bd57c17a3347dfe21153865c156692",
+      "bytes": 13587
+    },
+    "KANJIDIC-Documentation.html": {
+      "kind": "notice",
+      "url": "https://www.edrdg.org/wiki/KANJIDIC_Project.html",
+      "sha256": "d58b6d859772c5c2031911eb7604f2d55d50c4ac6abc8bfece17550899baaf7d",
+      "bytes": 58521
+    },
+    "CC-BY-SA-4.0.txt": {
+      "kind": "notice",
+      "url": "https://creativecommons.org/licenses/by-sa/4.0/legalcode.txt",
+      "sha256": "28a9529c7d0bb4dc51f4bf5c116a3d16ef247a052f7591466768ddf563fd1cf5",
+      "bytes": 20138
+    }
+  },
+  "derived_notices": {
+    "KanjiVG-COPYING": "d255e07978fd16ddfec38bc59dc9d857b885dd44ddbf4e79baf207d30746bdcc",
+    "KanjiVG-README.md": "aae5625e1f622110886950779e9c40ffdc6f794b32c0aed7f382e04a682de54a"
+  }
+}

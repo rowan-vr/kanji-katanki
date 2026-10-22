@@ -198,13 +198,20 @@ not established by this milestone.
 
 **Deliverable:** Select scan fields, detect unique kanji, and inspect dictionary/stroke data without mutating collection.
 
-- [ ] Vocabulary scanner as pure Python plus Anki read adapter.
-- [ ] Registry and validated manifests; load KANJIDIC2 and KanjiVG using shared interfaces.
-- [ ] Preview kanji counts, missing data, and sample stroke SVG.
-- [ ] Verify the scan changes zero notes/cards; unit tests for token extraction and dedup.
-- [ ] Document how to fetch/prepare sample datasets without checking unreviewed data into repo.
+- [x] Vocabulary scanner as pure Python plus Anki read adapter.
+- [x] Registry and validated manifests; load KANJIDIC2 and KanjiVG using shared interfaces.
+- [x] Preview candidate/supported kanji counts, missing data, and sample stroke SVG.
+  Existing/missing owned-note counts remain explicitly unassessed until Phase 2
+  defines stable ownership identities; see the [roadmap](ROADMAP.md).
+- [x] Verify the scan changes zero notes/cards; unit tests for token extraction and dedup.
+- [x] Document how to fetch/prepare sample datasets without checking unreviewed data into repo.
 
 **Time-box:** Target a 1–2 hour AI-assisted first POC for Phase 0 and a limited slice of Phase 1. This is an aspiration, not a release commitment; avoid scope creep.
+
+**Verification (2026-10-22):** Linux Anki 26.09.3 / Python 3.14.8 passed the
+packaged source-selection/report/SVG UI check with exact notes/cards/revlog
+preservation. Official KANJIDIC2 and one KanjiVG SVG were also parsed locally,
+without bundling data. See [dataset setup and evidence](DATASETS.md).
 
 ### Phase 2 — Primitives + safe card generation
 
@@ -273,7 +280,11 @@ not established by this milestone.
 
 - Exact Anki desktop version(s) and matching Python runtime to support.
 - Licensing and redistribution restrictions for each third-party dataset and field (Kanji Katanki code uses the MIT License).
-- Dataset bootstrap strategy (bundle essentials vs first-run download) consistent with offline operation thereafter.
+- Dataset bootstrap strategy: **resolved 2026-10-22** at the user's request.
+  Download/prepare the essential KANJIDIC2 subset and pinned KanjiVG data at build
+  time, keeping payloads out of Git, and bundle them with license copies,
+  attribution, versions/checksums, and an explicit maintainer refresh procedure.
+  First use is offline; runtime download/update UI and on-demand packs/assets remain later work.
 - Source and validation of unofficial JLPT levels; meaning of “coverage” when a dataset omits characters.
 - Whether default *kanji* production uses English meaning, mnemonic keyword or configurable context; guard against ambiguous prompt-answer mappings.
 - Primitive naming system and component-vs-radical distinctions.

@@ -45,7 +45,7 @@ def prepare(base: Path) -> None:
 def smoke(base: Path) -> None:
     import aqt
     from aqt import gui_hooks
-    from aqt.qt import QMenu, QMessageBox, QTimer
+    from aqt.qt import QMenu, QTimer
 
     passed = False
 
@@ -64,25 +64,12 @@ def smoke(base: Path) -> None:
             assert len(menu.actions()) == 1, "Repeated registration duplicated the command"
             log = base / "logs" / "addons" / "katanki" / "katanki.log"
             assert "Registered Kanji Katanki menu" in log.read_text(encoding="utf-8")
-            before = (mw.col.note_count(), mw.col.card_count())
-            dialog_seen = False
+            from scripts.smoke_discovery import exercise_dialog
 
-            def dismiss() -> None:
-                nonlocal dialog_seen
-                for widget in mw.app.topLevelWidgets():
-                    if isinstance(widget, QMessageBox) and widget.windowTitle().startswith(
-                        "Kanji Katanki"
-                    ):
-                        dialog_seen = True
-                        widget.accept()
-
-            QTimer.singleShot(100, dismiss)
-            menu.actions()[0].trigger()
-            assert dialog_seen, "Kanji Katanki dialog did not appear"
-            assert before == (mw.col.note_count(), mw.col.card_count())
-            passed = True
+            passed = exercise_dialog(mw, menu.actions()[0])
             print(
-                "PASS: real Anki loaded packaged Kanji Katanki; menu/dialog work; counts unchanged."
+                "PASS: packaged discovery dialog, dictionary/SVG preview, source filtering, "
+                "repeat scans, and unchanged notes/cards/review history."
             )
         finally:
             aqt.mw.unloadProfileAndExit()

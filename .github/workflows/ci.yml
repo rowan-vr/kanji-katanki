@@ -44,11 +44,11 @@ jobs:
           uv run --locked ruff check .
           uv run --locked ruff format --check .
 
-      - name: Run tests
-        run: uv run --locked pytest
-
       - name: Build add-on
         run: uv run --locked python scripts/build_addon.py
+
+      - name: Run tests
+        run: uv run --locked pytest
 
       - name: Upload installable add-on
         if: matrix.os == 'ubuntu-latest' && matrix.python == '3.12'

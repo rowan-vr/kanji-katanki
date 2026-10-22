@@ -1,0 +1,18 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!-- Original hand-authored format fixture, not an upstream dataset extract. -->
+<kanjidic2>
+  <header><file_version>4</file_version><database_version>fixture</database_version><date_of_creation>2026-10-22 (synthetic fixture)</date_of_creation></header>
+  <character>
+    <literal>景</literal>
+    <misc><grade>4</grade><stroke_count>12</stroke_count><stroke_count>13</stroke_count></misc>
+    <reading_meaning><rmgroup>
+      <reading r_type="ja_on">ケイ</reading><reading r_type="ja_kun">かげ</reading>
+      <reading r_type="pinyin">jing3</reading>
+      <meaning>fixture scenery</meaning><meaning m_lang="fr">fixture French gloss</meaning>
+    </rmgroup></reading_meaning>
+  </character>
+  <character>
+    <literal>色</literal><misc><grade>2</grade><stroke_count>6</stroke_count></misc>
+    <reading_meaning><rmgroup><reading r_type="ja_on">ショク</reading><reading r_type="ja_kun">いろ</reading><meaning>fixture color</meaning></rmgroup></reading_meaning>
+  </character>
+</kanjidic2>

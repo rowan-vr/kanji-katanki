@@ -1,0 +1,36 @@
+{
+  "id": "kanjivg",
+  "name": "KanjiVG",
+  "format": "kanjivg_svg",
+  "source": "https://github.com/KanjiVG/kanjivg/releases",
+  "capabilities": [
+    "strokes",
+    "components"
+  ],
+  "compression": [
+    "none",
+    "zip"
+  ],
+  "version": "local SVG SHA-256; record release/commit when preparing files",
+  "license": {
+    "name": "CC BY-SA 3.0",
+    "url": "https://creativecommons.org/licenses/by-sa/3.0/",
+    "attribution": "Ulrich Apel and KanjiVG contributors; stroke-only preview adapted by Kanji Katanki"
+  },
+  "default": true,
+  "bundled": {
+    "path": "bundled/kanjivg.zip",
+    "sha256": "a0ce1fe2e01422e13442f567a49c77bd5f75435d0e2d2a2a9ea8ab88598f32f0",
+    "version": "r20260714",
+    "entries": 6703,
+    "license_files": [
+      "bundled/NOTICE.txt",
+      "bundled/SOURCES.json",
+      "bundled/licenses/CC-BY-SA-4.0.txt",
+      "bundled/licenses/EDRDG-LICENCE.html",
+      "bundled/licenses/KANJIDIC-Documentation.html",
+      "bundled/licenses/KanjiVG-COPYING",
+      "bundled/licenses/KanjiVG-README.md"
+    ]
+  }
+}

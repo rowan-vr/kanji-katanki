@@ -20,22 +20,23 @@ def host(monkeypatch):
     qt.QAction = Mock()
     qt.QMenu = Mock()
     utils = ModuleType("aqt.utils")
-    utils.showInfo = Mock()
+    discovery = ModuleType("katanki.ui.discovery")
+    discovery.open_discovery = Mock()
+    utils.open_discovery = discovery.open_discovery
     utils.showWarning = Mock()
-    for module in (aqt, qt, utils):
+    for module in (aqt, qt, utils, discovery):
         monkeypatch.setitem(sys.modules, module.__name__, module)
     path = Path(katanki.__file__).parent / "anki" / "integration.py"
-    spec = importlib.util.spec_from_file_location("test_host_integration", path)
+    spec = importlib.util.spec_from_file_location("katanki.anki._test_integration", path)
     integration = importlib.util.module_from_spec(spec)
     spec.loader.exec_module(integration)
     return integration, aqt, qt, utils
 
 
-def test_command_opens_status_dialog_without_accessing_collection(host):
+def test_command_delegates_to_discovery_dialog(host):
     integration, aqt, _, utils = host
     integration.analyze_collection()
-    assert utils.showInfo.call_args.kwargs["parent"] is aqt.mw
-    assert utils.showInfo.call_args.kwargs["title"] == "Kanji Katanki — Analyze Collection"
+    utils.open_discovery.assert_called_once_with(aqt.mw)
     assert aqt.mw.col.mock_calls == []
     utils.showWarning.assert_not_called()
 
@@ -44,13 +45,13 @@ def test_command_without_profile_shows_warning(host):
     integration, aqt, _, utils = host
     aqt.mw.col = None
     integration.analyze_collection()
-    utils.showInfo.assert_not_called()
+    utils.open_discovery.assert_not_called()
     utils.showWarning.assert_called_once()
 
 
 def test_dialog_failure_is_logged_and_reported(host, caplog):
     integration, _, _, utils = host
-    utils.showInfo.side_effect = RuntimeError("dialog failed")
+    utils.open_discovery.side_effect = RuntimeError("dialog failed")
     with caplog.at_level(logging.ERROR):
         integration.analyze_collection()
     assert "dialog failed" in caplog.text

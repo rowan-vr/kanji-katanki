@@ -8,6 +8,13 @@ The Linux/Python 3.12 job uploads `kanji-katanki-addon`, containing the installa
 `kanji-katanki.ankiaddon`, as a workflow artifact retained for 14 days. Download it from
 the workflow run's Artifacts section and extract the outer ZIP before installing.
 
+Builds fetch checksum-locked upstream inputs when absent from the local cache and
+prepare KANJIDIC2/KanjiVG defaults plus required notices/licenses. Payloads are not
+committed to Git. Both workflows build before tests so data-dependent tests run.
+Normal builds never update source locks; maintainers use an explicit refresh and
+review metadata changes before a release.
+See [dataset maintenance](../docs/DATASETS.md#maintainer-preparation-and-regular-updates).
+
 These checks do not launch Anki or establish host compatibility on those operating
 systems. Run the isolated real-host smoke test documented in the project README
 for changes affecting Anki integration.
