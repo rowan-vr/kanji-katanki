@@ -58,7 +58,7 @@ def test_kanjidic_normalizes_japanese_readings_english_meanings_and_primary_stro
 
 
 def test_stroke_adapter_rebuilds_only_safe_paths_and_preserves_order(tmp_path):
-    original = (FIXTURES / "kanjivg/0666f.svg").read_text()
+    original = (FIXTURES / "kanjivg/0666f.svg").read_text(encoding="utf-8")
     path = tmp_path / "0666f.svg"
     path.write_text(
         original.replace(
