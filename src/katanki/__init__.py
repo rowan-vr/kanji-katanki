@@ -3,7 +3,7 @@
 import logging
 from importlib.util import find_spec
 
-logger = logging.getLogger(__name__)
+logger = logging.getLogger(f"addon.{__name__}")
 logger.addHandler(logging.NullHandler())
 
 
@@ -16,9 +16,12 @@ def bootstrap() -> None:
         register()
     except Exception:
         logger.exception("Kanji Katanki could not initialize")
-        from aqt.utils import showWarning
+        try:
+            from aqt.utils import showWarning
 
-        showWarning("Kanji Katanki could not initialize. See Anki's console for details.")
+            showWarning("Kanji Katanki could not initialize. See Anki's console for details.")
+        except Exception:
+            logger.exception("Could not display the Kanji Katanki startup warning")
 
 
 bootstrap()

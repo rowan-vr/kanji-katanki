@@ -6,7 +6,7 @@ from aqt import mw
 from aqt.qt import QAction, QMenu
 from aqt.utils import showInfo, showWarning
 
-logger = logging.getLogger(__name__)
+logger = logging.getLogger(f"addon.{__name__}")
 MENU_NAME = "katanki_menu"
 
 
@@ -37,3 +37,4 @@ def register() -> None:
     action.triggered.connect(analyze_collection)
     menu.addAction(action)
     mw.form.menuTools.addMenu(menu)
+    logger.info("Registered Kanji Katanki menu")

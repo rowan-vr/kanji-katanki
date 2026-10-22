@@ -182,11 +182,17 @@ A manifest might have `id`, `category`, `format`, `source`, `capabilities`, `lic
 
 **Deliverable:** Add-on installs in a separate Anki desktop test profile; `Tools → Kanji Katanki → Analyze Collection` displays a basic dialog.
 
-- [ ] Create `uv` project with `pytest` and `ruff`, reproducible lockfile.
-- [ ] Make Anki-compatible add-on entrypoint and menu integration.
-- [ ] Add logging and graceful failure handling.
-- [ ] Add unit test and documented local install/build procedure.
-- [ ] Confirm targeted Anki/Python versions using actual smoke test.
+- [x] Create `uv` project with `pytest` and `ruff`, reproducible lockfile.
+- [x] Make Anki-compatible add-on entrypoint and menu integration.
+- [x] Add logging and graceful failure handling.
+- [x] Add unit test and documented local install/build procedure.
+- [x] Confirm targeted Anki/Python versions using actual smoke test.
+
+**Verified baseline (2026-10-22):** Linux desktop Anki 26.09.3 / Python 3.14.8.
+The packaged add-on passed an isolated real-host smoke test for menu registration,
+dialog display, per-add-on logging, and unchanged note/card counts. Python unit
+tests run on 3.12.14. Older Anki versions and Windows/macOS host compatibility are
+not established by this milestone.
 
 ### Phase 1 — Read-only discovery and dictionary POC
 

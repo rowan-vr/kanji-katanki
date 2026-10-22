@@ -5,6 +5,7 @@ import os
 import shutil
 import sys
 from pathlib import Path
+from tempfile import TemporaryDirectory
 
 ROOT = Path(__file__).resolve().parents[1]
 sys.path.insert(0, str(ROOT))
@@ -56,6 +57,13 @@ def smoke(base: Path) -> None:
             assert Path(mw.pm.base) == base
             menu = mw.form.menuTools.findChild(QMenu, "katanki_menu")
             assert menu is not None, "Kanji Katanki menu was not registered"
+            from katanki.anki.integration import register
+
+            register()
+            assert mw.form.menuTools.findChildren(QMenu, "katanki_menu") == [menu]
+            assert len(menu.actions()) == 1, "Repeated registration duplicated the command"
+            log = base / "logs" / "addons" / "katanki" / "katanki.log"
+            assert "Registered Kanji Katanki menu" in log.read_text(encoding="utf-8")
             before = (mw.col.note_count(), mw.col.card_count())
             dialog_seen = False
 
@@ -94,12 +102,16 @@ if __name__ == "__main__":
     parser.add_argument("--smoke", action="store_true", help="Open and verify Anki, then exit")
     args = parser.parse_args()
     os.environ.setdefault("QT_QUICK_BACKEND", "software")
-    os.environ["ANKI_SINGLE_INSTANCE_KEY"] = "katanki-development"
-    base = (ROOT / ".anki-test").resolve()
-    prepare(base)
     if args.smoke:
-        smoke(base)
+        os.environ["ANKI_SINGLE_INSTANCE_KEY"] = f"kanji-katanki-smoke-{os.getpid()}"
+        with TemporaryDirectory(prefix="kanji-katanki-smoke-") as directory:
+            base = Path(directory) / "Anki"
+            prepare(base)
+            smoke(base)
     else:
+        os.environ["ANKI_SINGLE_INSTANCE_KEY"] = "katanki-development"
+        base = (ROOT / ".anki-test").resolve()
+        prepare(base)
         print(
             "Prepared isolated profile. Launch: "
             "env QT_QUICK_BACKEND=software ANKI_SINGLE_INSTANCE_KEY=katanki-development "
