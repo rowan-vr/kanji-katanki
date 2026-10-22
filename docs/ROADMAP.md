@@ -109,8 +109,10 @@ at the user's request, with documented redistribution terms and offline tests. S
 
 ## Phase 2 — Primitives and safe card generation
 
-Deliverable: preview and explicitly approve independent, idempotent generation.
-Covers FR-02, FR-03, and initial FR-04.
+Deliverable: generate cards from selected vocabulary sources, with a preview and
+explicit approval of independent, idempotent generation. Covers FR-02, FR-03, and
+initial FR-04. Saved source configuration and the streamlined refresh workflow
+follow in Phase 3, after generation and card content work end to end.
 
 - [x] Define normalized stable identities and detect existing owned notes by
   character/component key within its Katanki note type in the collection.
@@ -136,6 +138,17 @@ Covers FR-02, FR-03, and initial FR-04.
   skip without updates, unavailable prerequisites propagate, and primitive
   prerequisites can be disabled. This is a core preview contract; card content,
   UI approval, and host writes remain pending.
+- [ ] Generate from the vocabulary sources selected for the current run. Reuse
+  source selection from discovery; configuring and saving sources in the add-on
+  settings belongs to Phase 3.
+- [ ] Fetch example words from the selected vocabulary list and include every
+  matching entry on the kanji card front, masking each occurrence of the asked
+  kanji with `_`. Show the kanji's meaning on the front as well. For `時`,
+  `時間` appears as `_間`; for `間`, entries `時間` and `間` appear as
+  `時_` and `_`. Include all matching vocabulary cards, including single-kanji
+  entries; `真ん中` contributes to `真` and `中`, since it does not contain `間`.
+  Examples come from the vocabulary list, rather than a separate dictionary
+  example list.
 - [ ] Show the detailed plan and require explicit approval before writes.
 - [ ] Apply approved plans through Anki APIs with error handling and idempotency.
 - [ ] Preserve existing note/card IDs, scheduling, review history, and user edits
@@ -150,10 +163,37 @@ Verification, 2026-10-22: 63 unit tests pass after adding identity/planning test
 The source-deletion planning test verifies independence of core inputs only; it
 does not satisfy the critical real-host generation/progress lifecycle test.
 
-Acceptance: approved generation is safe to rerun and remains independent of source
-vocabulary. No source lifecycle tracking or direct collection-database writes.
+Acceptance: selected sources produce the expected cards, with vocabulary-derived
+masked examples and the kanji meaning on the front. Approved generation is safe
+to rerun and remains independent of source vocabulary. No source lifecycle
+tracking or direct collection-database writes.
 
-## Phase 3 — Statistics and modern interface
+## Phase 3 — UX, saved settings, and refresh
+
+Deliverable: once Phase 2 generation works, make everyday use a single refresh
+using the user's saved configuration.
+
+- [ ] Configure vocabulary sources (decks, note types, and fields) in the add-on
+  settings and persist them across Anki restarts.
+- [ ] Save generation preferences and provide recommended defaults with versioned
+  configuration and safe migrations.
+- [ ] Provide one refresh button that loads the configured sources and preferences,
+  scans vocabulary, plans generation, and applies the configured workflow.
+- [ ] Add automatic refresh with configurable triggers and clear enabled/disabled
+  controls, reusing the same saved configuration and generation safeguards.
+- [ ] Define how refresh updates vocabulary examples on existing cards while
+  preserving user edits, note/card identities, scheduling, and review history;
+  require explicit opt-in for updates as established in Phase 2.
+- [ ] Show progress, results, and actionable errors; make empty or invalid source
+  settings easy to correct.
+- [ ] Verify saved settings survive restarts, repeated refreshes create no
+  duplicates, and manual/automatic refresh preserve existing review progress.
+
+Acceptance: after configuring sources and preferences once, pressing refresh runs
+all configured steps without repeating setup. Automatic refresh uses the same
+workflow and respects the user's update choices.
+
+## Phase 4 — Statistics and modern interface
 
 Deliverable: a dashboard driven by actual Anki progress. Covers FR-05 and the
 detail-view portion of FR-04.
@@ -176,13 +216,13 @@ detail-view portion of FR-04.
 Acceptance: dashboard counts match Anki evidence and never imply writing mastery
 from recognition alone.
 
-## Phase 4 — Public beta
+## Phase 5 — Public beta
 
 Deliverable: a documented, self-contained release for ordinary desktop Anki users.
 Covers FR-06 and production readiness of the dictionary subsystem.
 
-- [ ] Provide recommended defaults, scan settings, and versioned configuration
-  with safe migrations.
+- [ ] Verify the saved settings, defaults, and configuration migrations delivered
+  in Phase 3 are ready for public release.
 - [ ] Decide dataset bootstrap strategy and provide setup/install/update/status UI.
   Decision resolved: bundle essential KANJIDIC2/KanjiVG data for offline first use.
   Optional local overrides and license UI exist; runtime install/update/status UI is pending.
@@ -210,7 +250,7 @@ Covers FR-06 and production readiness of the dictionary subsystem.
 Acceptance: users can install and use the release without Python, uv, Node.js,
 accounts, telemetry, or network-required reviews.
 
-## Phase 5 — Optional enhancements (post-beta)
+## Phase 6 — Optional enhancements (post-beta)
 
 - [ ] FR-07: explicit Migaku Kanji GOD import with backup, dry-run mappings,
   unmappable-data warnings, confirmation, and copied-profile tests; preserve

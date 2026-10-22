@@ -10,7 +10,7 @@ Kanji Katanki is a modular, offline-first, open-source **desktop Anki add-on** f
 
 1. **Use Anki for scheduling and review history.** Kanji Katanki must not implement its own SRS or directly edit Anki's underlying collection database.
 2. **Generated content is independent.** Vocabulary notes are discovery inputs, not owners of generated kanji/primitive notes. Removing source vocabulary must **never** remove, suspend, reset, or otherwise change generated material.
-3. **No source-to-generated lifecycle tracking.** No parent-child relationships, cascade deletion, orphan cleanup, or continuous synchronization with source notes. Katanki note types and their character/component fields establish ownership and deduplication.
+3. **No source-to-generated lifecycle tracking.** No parent-child relationships, cascade deletion, orphan cleanup, or continuous synchronization with source notes. Manual or automatic refresh may discover new material; refreshing examples on existing notes requires explicit opt-in and must never couple their lifecycle to source notes. Katanki note types and their character/component fields establish ownership and deduplication.
 4. **Deduplicate by Katanki note type plus character/component key within the collection.** Recognition and production use separate note types, each with one card template. Production is explicitly selected per character/primitive; recognizing a character never requires generating its production note. No synthetic identity field or configuration scope is stored. Never create duplicates on rescanning.
 5. **Data-driven dictionaries.** A registry of small JSON manifests describes datasets, URLs, capabilities, licensing and formats. Generic download/cache/import logic uses reusable format adapters; **do not create one bespoke Python module per dictionary** unless its file format requires a new parser.
 6. **Working defaults first, customization second.** Ship a tested default dictionary stack; provider replacement is an extensibility feature, not a first-run requirement.
@@ -124,11 +124,11 @@ A manifest might have `id`, `category`, `format`, `source`, `capabilities`, `lic
 
 ### FR-01 — Discovery
 
-- User can select target decks, note types and fields; scan only configured sources.
+- User can select target decks, note types and fields; scan only selected sources. Phase 2 uses selection for the current run; Phase 3 adds source configuration in the add-on settings and persistence across restarts.
 - Extract kanji code points, deduplicate at character level and report them; do not indiscriminately treat all CJK ideographs as supported Japanese kanji.
 - Preview total scanned notes, distinct kanji, existing Kanji Katanki kanji and missing kanji. Report unsupported/no-dictionary entries separately.
 - Support manual kanji entry or imported lists in a later phase.
-- Scanning is **read-only**; no source edits, tags, deletion or automatic rescan side effects.
+- Scanning is **read-only**; no source edits, tags or deletion. The later refresh workflow orchestrates scanning and separately approved generation; scanning itself never writes notes.
 
 ### FR-02 — Primitive graph
 
@@ -140,12 +140,19 @@ A manifest might have `id`, `category`, `format`, `source`, `capabilities`, `lic
 
 ### FR-03 — Generation
 
-- Generate permanent **Kanji Katanki-owned** notes for recognized kanji and optional primitives.
+- Generate permanent **Kanji Katanki-owned** notes for recognized kanji and optional primitives from the selected vocabulary sources.
 - Use separate recognition and production note types for kanji and primitives, each with one card template and native independent Anki scheduling. Generate only the modes explicitly selected for each character/primitive; production is opt-in.
 - Recognition: character → meaning/reading. Kanji production: meaning or mnemonic → character, with configurable ambiguity controls. **Vocabulary writing** is a separate optional template: reading + meaning/context → full written word; never rely on reading alone for homophones.
+- Kanji production card fronts show the asked kanji's meaning and example words
+  fetched from the selected vocabulary list, with every occurrence of that kanji
+  replaced by `_`. Include all matching vocabulary entries, including single-kanji
+  entries; do not substitute a dictionary-provided example list. For `時`, `時間`
+  appears as `_間`; for `間`, `時間` and `間` appear as `時_` and `_`.
+  `真ん中` supplies examples for `真` and `中`, not `間`. Recognition cards retain
+  the character → meaning/reading direction above.
 - Preserve source deck data; no source-to-generated lifecycle tracking.
 - Deduplicate by NFC-normalized character/component key within its Katanki note type, **not** by note ID or source vocabulary origin. Store the character or component key directly; no synthetic identity field or configuration scope. Make reruns idempotent.
-- Before writes, show a detailed plan (create/skip/unavailable) and require explicit approval.
+- Before writes, show a detailed plan (create/skip/unavailable) and require explicit approval. Phase 3 must define how saved approval choices support one-button and automatic refresh while retaining these safeguards; saving source settings alone does not authorize writes.
 - Preserve all existing Kanji Katanki note IDs, card IDs, scheduling and review history on rerun. Do not overwrite user edits without opt-in.
 - Deleting source vocabulary must not change generated kanji/primitive cards, even when no other source contains the character.
 
@@ -166,7 +173,20 @@ A manifest might have `id`, `category`, `format`, `source`, `capabilities`, `lic
 
 ### FR-06 — Settings and distribution
 
-- Simple recommended defaults; advanced users can choose supported providers and scan settings as the feature matures.
+- After Phase 2 generation and card content work end to end, deliver a dedicated
+  UX phase before the statistics dashboard.
+- Configure and save vocabulary sources (decks, note types and fields) in the
+  add-on settings, together with generation preferences and recommended defaults.
+  Settings persist across Anki restarts; provider customization remains later work.
+- Provide one refresh button that loads saved settings, scans configured sources,
+  previews/plans generation and runs the approved workflow without repeated setup.
+- Support automatic refresh with configurable triggers and clear enabled/disabled
+  controls. Reuse the manual refresh workflow, saved settings and write safeguards.
+- Define explicit opt-in behavior for updating vocabulary examples on existing
+  generated notes. Preserve user edits, note/card IDs, scheduling and review
+  history; removing vocabulary must never trigger destructive changes.
+- Show progress, results and actionable errors, including missing or invalid source
+  settings. Repeated manual or automatic refresh must remain idempotent.
 - Versioned configuration with safe migrations; standard Anki add-on installation and clear errors if datasets are absent.
 - No telemetry, accounts, cloud services or network-required review flows by default.
 - Ship a self-contained `.ankiaddon` on AnkiWeb/GitHub; cross-platform smoke tests and documentation.
@@ -215,8 +235,14 @@ without bundling data. See [dataset setup and evidence](DATASETS.md).
 
 ### Phase 2 — Primitives + safe card generation
 
-**Deliverable:** Generate independently scheduled notes after a preview and consent.
+**Deliverable:** Generate independently scheduled notes from selected vocabulary
+sources after a preview and consent, with masked vocabulary examples and kanji
+meanings on production card fronts. Saved source settings and streamlined refresh
+follow in Phase 3.
 
+- [ ] Select vocabulary sources for the current generation run.
+- [ ] Populate production card fronts with the kanji meaning and all matching
+  vocabulary examples, masking each occurrence of the asked kanji with `_`.
 - [ ] Stable identity scheme and existing-note detection.
 - [ ] Component extraction, cycle checks and stable dependency order.
 - [ ] Separate kanji/primitive recognition and production note types, with production explicitly selected per character/primitive.
@@ -224,7 +250,22 @@ without bundling data. See [dataset setup and evidence](DATASETS.md).
 - [ ] Anki adapter applies approved plans safely and idempotently.
 - [ ] **Critical test:** add `景色`, generate `景` and `色`, delete `景色`, rescan. Generated notes, card progress and due dates remain untouched; no duplicate notes.
 
-### Phase 3 — Statistics and modern interface
+### Phase 3 — UX, saved settings, and refresh
+
+**Deliverable:** Once Phase 2 works end to end, configure sources and preferences
+once, then run all configured steps with a refresh button.
+
+- [ ] Add source configuration and saved generation preferences to add-on settings.
+- [ ] Persist versioned settings across restarts, with defaults and safe migrations.
+- [ ] Implement one-button refresh using saved configuration and generation safeguards.
+- [ ] Add configurable automatic refresh using the same workflow and clear controls.
+- [ ] Define saved approval and explicit opt-in example-update behavior, preserving
+  user edits and generated-note independence.
+- [ ] Present progress, results and actionable errors without repeating setup.
+- [ ] Verify restart persistence, duplicate-free repeated refreshes and unchanged
+  note/card identities, scheduling and review history for existing cards.
+
+### Phase 4 — Statistics and modern interface
 
 **Deliverable:** Kanji GOD-style dashboard with real Anki progress.
 
@@ -235,18 +276,19 @@ without bundling data. See [dataset setup and evidence](DATASETS.md).
 - [ ] React/TypeScript frontend built as static files embedded in Anki webview.
 - [ ] Tests for counts, duplicate suppression, mixed progress and missing writing cards.
 
-### Phase 4 — Public beta
+### Phase 5 — Public beta
 
 **Deliverable:** Installable and documented release usable by people without development tools.
 
-- [ ] Simple setup, settings, recommended dictionary defaults, dataset bootstrap/update UI.
+- [ ] Verify Phase 3 settings and migrations for release; finish simple setup,
+  recommended dictionary defaults and dataset bootstrap/update UI.
 - [ ] Packaging and installation test on Windows/macOS/Linux.
 - [ ] Error handling for missing data, malformed files, version mismatch and interrupts.
 - [ ] Performance testing on realistically large Anki collections.
 - [ ] Attribution/licensing review, README, screenshots, changelog, release pipeline.
 - [ ] Add-on verified not to corrupt or mutate unrelated notes; backup guidance.
 
-### Phase 5 — Optional enhancements
+### Phase 6 — Optional enhancements
 
 - [ ] Migaku Kanji GOD migration with safe progress preservation.
 - [ ] Manual lists, more dictionary providers, fallback selection, custom classifications.
