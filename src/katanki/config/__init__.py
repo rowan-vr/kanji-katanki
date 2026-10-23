@@ -5,7 +5,7 @@ from dataclasses import asdict, dataclass
 from ..common.models import ScanSelection
 
 CONFIG_KEY = "katanki_settings"
-VERSION = 4
+VERSION = 5
 
 
 @dataclass(frozen=True)
@@ -51,6 +51,31 @@ class GenerationSettings:
 
 
 @dataclass(frozen=True)
+class CardSettings:
+    show_examples: bool = True
+    example_source: str = "discovered"
+    furigana: bool = False
+    auto_refresh: bool = True
+    include_new: bool = True
+    show_name: bool = True
+
+    def __post_init__(self):
+        if any(
+            type(value) is not bool
+            for value in (
+                self.show_examples,
+                self.furigana,
+                self.auto_refresh,
+                self.include_new,
+                self.show_name,
+            )
+        ):
+            raise ValueError("Card switches must be enabled or disabled.")
+        if self.example_source not in ("discovered", "discovered_and_default"):
+            raise ValueError("Choose discovered words or discovered and default words.")
+
+
+@dataclass(frozen=True)
 class DictionaryChoice:
     dataset_id: str
     mode: str = "bundled"
@@ -72,6 +97,7 @@ class Settings:
     include_primitives: bool = False
     generation: tuple[GenerationSettings, ...] = ()
     dictionaries: tuple[DictionaryChoice, ...] = ()
+    cards: tuple[CardSettings, ...] = ()
 
     def __post_init__(self):
         if not self.generation:
@@ -92,6 +118,16 @@ class Settings:
         ):
             raise ValueError("Generation settings need Recognition, Production, and Parts.")
 
+        if not self.cards:
+            object.__setattr__(self, "cards", tuple(CardSettings() for _ in GENERATION_CATEGORIES))
+        if len(self.cards) != len(GENERATION_CATEGORIES) or any(
+            not isinstance(item, CardSettings) for item in self.cards
+        ):
+            raise ValueError("Card settings need Recognition, Production, and Parts.")
+
+    def card_settings(self, category: str) -> CardSettings:
+        return self.cards[GENERATION_CATEGORIES.index(category)]
+
     def generation_settings(self, category: str) -> GenerationSettings:
         return self.generation[GENERATION_CATEGORIES.index(category)]
 
@@ -105,6 +141,9 @@ class Settings:
         return {
             "version": VERSION,
             "dictionaries": [asdict(choice) for choice in self.dictionaries],
+            "cards": {
+                category: asdict(self.card_settings(category)) for category in GENERATION_CATEGORIES
+            },
             "generation": {
                 category: {
                     **asdict(self.generation_settings(category)),
@@ -126,7 +165,7 @@ def from_dict(data) -> Settings:
         return Settings()
     if not isinstance(data, dict) or type(data.get("version")) is not int:
         raise ValueError("Invalid Katanki settings format. Saved settings were preserved.")
-    if data["version"] not in (1, 2, 3, VERSION):
+    if data["version"] not in (1, 2, 3, 4, VERSION):
         raise ValueError("Unsupported Katanki settings version. Saved settings were preserved.")
     if data["version"] == 1:
         legacy = data.get("source")
@@ -199,7 +238,28 @@ def from_dict(data) -> Settings:
         )
     if len({choice.dataset_id for choice in dictionaries}) != len(dictionaries):
         raise ValueError("Duplicate dictionary choices.")
-    return Settings(tuple(rules), destination, primitives, generation, tuple(dictionaries))
+    cards = ()
+    if data["version"] >= 5:
+        profiles = data.get("cards", {})
+        if not isinstance(profiles, dict):
+            raise ValueError("Invalid card settings.")
+        parsed = []
+        for category in GENERATION_CATEGORIES:
+            entry = profiles.get(category, {})
+            if not isinstance(entry, dict):
+                raise ValueError("Invalid card category settings.")
+            parsed.append(
+                CardSettings(
+                    entry.get("show_examples", True),
+                    entry.get("example_source", "discovered"),
+                    entry.get("furigana", False),
+                    entry.get("auto_refresh", True),
+                    entry.get("include_new", True),
+                    entry.get("show_name", True),
+                )
+            )
+        cards = tuple(parsed)
+    return Settings(tuple(rules), destination, primitives, generation, tuple(dictionaries), cards)
 
 
 def load_settings(collection) -> Settings:

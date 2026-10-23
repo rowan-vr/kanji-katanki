@@ -18,6 +18,7 @@ from ..anki.collection import resolve_sources, selected_notes
 from ..config import GENERATION_CATEGORIES, Settings, load_settings, save_settings
 from ..dictionaries.preferences import dictionary_sources
 from ..generation.discovery import scan_notes
+from .card_settings import CardSettingsPanel
 from .dictionaries import DictionarySettingsPanel
 from .generation_settings import GenerationSettingsPanel
 from .ignored import IgnoredCardsPanel
@@ -70,6 +71,13 @@ class SettingsDialog(QDialog):
         # Retain the existing controls for integration harnesses and legacy defaults.
         self.deck = self.generation_panels["recognition"].deck
         self.primitives = self.generation_panels["parts"].automatic
+        self.card_tabs = QTabWidget()
+        self.tabs.addTab(self.card_tabs, "Cards")
+        self.card_panels = {}
+        for category in GENERATION_CATEGORIES:
+            panel = CardSettingsPanel(category, settings.card_settings(category))
+            self.card_panels[category] = panel
+            self.card_tabs.addTab(panel, category.title())
         self.dictionary_panel = DictionarySettingsPanel(self, settings.dictionaries)
         self.tabs.addTab(self.dictionary_panel, "Dictionaries")
         self.ignored_panel = IgnoredCardsPanel(mw)
@@ -137,6 +145,7 @@ class SettingsDialog(QDialog):
                     for category in GENERATION_CATEGORIES
                 ),
                 self.dictionary_panel.choices(),
+                tuple(self.card_panels[category].settings() for category in GENERATION_CATEGORIES),
             )
             dictionary_sources(settings.dictionaries)
             self.sources.selection()

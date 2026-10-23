@@ -14,6 +14,7 @@ def exercise_settings_dialog(mw, selection):
     original = load_settings(mw.col)
     cancelled = SettingsDialog(mw)
     cancelled.primitives.setChecked(not original.include_primitives)
+    cancelled.card_panels["recognition"].refresh.setChecked(False)
     cancelled.reject()
     assert load_settings(mw.col) == original, "Cancel saved settings"
 
@@ -35,6 +36,28 @@ def exercise_settings_dialog(mw, selection):
         panel.tags.setText("katanki " + category)
         panel.copy_tags.setChecked(True)
         panel.patterns.setText("source::NIJ::*")
+    assert [dialog.tabs.tabText(i) for i in range(dialog.tabs.count())] == [
+        "Discovery",
+        "Generation",
+        "Cards",
+        "Dictionaries",
+        "Ignored cards",
+    ]
+    assert [dialog.card_tabs.tabText(i) for i in range(3)] == ["Recognition", "Production", "Parts"]
+    for index, panel in enumerate(dialog.card_panels.values()):
+        assert panel.refresh.isChecked()
+        panel.examples.setChecked(index != 0)
+        panel.source.setCurrentIndex(index % 2)
+        if panel.category == "parts":
+            assert not hasattr(panel, "furigana")
+            assert not hasattr(panel, "word_status")
+            assert panel.examples.text() == "Show example kanji containing the part on the back"
+            panel.name.setChecked(False)
+        else:
+            assert panel.source.itemText(0) == "Your vocabulary words only"
+            panel.furigana.setChecked(index == 1)
+            panel.word_status.setCurrentIndex(index % 2)
+        panel.refresh.setChecked(index != 1)
     dialog._save()
     expected = Settings(
         rules,
@@ -42,6 +65,7 @@ def exercise_settings_dialog(mw, selection):
         True,
         tuple(panel.settings() for panel in dialog.generation_panels.values()),
         dialog.dictionary_panel.choices(),
+        tuple(panel.settings() for panel in dialog.card_panels.values()),
     )
     assert load_settings(mw.col) == expected
     reopened = SettingsDialog(mw)
@@ -50,6 +74,8 @@ def exercise_settings_dialog(mw, selection):
     assert reopened.primitives.isChecked()
     for category, panel in reopened.generation_panels.items():
         assert panel.settings() == expected.generation_settings(category)
+    for category, panel in reopened.card_panels.items():
+        assert panel.settings() == expected.card_settings(category)
     reopened.reject()
     # Exercise adding/removing and editing rows, then restore the fixture scan defaults.
     row = reopened.sources.add_rule(
@@ -129,7 +155,7 @@ def exercise_dictionary_settings(mw, selection):
     original = load_settings(mw.col)
     before = snapshot(mw.col)
     dialog = SettingsDialog(mw)
-    assert dialog.tabs.tabText(2) == "Dictionaries"
+    assert dialog.tabs.tabText(3) == "Dictionaries"
     panels = dialog.dictionary_panel.panels
     kanji = panels["kanjidic2"]
     assert "EDRDG" in kanji.about.toPlainText()

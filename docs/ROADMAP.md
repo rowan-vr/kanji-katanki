@@ -228,7 +228,7 @@ using the user's saved configuration.
   Part tags inherit source vocabulary tags through the component graph. Decks/tags
   are snapshotted in the preview and applied only to new notes. Missing settings use safe defaults;
   malformed/future versions fail without overwriting data. Version 1/2 settings
-  migrate to version 4 while preserving source IDs and deck/component preferences.
+  migrate to version 5 while preserving source IDs and deck/component preferences.
   Preview approval remains required; background triggers and update approvals belong
   to the remaining refresh work.
   Dictionaries settings select bundled/local/disabled KANJIDIC2 and KanjiVG sources;
@@ -253,6 +253,19 @@ using the user's saved configuration.
   category decks/tags, duplicate clicks, tile state/preview, persistent ignore/restore,
   and quiet no-op refreshes without a review window. Parts-only tabs and choosing
   missing target decks in the same review are host-verified.
+- [x] Add Cards settings between Generation and Dictionaries with Recognition,
+  Production, and Parts subtabs. Version 5 persists independent front-example,
+  discovered/default-word, furigana, automatic-example-refresh (default on), and
+  seen/new vocabulary choices for Recognition and Production. Parts has front-name,
+  back example-kanji, vocabulary-only/other-kanji, and automatic-refresh controls;
+  it has no furigana or word review-status controls. Versions 1–4 migrate without modifying saved data
+  or losing existing preferences. Evidence: `tests/test_card_settings.py`;
+  `scripts/smoke_settings.py` covers tab order, independent Save/Cancel and reopening.
+  Verification, 2026-10-23: 182 unit tests, lint/formatting, real-collection
+  persistence, and the packaged Qt-offscreen Anki smoke pass.
+  This delivers the settings UI and persistence; applying display choices to card
+  content and refreshing examples remain part of the unchecked work below.
+  Default-word and vocabulary-reading providers are still undecided.
 - [ ] Add automatic refresh with configurable triggers and clear enabled/disabled
   controls, reusing the same saved configuration and generation safeguards.
 - [ ] Define how refresh updates vocabulary examples on existing cards while
