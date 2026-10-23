@@ -21,7 +21,7 @@ def source_feedback(mw, message):
     from .settings import SettingsDialog
 
     settings = SettingsDialog(mw)
-    if settings.exec() == QDialog.DialogCode.Accepted:
+    if settings.exec() == QDialog.DialogCode.Accepted and not settings.cards_changed:
         from .refresh import open_refresh
 
         QTimer.singleShot(0, lambda: open_refresh(mw) if mw.col is not None else None)
