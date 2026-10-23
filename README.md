@@ -200,9 +200,10 @@ and hide furigana. “Seen” means at least one source card has been reviewed.
 Parts instead saves whether to show the part's name on the front, show example
 kanji containing it on the back, use kanji from your vocabulary alone or also
 other kanji, and automatically refresh example kanji (on by default).
+Each category also saves an example display limit: 5 by default, with 0 meaning
+show all. The limit includes user examples; all eligible examples remain stored.
 These are saved preferences for the upcoming card rendering and example refresh
-work; they do not yet change new or existing cards. The default-word provider is
-still undecided.
+work; they do not yet change new or existing cards. Jitendex default-word support is planned for a separate PR.
 
 The **Dictionaries** tab manages KANJIDIC2 and KanjiVG independently. Choose the
 default (a compatible downloaded update or bundled offline data), a local override,

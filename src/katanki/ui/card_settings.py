@@ -2,7 +2,7 @@
 
 from dataclasses import replace
 
-from aqt.qt import QCheckBox, QComboBox, QFormLayout, QLabel, QVBoxLayout, QWidget
+from aqt.qt import QCheckBox, QComboBox, QFormLayout, QLabel, QSpinBox, QVBoxLayout, QWidget
 
 
 class CardSettingsPanel(QWidget):
@@ -34,6 +34,15 @@ class CardSettingsPanel(QWidget):
         )
         self.examples.setChecked(settings.show_examples)
         form.addRow("Examples", self.examples)
+        self.limit = QSpinBox()
+        self.limit.setRange(0, 2_147_483_647)
+        self.limit.setSpecialValueText("Show all")
+        self.limit.setValue(settings.example_limit)
+        self.limit.setToolTip(
+            "Maximum examples displayed, including user examples. "
+            "0 shows all. All eligible examples remain stored on the card."
+        )
+        form.addRow("Example limit", self.limit)
         self.source = QComboBox()
         if parts:
             self.source.addItem("Kanji from your vocabulary only", "discovered")
@@ -45,7 +54,9 @@ class CardSettingsPanel(QWidget):
             self.source.addItem(
                 "Your vocabulary words + default examples", "discovered_and_default"
             )
-            self.source.setToolTip("The source of default words has not been decided yet.")
+            self.source.setToolTip(
+                "Default examples from Jitendex are planned for a later release."
+            )
         self.source.setCurrentIndex(self.source.findData(settings.example_source))
         form.addRow("Kanji sources" if parts else "Word sources", self.source)
         if not parts:
@@ -74,7 +85,7 @@ class CardSettingsPanel(QWidget):
         hint = QLabel(
             "These preferences are saved per category. Applying them to generated cards "
             "and automatically refreshing examples is planned for the card refresh work."
-            + ("" if parts else " Default words will be available once their source is chosen.")
+            + ("" if parts else " Default examples from Jitendex are planned for a later release.")
         )
         hint.setWordWrap(True)
         layout.addWidget(hint)
@@ -85,6 +96,7 @@ class CardSettingsPanel(QWidget):
             show_examples=self.examples.isChecked(),
             example_source=self.source.currentData(),
             auto_refresh=self.refresh.isChecked(),
+            example_limit=self.limit.value(),
         )
         if self.category == "parts":
             changes["show_name"] = self.name.isChecked()
