@@ -7,7 +7,7 @@ from html import escape
 
 from ..dictionaries.manager import DictionaryManager
 from ..dictionaries.preferences import dictionary_sources
-from ..dictionaries.words import ATTRIBUTION
+from ..dictionaries.words import ATTRIBUTION, selected_words
 from ..generation.cards import CardContent, normalize_prompt, note_type_spec
 from ..generation.examples import STATE_FIELD, encode_state, lines, managed_fields
 from ..generation.planner import NOTE_TYPES, Identity
@@ -56,9 +56,11 @@ def plan_example_refresh(collection, report, settings):
                 if entry:
                     entries[identity.key] = entry
     expanded = replace(report, entries=tuple(entries.values()))
+    word_provider = selected_words(settings.dictionaries)
     preview = build_preview(
         expanded,
         (),
+        word_suggestions=word_provider,
         recognition=tuple(i.key for i in owned if i.note_type == "kanji-recognition"),
         production=tuple(i.key for i in owned if i.note_type == "kanji-production"),
         include_primitives=False,
@@ -113,8 +115,9 @@ def plan_example_refresh(collection, report, settings):
             any(word not in content.discovered_examples for word in content.examples)
             and identity.kind == "kanji"
         ):
-            if escape(ATTRIBUTION) not in desired["Attribution"]:
-                desired["Attribution"] += "<br>" + escape(ATTRIBUTION)
+            attribution = escape(getattr(word_provider, "attribution", ATTRIBUTION))
+            if attribution not in desired["Attribution"]:
+                desired["Attribution"] += "<br>" + attribution
         if identity.note_type == "kanji-production":
             options = settings.card_settings("production")
             words = lines(note["UserExamples"]) if "UserExamples" in note else ()

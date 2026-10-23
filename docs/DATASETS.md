@@ -1,13 +1,14 @@
 # Default datasets
 
-KANJIDIC2 and KanjiVG are included in the `.ankiaddon` and enabled by default.
+KANJIDIC2, KanjiVG and Jitendex are included in the `.ankiaddon` and enabled by default.
 Installed users need no separate download, Python environment, or data path.
-Select decks, a note type, and fields in **Analyze Collection**, then scan offline.
+Choose sources under **Settings → Discovery**, then use **Refresh** offline.
 
 | Dataset | Bundled snapshot | Contents | Data license |
 | --- | --- | --- | --- |
 | KANJIDIC2 | 2026-10-23 | 13,108 entries; Japanese on/kun readings, English meanings, grade, primary stroke count | CC BY-SA 4.0 + EDRDG terms |
 | KanjiVG | r20260714 | 6,703 canonical non-variant SVG files | CC BY-SA 3.0 |
+| Jitendex | 2026.10.03.0 | Complete Yomitan export: 436,555 term rows; 17,126 eligible common word forms | CC BY-SA 4.0; Tatoeba CC BY 2.0 FR; EDRDG terms |
 
 Jitendex 2026.10.03.0 is also bundled in full: the original 38.8 MB Yomitan
 archive plus a lightweight CC BY-SA 4.0 suggestion index with 17,126 common
@@ -16,27 +17,63 @@ add-on stays below 50 MB. JMdict
 is included through Jitendex; no separate JMdict archive is needed. An unofficial
 JLPT source has not been selected.
 
-The word pack currently follows a separate build lock, `datasets/jitendex-lock.json`,
-and is not part of the independent dictionary-update catalog. Normal builds download
-the pinned Yomitan archive, verify its hash, and deterministically prepare
-`dictionaries/word_pack/words.json`, retains `jitendex-yomitan.zip` byte-for-byte,
-and copies attribution, provenance and license text. Generated
-payloads are ignored by Git. `scripts/bundle_words.py --offline` rebuilds from
-verified `data/upstream/` inputs; `build_addon.py --offline` also accepts an already
-verified prepared word pack. Changing the baseline requires reviewing the source
-revision, checksums, conversion output and notices in the word lock together.
-No word dictionary is downloaded during card creation or review. See
-[card examples](CARD_EXAMPLES.md#default-words) for filtering and ranking.
+Jitendex now participates in the shared dictionary update catalog, validation,
+installation and bundled-fallback machinery. Settings → Dictionaries exposes
+Default, local Yomitan ZIP, Disabled, Check dictionary, Update dictionary, and Use
+bundled version. Disabling it removes dictionary defaults without removing the
+user's discovered vocabulary. Local overrides take precedence over installed
+updates. Selection affects subsequent generation/Refresh, never rewrites notes
+just by changing a dictionary choice.
 
-The word pack is an adaptation of Jitendex © Stephen Kraus and JMdict © the
-Electronic Dictionary Research and Development Group. It remains CC BY-SA 4.0;
-its original attribution and the full license are included in `word_pack/NOTICE.txt`
-and `word_pack/CC-BY-SA-4.0.txt`. The bundled EDRDG terms in `bundled/licenses/`
-also apply. The full archive preserves all upstream entries, definitions, example
-sentences, tags, ruby markup, images and metadata, including embedded font licenses.
-Tatoeba sentence data remains CC BY 2.0 FR; the full text is copied to
-`word_pack/CC-BY-2.0-FR.html`. The suggestion index alone omits definitions,
-sentences, audio and positioning, and filters for common words.
+All three datasets use the same release-pack system:
+
+- Normal builds fetch only the immutable release assets pinned in
+  `datasets/bundled-lock.json` and verify pack and file checksums.
+- Installed add-ons consult `datasets/catalog.json` for compatible releases,
+  then download and validate the selected pack before activating it atomically.
+- Bundled payloads live together under `dictionaries/bundled/`:
+  `kanjidic2.xml`, `kanjivg.zip`, and `jitendex.zip`.
+- Maintainer preparation uses the shared `bundled/SOURCES.json` provenance and
+  `scripts/bundle_datasets.py`. There is no separate Jitendex lock, folder or
+  normal-build upstream download route.
+
+Jitendex's original Yomitan archive is retained byte-for-byte, including all
+436,555 term rows. The adapter compiles the 17,126 eligible common word forms on
+first use and caches them in memory by source path, size and modification time.
+Bundled, installed and local sources use the same reader and ranking rules.
+Changing a source does not modify user dictionaries or fetch data during review.
+See [card examples](CARD_EXAMPLES.md#default-words) for ranking.
+
+Jitendex is © Stephen Kraus, under CC BY-SA 4.0, and includes JMdict © EDRDG.
+The source attribution, EDRDG terms, CC BY-SA 4.0 and Tatoeba CC BY 2.0 FR license
+texts are included under `bundled/licenses/`, with the shared `bundled/NOTICE.txt`.
+The full archive preserves definitions, examples, ruby markup, images, metadata
+and embedded Hanazono/GlyphWiki font licenses. Only the in-memory suggestion list
+filters entries; the bundled dictionary is complete.
+
+### First combined release
+
+The combined baseline is published as
+[datasets-2026-10-23-jitendex](https://github.com/rowan-vr/kanji-katanki/releases/tag/datasets-2026-10-23-jitendex).
+All three archives and the matching catalog have been downloaded and verified
+against the checked-in build lock. Their local copies remain in `dist/datasets/`.
+This is a dataset-only prerelease; the stable add-on release is unchanged.
+
+Publication used the following command (the existing assets must not be replaced):
+
+```sh
+gh release create datasets-2026-10-23-jitendex \
+  dist/datasets/kanjidic2.zip dist/datasets/kanjivg.zip \
+  dist/datasets/jitendex.zip dist/datasets/catalog.json \
+  --repo rowan-vr/kanji-katanki --prerelease \
+  --title 'Dictionary packs: Jitendex integration'
+```
+
+Cold builds can now fetch all three packs from this release using the shared build
+lock; verified caches also support offline rebuilds. The matching catalog and
+integration changes still need to be merged to advertise Jitendex through the
+public runtime catalog on main. Later releases use the same monthly/manual
+Dataset packs workflow and reviewed catalog promotion as before.
 
 The add-on archive is approximately 44 MB and includes offline defaults. Dataset
 payloads and copied upstream notices stay out of Git. Versioned packs live as
@@ -51,7 +88,7 @@ Two small files serve separate purposes:
   users. The add-on checks the `main` branch copy over HTTPS. Updating this file
   does not require an add-on release.
 
-Builds restore ignored runtime payloads under
+Builds restore all three ignored runtime payloads under
 `src/katanki/dictionaries/bundled/` from those packs. Verified pack downloads are
 cached by hash under ignored `data/packs/`. Original maintainer downloads are
 cached under ignored `data/upstream/`. Canonical XML and inner SVG ZIP members
@@ -124,8 +161,9 @@ or promote the public catalog. Publishing runs only from `main`, in a separate
 job with write permission. Dataset prereleases do not trigger the add-on release
 job or replace the latest stable add-on release.
 
-The workflow artifact includes the two packs, candidate `catalog.json`, and a
-`review/` directory containing source locks and manifests. Pack preparation
+The workflow artifact includes all three packs (`kanjidic2.zip`, `kanjivg.zip`,
+`jitendex.zip`), candidate `catalog.json`, and a
+`review/` directory containing the shared source provenance and manifests. Pack preparation
 round-trips each candidate through the same validator used by installed clients.
 Upstream/format failures affect this maintenance workflow, not normal CI.
 
@@ -141,8 +179,8 @@ Choose a new tag every time; never replace a published asset. To change KanjiVG,
 edit the pinned URL and `kanjivg_release` in `bundled/SOURCES.json` first. The raw
 source lock is preparation provenance, not the normal build's download target.
 
-Publish packs before promoting their catalog. The initial packs are already
-published under `datasets-2026-10-23`; the equivalent publishing command is:
+Publish packs before promoting their catalog. The older two-dictionary baseline was published under `datasets-2026-10-23`.
+The initial publishing command was:
 
 ```sh
 gh release create datasets-2026-10-23 \
@@ -152,9 +190,9 @@ gh release create datasets-2026-10-23 \
   --notes 'Offline defaults and independent dictionary updates; license notices included.'
 ```
 
-The initial catalog references the published `datasets-2026-10-23` prerelease.
-Its packs match the checked-in manifests and source provenance. Cold builds fetch
-those assets; prepared defaults and the verified pack cache also work offline.
+The original two-pack release remains available for older commits. The new
+three-pack baseline is published as described above; prepared defaults and the
+verified pack cache also support offline builds.
 
 After checking published assets, review and promote `datasets/catalog.json` to
 advertise updates. For a new bundled baseline, also copy that catalog to
@@ -186,7 +224,7 @@ tests never download data; bundle-dependent checks skip until a build prepares i
 
 ## Later: additional on-demand assets
 
-Independent updates for the two default dictionaries are implemented. Additional
+Independent updates for all three default dictionaries are implemented. Additional
 providers and per-character downloads remain deferred; review flows must continue
 working without network access.
 
@@ -263,3 +301,18 @@ Repeat it using the installed Anki's Python:
 ```
 
 Fixture notes are created only in a disposable profile before snapshots are taken.
+
+
+## Jitendex integration verification, 2026-10-23
+
+251 unit/packaging tests pass, including local selection in generation and Refresh,
+disabled defaults, same-day revision ordering, downloaded activation and bundled
+fallback, malformed ZIP/term rejection, changed-source caches, and maintainer
+source-lock regeneration. The full three-pack candidate was generated offline and
+round-tripped through the installed-client validator. The Jitendex pack is about
+38.9 MB and carries the original export plus self-contained license notices.
+Real Anki/Qt checks cover list visibility, local ZIP checks, saved choices,
+update dialogs, installation, disabled mode, returning to bundled data and offline
+failure. Host baseline: Linux Anki 26.09.3 / Python 3.14.8. The three packs and
+matching catalog were subsequently published as the dataset-only prerelease
+`datasets-2026-10-23-jitendex`, downloaded again, and verified against the build lock.

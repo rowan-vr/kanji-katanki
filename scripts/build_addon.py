@@ -58,11 +58,6 @@ def build(output: Path, *, offline: bool = False) -> Path:
             command.append("--offline")
         subprocess.run(command, check=True, cwd=ROOT)
         verify_bundled_assets(source)
-    if (ROOT / "datasets" / "jitendex-lock.json").is_file():
-        command = [sys.executable, str(ROOT / "scripts" / "bundle_words.py")]
-        if offline:
-            command.append("--offline")
-        subprocess.run(command, check=True, cwd=ROOT)
     output.parent.mkdir(parents=True, exist_ok=True)
     with ZipFile(output, "w", compression=ZIP_DEFLATED) as archive:
         archive.write(ROOT / "LICENSE", "LICENSE")
@@ -72,14 +67,13 @@ def build(output: Path, *, offline: bool = False) -> Path:
                 path.is_file()
                 and "__pycache__" not in path.parts
                 and "user_files" not in path.relative_to(source).parts
+                and "word_pack" not in path.relative_to(source).parts
                 and path.suffix != ".pyc"
             ):
                 archive.write(
                     path,
                     path.relative_to(source),
-                    compress_type=ZIP_STORED
-                    if path.name == "jitendex-yomitan.zip"
-                    else ZIP_DEFLATED,
+                    compress_type=ZIP_STORED if path.name == "jitendex.zip" else ZIP_DEFLATED,
                 )
     return output
 

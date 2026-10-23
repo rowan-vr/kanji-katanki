@@ -14,7 +14,8 @@ FIXTURES = Path(__file__).parent / "fixtures"
 def test_defaults_use_bundled_datasets_and_disabled_choices_remove_them():
     assert dictionary_sources(()) == bundled_sources()
     assert dictionary_sources((DictionaryChoice("kanjidic2", "disabled"),)) == {
-        "kanjivg": bundled_sources()["kanjivg"]
+        "kanjivg": bundled_sources()["kanjivg"],
+        "jitendex": bundled_sources()["jitendex"],
     }
     assert (
         dictionary_sources(tuple(DictionaryChoice(key, "disabled") for key in bundled_sources()))
@@ -29,7 +30,10 @@ def test_local_choices_are_used_instead_of_bundles_and_persist():
     )
     settings = Settings(dictionaries=choices)
     assert from_dict(settings.to_dict()) == settings
-    assert dictionary_sources(choices) == {"kanjidic2": FIXTURES / "kanjidic2.xml"}
+    assert dictionary_sources(choices) == {
+        "kanjidic2": FIXTURES / "kanjidic2.xml",
+        "jitendex": bundled_sources()["jitendex"],
+    }
     assert "SHA-256" in check_dictionary(choices[0])
     assert "Disabled" in check_dictionary(choices[1])
 

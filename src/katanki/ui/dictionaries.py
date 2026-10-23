@@ -52,6 +52,8 @@ class DictionaryPanel(QWidget):
         self.path.setPlaceholderText(
             "SVG directory or canonical ZIP"
             if manifest.format == "kanjivg_svg"
+            else "Jitendex Yomitan .zip"
+            if manifest.format == "jitendex_yomitan"
             else "KANJIDIC2 .xml or .xml.gz"
         )
         path_row.addWidget(self.path)
@@ -97,6 +99,15 @@ class DictionaryPanel(QWidget):
             f'<a href="{escape(manifest.license_url, quote=True)}">'
             f"{escape(manifest.license_name)}</a></p>"
         )
+        if manifest.format == "jitendex_yomitan":
+            metadata += (
+                "<p>Default word suggestions prefer common contemporary forms, ordered by "
+                "dictionary priority, then shorter words and spelling. Rare, obsolete and "
+                "kana-preferred entries are excluded from suggestions. Your source vocabulary "
+                "comes first. The full dictionary remains available offline.</p>"
+                "<p>Local overrides must be Jitendex-compatible Yomitan ZIP files. "
+                "Use Cards → Discovered and default words to include dictionary examples.</p>"
+            )
         if bundle:
             metadata += (
                 f"<p>Bundled version: {escape(bundle['version'])}<br>"
@@ -222,11 +233,16 @@ class DictionaryPanel(QWidget):
             path = QFileDialog.getExistingDirectory(self, "Select KanjiVG kanji/ SVG directory")
         else:
             stroke = self.manifest.format == "kanjivg_svg"
+            words = self.manifest.format == "jitendex_yomitan"
             path, _ = QFileDialog.getOpenFileName(
                 self,
-                "Select KanjiVG ZIP" if stroke else "Select KANJIDIC2",
+                "Select Jitendex Yomitan ZIP"
+                if words
+                else "Select KanjiVG ZIP"
+                if stroke
+                else "Select KANJIDIC2",
                 "",
-                "ZIP (*.zip)" if stroke else "XML (*.xml *.gz)",
+                "ZIP (*.zip)" if stroke or words else "XML (*.xml *.gz)",
             )
         if path:
             self.path.setText(path)

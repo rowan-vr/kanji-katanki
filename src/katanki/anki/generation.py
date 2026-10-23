@@ -7,6 +7,7 @@ A stale preview may skip newly existing notes, but never adds extra creations.
 import re
 from dataclasses import dataclass, replace
 
+from ..dictionaries.words import selected_words
 from ..generation.cards import CSS, normalize_prompt, note_type_spec
 from ..generation.destinations import creation_options
 from ..generation.discovery import visible_text
@@ -38,6 +39,7 @@ def preview_generation(
     for note_type in sorted(relevant):
         existing.update(owned_identities(collection, note_type=note_type))
     if generation_settings is not None:
+        choices["word_suggestions"] = selected_words(generation_settings.dictionaries)
         choices["card_settings"] = {
             category: generation_settings.card_settings(category)
             for category in ("recognition", "production", "parts")

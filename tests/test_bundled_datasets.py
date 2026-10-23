@@ -30,7 +30,7 @@ requires_datasets = pytest.mark.skipif(
 def test_defaults_load_offline_with_licenses_and_versioned_fingerprints(monkeypatch):
     monkeypatch.setattr("urllib.request.urlopen", Mock(side_effect=AssertionError("Network used")))
     with DictionaryManager() as manager:
-        assert manager.status() == ("components", "kanji", "strokes")
+        assert manager.status() == ("components", "kanji", "strokes", "words")
         assert manager.lookup_kanji("景").meanings != ("fixture scenery",)
         assert manager.lookup_strokes("景") is not None
         for manifest in list_datasets():

@@ -31,10 +31,23 @@
       "url": "https://creativecommons.org/licenses/by-sa/4.0/legalcode.txt",
       "sha256": "28a9529c7d0bb4dc51f4bf5c116a3d16ef247a052f7591466768ddf563fd1cf5",
       "bytes": 20138
+    },
+    "jitendex-yomitan.zip": {
+      "url": "https://github.com/stephenmk/stephenmk.github.io/releases/download/2026.10.03.0/jitendex-yomitan.zip",
+      "sha256": "e914c76596220dffc6ee0c069cd05992f03adb2988c12c3cebe817a3ac271356",
+      "bytes": 38831822,
+      "kind": "data"
+    },
+    "CC-BY-2.0-FR.html": {
+      "url": "https://creativecommons.org/licenses/by/2.0/fr/legalcode",
+      "sha256": "597d4c64f6606c64da65ba6c079e5cc87e4cce2b5187eda908c939b538e7ab9b",
+      "bytes": 39479,
+      "kind": "notice"
     }
   },
   "derived_notices": {
     "KanjiVG-COPYING": "d255e07978fd16ddfec38bc59dc9d857b885dd44ddbf4e79baf207d30746bdcc",
-    "KanjiVG-README.md": "aae5625e1f622110886950779e9c40ffdc6f794b32c0aed7f382e04a682de54a"
+    "KanjiVG-README.md": "aae5625e1f622110886950779e9c40ffdc6f794b32c0aed7f382e04a682de54a",
+    "Jitendex-Attribution.txt": "66c3b568fad1a91b932329f8833bbbccfed4b5bd26ee2b6ca247bc283618eae9"
   }
 }

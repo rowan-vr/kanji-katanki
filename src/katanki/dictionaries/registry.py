@@ -6,7 +6,7 @@ from dataclasses import dataclass
 from pathlib import Path
 from urllib.parse import urlsplit
 
-FORMATS = {"kanjidic2_xml", "kanjivg_svg"}
+FORMATS = {"kanjidic2_xml", "kanjivg_svg", "jitendex_yomitan"}
 
 
 @dataclass(frozen=True)
@@ -54,7 +54,11 @@ def read_manifest(path: Path) -> DatasetManifest:
             raise ValueError(f"Manifest {key} must be a nonempty string.")
     if not re.fullmatch(r"[a-z0-9][a-z0-9_-]*", raw["id"]) or raw["format"] not in FORMATS:
         raise ValueError("Invalid dataset ID or unsupported format adapter.")
-    expected = {"kanjidic2_xml": {"kanji"}, "kanjivg_svg": {"strokes", "components"}}
+    expected = {
+        "kanjidic2_xml": {"kanji"},
+        "kanjivg_svg": {"strokes", "components"},
+        "jitendex_yomitan": {"words"},
+    }
     if (
         not isinstance(raw["capabilities"], list)
         or any(not isinstance(item, str) for item in raw["capabilities"])

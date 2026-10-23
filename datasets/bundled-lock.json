@@ -1,21 +1,29 @@
 {
   "schema_version": 1,
   "datasets": {
+    "jitendex": {
+      "version": "2026.10.03.0",
+      "revision": 202610030000,
+      "format_version": 1,
+      "url": "https://github.com/rowan-vr/kanji-katanki/releases/download/datasets-2026-10-23-jitendex/jitendex.zip",
+      "sha256": "ed0c9952761fdbbaf01571eba56ad9269283d59d0d4c19ae6dbd714df3efcaab",
+      "bytes": 38884072
+    },
     "kanjidic2": {
       "version": "2026-10-23",
       "revision": 20261023,
       "format_version": 1,
-      "url": "https://github.com/rowan-vr/kanji-katanki/releases/download/datasets-2026-10-23/kanjidic2.zip",
-      "sha256": "ed5b45e4559ab304a7d4afde7bb4edb35ff522a57db4230265ce584fb3594ae7",
-      "bytes": 428165
+      "url": "https://github.com/rowan-vr/kanji-katanki/releases/download/datasets-2026-10-23-jitendex/kanjidic2.zip",
+      "sha256": "3c7e7d489154d3a72bc5b7dac9b3f659c791066424faf77cbfa72569ad706d4a",
+      "bytes": 439456
     },
     "kanjivg": {
       "version": "r20260714",
       "revision": 20260714,
       "format_version": 1,
-      "url": "https://github.com/rowan-vr/kanji-katanki/releases/download/datasets-2026-10-23/kanjivg.zip",
-      "sha256": "bbddc39cc122e5460c8bc13c4a2bf28af815e0a1a624a08d3b624507a093dd6a",
-      "bytes": 4758905
+      "url": "https://github.com/rowan-vr/kanji-katanki/releases/download/datasets-2026-10-23-jitendex/kanjivg.zip",
+      "sha256": "85635ccdc45bdaf8ac6d86e239537a7156bdef4c0cee773bd1c01f80a1efe527",
+      "bytes": 4770196
     }
   }
 }
