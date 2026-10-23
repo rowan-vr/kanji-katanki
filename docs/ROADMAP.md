@@ -361,11 +361,15 @@ using the user's saved configuration.
   part of the final acceptance checks below.
 - [x] Verify saved settings survive restarts.
   Human acceptance check passed, reported 2026-10-23.
-- [ ] Improve the refresh replacement/migration review dialog and repeat visual
+- [x] Improve the refresh replacement/migration review dialog and repeat visual
   acceptance. Human review failed, reported 2026-10-23: the dialog presents a dense
   text dump with raw example HTML, internal field names and note IDs, making
   before/after replacements difficult to compare. Present readable card/field
   changes with clear before/after grouping while retaining explicit approval.
+  Replacement UI implemented on `fix/refresh-replacement-dialog`: selectable card
+  list, side-by-side current/proposed values, readable example text and field labels,
+  and note IDs in tooltips. Qt-offscreen checks pass card selection, readable values,
+  Cancel and approval. Human visual acceptance passed, reported 2026-10-23.
 - [ ] Verify repeated refreshes create no duplicates and manual/automatic refresh
   preserve existing note/card identities, scheduling and review history.
   Human acceptance checks remain pending; other host/UI checks also remain pending.
@@ -382,8 +386,8 @@ tabbed Settings Save/Cancel and reopening, Add/Remove source rows, saved
 discovery/generation defaults, exact
 notes/cards/revlog preservation during settings/scans, generation Cancel/approval,
 and stroke controls on Linux Anki 26.09.3 / Python 3.14.8. Human acceptance has
-confirmed restart persistence; replacement/migration dialog visual review failed,
-and the remaining checks are pending as listed above.
+confirmed restart persistence and the revised replacement/migration dialog;
+the remaining checks are pending as listed above.
 
 Acceptance: after configuring sources and preferences once, pressing refresh runs
 all configured steps without repeating setup. Automatic refresh uses the same
