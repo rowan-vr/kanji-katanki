@@ -77,4 +77,4 @@ def selected_notes(
             fields_by_note.setdefault(note_id, {}).update(dict.fromkeys(source.fields))
     for note_id, fields in sorted(fields_by_note.items()):
         note = collection.get_note(note_id)
-        yield NoteText(tuple(note[field] for field in fields))
+        yield NoteText(tuple(note[field] for field in fields), tuple(getattr(note, "tags", ())))

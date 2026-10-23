@@ -219,13 +219,22 @@ using the user's saved configuration.
   **Test discovery** scans unsaved source rows in the background and shows note,
   vocabulary, and kanji candidate counts and lists without saving or generating.
   Real-host smoke verifies exact settings and notes/cards/revlog preservation.
-- [ ] Save generation preferences and provide recommended defaults with versioned
+- [x] Save generation preferences and provide recommended defaults with versioned
   configuration and safe migrations.
-  The Generation tab saves destination deck and component recognition prerequisites;
-  production remains per-character opt-in. Missing settings use safe defaults;
-  malformed/future versions fail without overwriting data. Version 1 source settings
-  migrate to version 2 rules while preserving IDs and preferences. Automatic refresh
-  and write/update approvals remain undefined.
+  Recognition, Production, and Parts subtabs save category selection, target decks,
+  default tags, and all/filtered source-tag copying. Enabled categories are selected
+  when opening Generate; preview approval still gates writes. Recognition and Production default on.
+  Part tags inherit source vocabulary tags through the component graph. Decks/tags
+  are snapshotted in the preview and applied only to new notes. Missing settings use safe defaults;
+  malformed/future versions fail without overwriting data. Version 1/2 settings
+  migrate to version 4 while preserving source IDs and deck/component preferences.
+  Preview approval remains required; background triggers and update approvals belong
+  to the remaining refresh work.
+  Dictionaries settings select bundled/local/disabled KANJIDIC2 and KanjiVG sources;
+  background checks expose detected provenance, errors, and a sample stroke check.
+  Attribution includes source/license links, bundled versions/counts/checksums, and
+  packaged notice copies. Real-host smoke covers Save/reopen, checks without writes,
+  and disabled sources respected by discovery.
 - [ ] Provide one refresh button that loads the configured sources and preferences,
   scans vocabulary, plans generation, and applies the configured workflow.
 - [ ] Add automatic refresh with configurable triggers and clear enabled/disabled
@@ -238,9 +247,11 @@ using the user's saved configuration.
 - [ ] Verify saved settings survive restarts, repeated refreshes create no
   duplicates, and manual/automatic refresh preserve existing review progress.
 
-Verification, 2026-10-23: 99 unit tests pass; lint and formatting pass.
+Verification, 2026-10-23: 119 unit tests pass; lint and formatting pass.
 `scripts/smoke_settings.py` confirms persistence after closing/reopening a real
-Anki collection, mixed note types/fields, and overlapping wildcard deduplication.
+Anki collection, mixed note types/fields, and overlapping wildcard deduplication. Category generation checks verify separate
+recognition/production/parts decks, default/filtered/inherited tags, missing-deck
+rejection before writes, and idempotent reruns.
 The packaged Qt-offscreen smoke passes top-level menu registration,
 tabbed Settings Save/Cancel and reopening, Add/Remove source rows, saved
 discovery/generation defaults, exact

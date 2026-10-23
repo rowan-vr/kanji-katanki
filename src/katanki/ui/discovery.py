@@ -21,7 +21,7 @@ from aqt.qt import (
 from aqt.utils import showText, showWarning
 
 from ..anki.analysis import analyze
-from ..config import load_settings
+from ..config import DictionaryChoice, load_settings
 from ..dictionaries.registry import bundled_path, bundled_sources, list_datasets
 from .sources import SourceSelector
 
@@ -38,6 +38,7 @@ class DiscoveryDialog(QDialog):
         self.report = None
         self.busy = False
         self.sources = {}
+        self.disabled_datasets = set()
         layout = QVBoxLayout(self)
         description = QLabel(
             "Choose deck patterns, note types, and fields. Scans are read-only.\n"
@@ -49,11 +50,21 @@ class DiscoveryDialog(QDialog):
         layout.addLayout(row)
         self.source_selector = SourceSelector(mw)
         row.addWidget(self.source_selector)
-        self.source_selector.restore(load_settings(mw.col).sources)
+        settings = load_settings(mw.col)
+        self.disabled_datasets = {
+            choice.dataset_id for choice in settings.dictionaries if choice.mode == "disabled"
+        }
+        self.source_selector.restore(settings.sources)
         defaults_row = QHBoxLayout()
         layout.addLayout(defaults_row)
         self.use_bundled = QCheckBox("Use bundled default dictionaries (offline)")
-        self.use_bundled.setChecked(True)
+        choices = {choice.dataset_id: choice for choice in settings.dictionaries}
+        self.use_bundled.setChecked(
+            any(
+                choices.get(manifest.id, DictionaryChoice(manifest.id)).mode == "bundled"
+                for manifest in list_datasets()
+            )
+        )
         defaults_row.addWidget(self.use_bundled)
         licenses = QPushButton("Sources and licenses…")
         licenses.clicked.connect(self._licenses)
@@ -78,6 +89,11 @@ class DiscoveryDialog(QDialog):
                 )
             )
             line.addWidget(browse)
+            choice = next(
+                (item for item in settings.dictionaries if item.dataset_id == manifest.id), None
+            )
+            if choice and choice.mode == "local":
+                entry.setText(choice.path)
             self.sources[manifest.id] = entry
         self.scan_button = QPushButton("Scan selected sources")
         self.scan_button.setObjectName("katanki_scan")
@@ -139,7 +155,11 @@ class DiscoveryDialog(QDialog):
     def _scan(self):
         try:
             selection = self.source_selector.selection()
-            paths = bundled_sources() if self.use_bundled.isChecked() else {}
+            paths = {
+                key: path
+                for key, path in bundled_sources().items()
+                if self.use_bundled.isChecked() and key not in self.disabled_datasets
+            }
             paths.update(
                 {
                     dataset_id: Path(entry.text().strip()).expanduser()

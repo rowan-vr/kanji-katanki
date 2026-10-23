@@ -189,8 +189,9 @@ def exercise_generation_dialog(mw, report):
     assert dialog.deck.currentData() == settings.destination_deck_id
     dialog.deck.setCurrentIndex(1)
     for row, character in enumerate(report.scan.candidates):
-        if character == "景":
-            dialog.table.item(row, 2).setCheckState(Qt.CheckState.Checked)
+        dialog.table.item(row, 2).setCheckState(
+            Qt.CheckState.Checked if character == "景" else Qt.CheckState.Unchecked
+        )
     component_row = dialog.component_keys.index("日")
     dialog.component_table.item(component_row, 1).setText("sun component")
     dialog.component_table.item(component_row, 2).setCheckState(Qt.CheckState.Checked)

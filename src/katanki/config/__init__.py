@@ -5,7 +5,7 @@ from dataclasses import asdict, dataclass
 from ..common.models import ScanSelection
 
 CONFIG_KEY = "katanki_settings"
-VERSION = 2
+VERSION = 4
 
 
 @dataclass(frozen=True)
@@ -24,11 +24,76 @@ class SourceRule:
         ScanSelection(self.deck_ids or (1,), self.note_type_id, self.fields)
 
 
+GENERATION_CATEGORIES = ("recognition", "production", "parts")
+
+
+@dataclass(frozen=True)
+class GenerationSettings:
+    auto_generate: bool = False
+    target_deck_id: int | None = None
+    default_tags: tuple[str, ...] = ()
+    copy_source_tags: bool = False
+    source_tag_patterns: tuple[str, ...] = ()
+
+    def __post_init__(self):
+        if type(self.auto_generate) is not bool or type(self.copy_source_tags) is not bool:
+            raise ValueError("Generation switches must be enabled or disabled.")
+        if self.target_deck_id is not None and (
+            type(self.target_deck_id) is not int or self.target_deck_id <= 0
+        ):
+            raise ValueError("Select a valid target deck.")
+        for values in (self.default_tags, self.source_tag_patterns):
+            if not isinstance(values, tuple) or any(
+                not isinstance(tag, str) or not tag or any(char.isspace() for char in tag)
+                for tag in values
+            ):
+                raise ValueError("Tags and tag patterns must be nonempty, without spaces.")
+
+
+@dataclass(frozen=True)
+class DictionaryChoice:
+    dataset_id: str
+    mode: str = "bundled"
+    path: str = ""
+
+    def __post_init__(self):
+        if not isinstance(self.dataset_id, str) or not self.dataset_id:
+            raise ValueError("Choose a valid dictionary.")
+        if self.mode not in ("bundled", "local", "disabled") or not isinstance(self.path, str):
+            raise ValueError("Invalid dictionary source settings.")
+        if self.mode == "local" and not self.path.strip():
+            raise ValueError("Choose a local dictionary file or directory.")
+
+
 @dataclass(frozen=True)
 class Settings:
     sources: tuple[SourceRule, ...] = ()
     destination_deck_id: int | None = None
     include_primitives: bool = False
+    generation: tuple[GenerationSettings, ...] = ()
+    dictionaries: tuple[DictionaryChoice, ...] = ()
+
+    def __post_init__(self):
+        if not self.generation:
+            object.__setattr__(
+                self,
+                "generation",
+                tuple(
+                    GenerationSettings(
+                        category in ("recognition", "production")
+                        or (category == "parts" and self.include_primitives),
+                        self.destination_deck_id,
+                    )
+                    for category in GENERATION_CATEGORIES
+                ),
+            )
+        if len(self.generation) != 3 or any(
+            not isinstance(item, GenerationSettings) for item in self.generation
+        ):
+            raise ValueError("Generation settings need Recognition, Production, and Parts.")
+
+    def generation_settings(self, category: str) -> GenerationSettings:
+        return self.generation[GENERATION_CATEGORIES.index(category)]
 
     def to_dict(self) -> dict:
         sources = []
@@ -39,6 +104,17 @@ class Settings:
             sources.append(entry)
         return {
             "version": VERSION,
+            "dictionaries": [asdict(choice) for choice in self.dictionaries],
+            "generation": {
+                category: {
+                    **asdict(self.generation_settings(category)),
+                    "default_tags": list(self.generation_settings(category).default_tags),
+                    "source_tag_patterns": list(
+                        self.generation_settings(category).source_tag_patterns
+                    ),
+                }
+                for category in GENERATION_CATEGORIES
+            },
             "sources": sources,
             "destination_deck_id": self.destination_deck_id,
             "include_primitives": self.include_primitives,
@@ -50,7 +126,7 @@ def from_dict(data) -> Settings:
         return Settings()
     if not isinstance(data, dict) or type(data.get("version")) is not int:
         raise ValueError("Invalid Katanki settings format. Saved settings were preserved.")
-    if data["version"] not in (1, VERSION):
+    if data["version"] not in (1, 2, 3, VERSION):
         raise ValueError("Unsupported Katanki settings version. Saved settings were preserved.")
     if data["version"] == 1:
         legacy = data.get("source")
@@ -80,7 +156,50 @@ def from_dict(data) -> Settings:
     primitives = data.get("include_primitives", False)
     if type(primitives) is not bool:
         raise ValueError("Invalid saved component preference.")
-    return Settings(tuple(rules), destination, primitives)
+    generation = ()
+    if data["version"] >= 3:
+        profiles = data.get("generation", {})
+        if not isinstance(profiles, dict):
+            raise ValueError("Invalid generation settings.")
+        settings = Settings(tuple(rules), destination, primitives)
+        parsed = []
+        for category in GENERATION_CATEGORIES:
+            entry = profiles.get(category)
+            if entry is None:
+                parsed.append(settings.generation_settings(category))
+                continue
+            if not isinstance(entry, dict):
+                raise ValueError("Invalid generation category settings.")
+            tags, patterns = entry.get("default_tags", []), entry.get("source_tag_patterns", [])
+            if not isinstance(tags, list) or not isinstance(patterns, list):
+                raise ValueError("Invalid saved tags or tag patterns.")
+            parsed.append(
+                GenerationSettings(
+                    entry.get(
+                        "auto_generate", settings.generation_settings(category).auto_generate
+                    ),
+                    entry.get("target_deck_id"),
+                    tuple(tags),
+                    entry.get("copy_source_tags", False),
+                    tuple(patterns),
+                )
+            )
+        generation = tuple(parsed)
+    entries = data.get("dictionaries", []) if data["version"] >= 4 else []
+    if not isinstance(entries, list):
+        raise ValueError("Invalid saved dictionary choices.")
+    dictionaries = []
+    for entry in entries:
+        if not isinstance(entry, dict):
+            raise ValueError("Invalid saved dictionary choice.")
+        dictionaries.append(
+            DictionaryChoice(
+                entry.get("dataset_id"), entry.get("mode", "bundled"), entry.get("path", "")
+            )
+        )
+    if len({choice.dataset_id for choice in dictionaries}) != len(dictionaries):
+        raise ValueError("Duplicate dictionary choices.")
+    return Settings(tuple(rules), destination, primitives, generation, tuple(dictionaries))
 
 
 def load_settings(collection) -> Settings:

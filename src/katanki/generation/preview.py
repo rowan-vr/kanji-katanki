@@ -5,6 +5,7 @@ from dataclasses import dataclass
 
 from ..common.models import DiscoveryReport
 from .cards import CardContent, normalize_prompt, vocabulary_prompt
+from .destinations import CreationOptions
 from .planner import GenerationPlan, Identity, LearningUnit, plan_generation
 
 
@@ -13,6 +14,7 @@ class GenerationPreview:
     plan: GenerationPlan
     contents: tuple[CardContent, ...]
     warnings: tuple[str, ...]
+    creations: tuple[CreationOptions, ...] = ()
 
 
 def build_preview(

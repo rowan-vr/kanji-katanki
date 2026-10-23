@@ -12,6 +12,10 @@ def test_defaults_are_safe_and_collection_independent():
     assert from_dict(None) == Settings()
     assert Settings().sources == ()
     assert Settings().include_primitives is False
+    assert Settings().generation_settings("production").auto_generate is True
+    saved = Settings().to_dict()
+    saved["generation"]["production"]["auto_generate"] = False
+    assert from_dict(saved).generation_settings("production").auto_generate is False
 
 
 def test_saved_settings_survive_json_storage_and_reloading():
@@ -32,7 +36,7 @@ def test_saved_settings_survive_json_storage_and_reloading():
     save_settings(collection, settings)
     assert load_settings(collection) == settings
     assert set(stored) == {CONFIG_KEY}
-    assert stored[CONFIG_KEY]["version"] == 2
+    assert stored[CONFIG_KEY]["version"] == 4
 
 
 @pytest.mark.parametrize(
@@ -42,7 +46,7 @@ def test_saved_settings_survive_json_storage_and_reloading():
         {},
         {"version": True},
         {"version": 0},
-        {"version": 3},
+        {"version": 5},
         {"version": 2, "sources": {}},
         {"version": 2, "sources": [{"deck_pattern": "*", "note_type_id": 1, "fields": []}]},
         {"version": 1, "source": []},
@@ -79,5 +83,39 @@ def test_version_one_migration_preserves_ids_preferences_and_original_data():
     original = json.dumps(data)
     settings = from_dict(data)
     assert settings == Settings((SourceRule("", 30, ("Expression",), (10, 20)),), 40, True)
-    assert settings.to_dict()["version"] == 2
+    assert settings.to_dict()["version"] == 4
     assert json.dumps(data) == original
+
+
+def test_category_settings_roundtrip_and_version_two_migration():
+    from katanki.config import GenerationSettings
+
+    settings = Settings(
+        generation=(
+            GenerationSettings(True, 10, ("katanki",), True, ("source::NIJ::*",)),
+            GenerationSettings(True, 20, ("production",), True),
+            GenerationSettings(False, 30, ("parts",)),
+        )
+    )
+    assert from_dict(json.loads(json.dumps(settings.to_dict()))) == settings
+    legacy = from_dict({"version": 2, "destination_deck_id": 40, "include_primitives": True})
+    assert legacy.generation_settings("recognition") == GenerationSettings(True, 40)
+    assert legacy.generation_settings("production") == GenerationSettings(True, 40)
+    assert legacy.generation_settings("parts") == GenerationSettings(True, 40)
+
+
+@pytest.mark.parametrize(
+    "entry",
+    [
+        [],
+        {"auto_generate": "false"},
+        {"target_deck_id": True},
+        {"default_tags": "tag"},
+        {"default_tags": ["two words"]},
+        {"copy_source_tags": 1},
+        {"source_tag_patterns": [""]},
+    ],
+)
+def test_invalid_generation_profiles_are_rejected(entry):
+    with pytest.raises(ValueError):
+        from_dict({"version": 3, "generation": {"recognition": entry}})
