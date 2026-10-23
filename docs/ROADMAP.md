@@ -310,9 +310,42 @@ Covers FR-06 and production readiness of the dictionary subsystem.
   in Phase 3 are ready for public release.
 - [ ] Decide dataset bootstrap strategy and provide setup/install/update/status UI.
   Decision resolved: bundle essential KANJIDIC2/KanjiVG data for offline first use.
-  Optional local overrides and license UI exist; runtime install/update/status UI is pending.
+  Optional local overrides, license UI, runtime update checks/downloads, result
+  popups, and return-to-bundled controls exist. Public-release verification remains.
 - [ ] Implement generic HTTPS downloads, checksum/version validation, safe archive
   extraction, decompression limits, and atomic cache replacement.
+  Implemented for the existing dictionary packs; verify the complete production
+  publishing and update path before public release.
+- [ ] Improve the maintainer workflow for independent dataset releases.
+  Current baseline: the monthly/manual [Dataset packs workflow](../.github/workflows/datasets.yml)
+  prepares validated candidates; manual runs can publish assets. Catalog promotion
+  and updating the bundled baseline still require manual coordination. See
+  [dataset maintenance](DATASETS.md#maintainer-preparation-and-regular-updates).
+  - [ ] Detect upstream changes, including new KanjiVG releases, and skip unchanged
+    packs. Produce a review summary of versions, entry/coverage changes, parser
+    warnings, download sizes, checksums, and license/provenance differences.
+  - [ ] Allow a maintainer to approve and publish an existing candidate artifact
+    without downloading upstream again or regenerating the reviewed bytes.
+    Publish immutable assets first, then verify their public download URLs, sizes,
+    hashes, pack metadata, and included notices before any catalog promotion.
+  - [ ] Open a promotion PR with the exact published catalog. Distinguish runtime
+    dictionary updates from a new bundled baseline; baseline changes also update
+    the build lock, manifests, and source provenance together. Prevent stale tags,
+    missing release assets, and mismatched hashes from reaching the default branch.
+  - [ ] Gate promotion on clean-cache builds on Linux, macOS, and Windows, including
+    CRLF checkout coverage, plus runtime install/update and bundled-fallback checks.
+    Keep live-upstream failures confined to dataset maintenance, outside normal CI.
+  - [ ] Keep dataset and add-on release discovery separate. Support normal dataset
+    releases with `--latest=false`; retain the initial `datasets-2026-10-23`
+    prerelease. The catalog determines the newest compatible dictionaries.
+  - [ ] Document and verify rollback to a previously published compatible catalog
+    entry, preserving older packs for installed users and reproducible builds.
+    Explain the distinction between withdrawing an update and downgrading users
+    who already installed it. Surface failed preparation/publication runs and
+    provide a retry path that never overwrites a published asset.
+  Acceptance: a maintainer can review, publish, promote, and withdraw dictionary
+  updates without copying metadata by hand, committing dataset payloads, releasing
+  new add-on code, or breaking offline use and existing build locks.
 - [ ] Preserve the last working dataset after failed or interrupted imports.
 - [ ] Verify installed dictionary lookups and review flows work offline.
   Bundled dictionary lookups and SVG previews pass offline unit/packaged-host checks.
