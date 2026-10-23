@@ -10,7 +10,8 @@ supported versions remain an open decision; the verified local baseline is Linux
 Anki 26.09.3 / Python 3.14.8. Bundled KANJIDIC2/KanjiVG defaults are now
 downloaded/prepared at build time and verified offline in the installed add-on.
 Dataset payloads and upstream notice copies are ignored by Git; only source locks,
-manifests, code, and our notices are tracked. On-demand downloads are deferred.
+manifests, catalogs, code, and our notices are tracked. Settings can install
+independent compatible data updates while retaining bundled offline defaults.
 
 ## How to maintain this tracker
 
@@ -350,7 +351,9 @@ accounts, telemetry, or network-required reviews.
   controls, version/checksum/license tracking, bounded local caching, cancellation,
   retry, and prefetch. Reuse cached data offline and keep review flows usable without
   network access; report missing data instead of fetching during every review.
-  Current delivery remains a build-time download plus a self-contained bundle.
+  Independent updates for existing defaults now use versioned release packs and
+  a small catalog, with bundled offline fallback. Additional providers and
+  per-character downloads remain deferred.
 - [ ] Custom primitive names and exclusions.
 - [ ] Additional classifications: Jōyō, school grade, frequency, and custom packs.
 - [ ] Enhanced stroke animation and optional handwriting canvas/validation.

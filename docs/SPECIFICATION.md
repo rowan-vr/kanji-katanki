@@ -331,7 +331,10 @@ once, then run all configured steps with a refresh button.
   Download/prepare the essential KANJIDIC2 subset and pinned KanjiVG data at build
   time, keeping payloads out of Git, and bundle them with license copies,
   attribution, versions/checksums, and an explicit maintainer refresh procedure.
-  First use is offline; runtime download/update UI and on-demand packs/assets remain later work.
+  First use is offline. Independent compatible dictionary updates use a small
+  online catalog and versioned GitHub Release packs; Settings retains bundled
+  fallback and local/disabled sources. Additional providers/per-character assets
+  remain later work.
 - Source and validation of unofficial JLPT levels; meaning of “coverage” when a dataset omits characters.
 - Kanji production fronts: **resolved** by user decision. Use kanji meanings plus all distinct matching words from selected vocabulary fields, blanking the target character; no manual prompts. Block identical generated clues and preserve copied examples after source deletion. Persistent source settings are next.
 - Primitive naming system and component-vs-radical distinctions.

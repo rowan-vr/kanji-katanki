@@ -13,6 +13,7 @@ dist/
 
 # Maintainer download cache; only reviewed derived defaults are bundled
 /data/
+/src/katanki/user_files/
 
 # Dataset payloads and upstream notices are generated only during builds.
 /src/katanki/dictionaries/bundled/*

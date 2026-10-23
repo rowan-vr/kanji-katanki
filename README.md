@@ -45,10 +45,12 @@ into the development environment. Kanji Katanki code is licensed under the
 [MIT License](LICENSE). Bundled dictionary and stroke data have separate
 CC BY-SA licenses; see [third-party notices](THIRD_PARTY_NOTICES.md). The current
 archive is about 5 MiB and includes dataset versions, checksums, and license copies.
-Builds fetch checksum-locked inputs when needed and generate ignored payloads;
+Builds fetch immutable, checksum-locked release packs and generate ignored payloads;
 dataset binaries are not stored in Git. Use `scripts/build_addon.py --offline` to
 require prepared data or verified local cache. A fresh build needs network access;
-installed users do not. Tests never download data on their own and skip bundled-data
+installed users do not. Settings → Dictionaries can download independent updates
+or return to bundled defaults; daily startup checks are opt-in. Tests never
+download data on their own and skip bundled-data
 checks until the first build. See [dataset maintenance](docs/DATASETS.md).
 
 `src/katanki/anki/` owns host integration. Other feature packages will be added as
@@ -189,7 +191,8 @@ included at scan time. Refresh uses the saved source rules and generation prefer
 unsupported settings versions are preserved and reported rather than reset.
 Version 1–3 settings migrate to version 4 without losing source rules or generation preferences.
 The **Dictionaries** tab manages KANJIDIC2 and KanjiVG independently. Choose the
-bundled offline snapshot, a local override, or Disabled. KANJIDIC2 accepts XML/XML.gz;
+default (a compatible downloaded update or bundled offline data), a local override,
+or Disabled. KANJIDIC2 accepts XML/XML.gz;
 KanjiVG accepts an extracted `kanji/` SVG directory or canonical SVG ZIP. **Check
 dictionary** loads the current selection without saving settings or changing notes.
 Stroke checks verify a sample SVG; remaining strokes load on demand. Bundled checks
@@ -198,8 +201,12 @@ also verify the packaged checksum and required notices.
 **About & attribution** shows credits, source/license links, bundled versions,
 entry counts and SHA-256 checksums. **License notices** exposes the bundled upstream
 license/documentation copies, and **Check results** shows detected provenance or
-an actionable error. Settings persist per collection and are used by refresh; disabled datasets remain excluded. Provider downloads and online
-updates are not part of this tab yet.
+an actionable error. Settings persist per collection and are used by refresh;
+disabled datasets remain excluded. **Check for dictionary updates** and **Update
+dictionary** install compatible packs independently of add-on releases. Downloads
+apply immediately; **Use bundled version** restores the offline default. Optional
+daily startup checks are saved with Settings. Downloaded packs and update-check
+preferences are shared by profiles in the same Anki installation.
 
 The menu refresh workflow is implemented; automatic background triggers remain later Phase 3 work.
 

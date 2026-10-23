@@ -147,6 +147,7 @@ class SettingsDialog(QDialog):
                         f"The {category} target deck is missing. Choose its replacement."
                     )
             save_settings(self.mw.col, settings)
+            self.dictionary_panel.save_preferences()
         except Exception as error:
             showWarning(f"Could not save Katanki settings:\n{error}", parent=self)
             return

@@ -142,7 +142,7 @@ def write_kanjivg(source: Path, target: Path, notices: Path):
     return count
 
 
-def bundle(*, refresh=False, offline=False):
+def prepare_from_sources(*, refresh=False, offline=False):
     lock = json.loads((BUNDLED / "SOURCES.json").read_text(encoding="utf-8"))
     if not offline:
         refresh_sources(lock, CACHE, update_lock=refresh)
@@ -210,6 +210,16 @@ def bundle(*, refresh=False, offline=False):
                 json.dumps(manifest, ensure_ascii=False, indent=2) + "\n", encoding="utf-8"
             )
     print(f"Bundled {kanji_count} kanji entries and {stroke_count} canonical stroke SVGs.")
+
+
+def bundle(*, refresh=False, offline=False):
+    if refresh:
+        prepare_from_sources(refresh=True)
+    else:
+        sys.path.insert(0, str(ROOT))
+        from scripts.dataset_packs import restore
+
+        restore(offline=offline)
 
 
 if __name__ == "__main__":

@@ -1,6 +1,7 @@
 """Top-level Katanki menu and dialog entrypoints."""
 
 import logging
+from pathlib import Path
 
 from aqt import mw
 from aqt.qt import QAction, QMenu
@@ -41,6 +42,12 @@ def settings() -> None:
 def register() -> None:
     if mw is None or mw.menuBar().findChild(QMenu, MENU_NAME) is not None:
         return
+    from aqt import gui_hooks
+
+    from ..dictionaries.updates import configure_storage
+
+    configure_storage(Path(__file__).resolve().parents[1] / "user_files" / "dictionaries")
+    gui_hooks.profile_did_open.append(_check_dictionary_updates)
     menu = QMenu("Katanki", mw.menuBar())
     menu.setObjectName(MENU_NAME)
     action = QAction("Refresh and generate Kanji Cards", menu)
@@ -52,3 +59,20 @@ def register() -> None:
     menu.addAction(settings_action)
     mw.menuBar().addMenu(menu)
     logger.info("Registered Kanji Katanki menu")
+
+
+def _check_dictionary_updates() -> None:
+    from ..dictionaries.updates import check_updates, preferences
+
+    if not preferences().get("automatic", False):
+        return
+
+    def finished(future):
+        try:
+            future.result()
+        except Exception:
+            logger.info("Dictionary update check unavailable; offline defaults remain active")
+
+    mw.taskman.run_in_background(
+        lambda: check_updates(automatic=True), finished, uses_collection=False
+    )

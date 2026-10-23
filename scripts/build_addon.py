@@ -61,7 +61,12 @@ def build(output: Path, *, offline: bool = False) -> Path:
         archive.write(ROOT / "LICENSE", "LICENSE")
         archive.write(ROOT / "THIRD_PARTY_NOTICES.md", "THIRD_PARTY_NOTICES.md")
         for path in sorted(source.rglob("*")):
-            if path.is_file() and "__pycache__" not in path.parts and path.suffix != ".pyc":
+            if (
+                path.is_file()
+                and "__pycache__" not in path.parts
+                and "user_files" not in path.relative_to(source).parts
+                and path.suffix != ".pyc"
+            ):
                 archive.write(path, path.relative_to(source))
     return output
 

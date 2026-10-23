@@ -5,7 +5,8 @@ from pathlib import Path
 
 from ..config import DictionaryChoice
 from .manager import DictionaryManager
-from .registry import bundled_path, list_datasets
+from .registry import list_datasets
+from .updates import default_source
 
 
 def dictionary_sources(choices: tuple[DictionaryChoice, ...]) -> dict[str, Path]:
@@ -23,7 +24,7 @@ def dictionary_sources(choices: tuple[DictionaryChoice, ...]) -> dict[str, Path]
         if choice.mode == "bundled":
             if manifest.bundled is None:
                 raise ValueError(f"No bundled data available for {manifest.name}.")
-            paths[dataset_id] = bundled_path(manifest.bundled["path"])
+            paths[dataset_id] = default_source(manifest)
         else:
             path = Path(choice.path.strip()).expanduser()
             if not path.exists():

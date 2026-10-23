@@ -12,11 +12,15 @@ The Linux/Python 3.12 job uploads `kanji-katanki-addon`, containing the installa
 `kanji-katanki.ankiaddon`, as a workflow artifact retained for 14 days. Download it from
 the workflow run's Artifacts section and extract the outer ZIP before installing.
 
-Builds fetch checksum-locked upstream inputs when absent from the local cache and
-prepare KANJIDIC2/KanjiVG defaults plus required notices/licenses. Payloads are not
-committed to Git. Both workflows build before tests so data-dependent tests run.
-Normal builds never update source locks; maintainers use an explicit refresh and
-review metadata changes before a release.
+Builds fetch exact dictionary packs selected by `datasets/bundled-lock.json` from
+this repository's dataset Releases, verify them, and bundle offline defaults.
+Dataset payloads stay out of Git. Both workflows build before tests; they never
+fetch mutable upstream data or refresh source locks. Dataset release tags are
+excluded from the add-on release job.
+
+The separate `Dataset packs` workflow prepares monthly candidate artifacts. Manual
+runs can publish validated assets; catalog promotion is reviewed separately.
+Upload the initial `datasets-2026-10-22` assets before relying on cold CI builds.
 See [dataset maintenance](../docs/DATASETS.md#maintainer-preparation-and-regular-updates).
 
 These checks do not launch Anki or establish host compatibility on those operating
