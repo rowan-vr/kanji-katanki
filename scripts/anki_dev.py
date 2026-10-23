@@ -67,14 +67,18 @@ def smoke(base: Path) -> None:
 
             register()
             assert mw.menuBar().findChildren(QMenu, "katanki_menu") == [menu]
-            assert len(menu.actions()) == 3, "Repeated registration duplicated the command"
+            assert [item.text() for item in menu.actions() if not item.isSeparator()] == [
+                "Refresh and generate Kanji Cards",
+                "New Kanji Cards",
+                "Settings…",
+            ], "Repeated registration duplicated a command"
             log = base / "logs" / "addons" / "katanki" / "katanki.log"
             assert "Registered Kanji Katanki menu" in log.read_text(encoding="utf-8")
             from scripts.smoke_discovery import exercise_discovery
 
             assert menu.actions()[0].text() == "Refresh and generate Kanji Cards"
             assert all(action.text() != "Analyze Collection" for action in menu.actions())
-            passed = exercise_discovery(mw)
+            assert exercise_discovery(mw)
             from scripts.smoke_refresh import exercise_refresh
 
             exercise_refresh(mw, menu.actions()[0])
@@ -84,6 +88,7 @@ def smoke(base: Path) -> None:
             from scripts.smoke_word_examples import exercise_example_rendering
 
             exercise_example_rendering(mw)
+            passed = True
             print(
                 "PASS: packaged discovery preserves data; generation preview cancel/approve, "
                 "card creation, stroke-number toggle and playback pass in real Qt/Anki."

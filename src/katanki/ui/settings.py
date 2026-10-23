@@ -100,9 +100,9 @@ class SettingsDialog(QDialog):
         refresh_layout.addWidget(self.refresh_examples)
         refresh_layout.addWidget(self.refresh_dictionary)
         update_hint = QLabel(
-            "These preferences are saved for the upcoming existing-card update workflow. "
-            "Refresh currently skips existing cards. Example updates will also respect "
-            "each category's automatic-example-refresh setting under Cards."
+            "Example updates respect each category's refresh setting under Cards. "
+            "Manual edits are preserved; older notes require a migration review. "
+            "Tag and dictionary-content updates remain planned."
         )
         update_hint.setWordWrap(True)
         refresh_layout.addWidget(update_hint)

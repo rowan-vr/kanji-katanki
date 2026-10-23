@@ -108,6 +108,7 @@ def test_disabled_category_and_ignored_character_never_enter_new_card_plan(monke
     owned = Mock(return_value={})
     monkeypatch.setattr(generation, "owned_identities", owned)
     collection = Mock()
+    collection.models.all.return_value = []
     collection.get_config.return_value = [{"note_type": "kanji-recognition", "key": "景"}]
     settings = Settings(
         generation=(

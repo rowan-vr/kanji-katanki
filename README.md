@@ -4,10 +4,11 @@ Offline-first kanji learning for desktop Anki. **Phase 3: saved settings and ref
 
 Configure vocabulary sources, generation categories, decks/tags, and dictionaries
 under **Katanki → Settings…**. Then choose **Katanki → Refresh and generate Kanji Cards**
-to scan saved sources. Refresh runs without approval and skips existing cards.
+to scan saved sources. Refresh updates managed examples when enabled, preserving
+manual edits and review progress. Older notes require a before/after migration review.
 Only new eligible cards open a single creation review, with category tabs, green
 selected tiles, and an inline front/back preview. Approve creation with **Create … cards**.
-Existing notes, edits, and progress are preserved.
+Generated notes are never deleted when source vocabulary disappears.
 See [the implementation specification](docs/SPECIFICATION.md).
 Track completed milestones and remaining work in [the roadmap](docs/ROADMAP.md).
 
@@ -210,24 +211,34 @@ kanji containing it on the back, use kanji from your vocabulary alone or also
 other kanji, and automatically refresh example kanji (on by default).
 Each category also saves an example display limit: 5 by default, with 0 meaning
 show all. The limit includes user examples; all eligible examples remain stored.
-These are saved preferences for the upcoming card rendering and example refresh
-work; they do not yet change new or existing cards. Jitendex default-word support is planned for a separate PR.
+Example visibility, sources, limits, and refresh settings now apply to card examples.
+Choose **Discovered and default words** to add Jitendex suggestions after your source
+vocabulary. The complete pinned Jitendex export is bundled offline; a small index
+ranks common words. Recognition/Parts show examples on the back; Production shows
+masked clues. Furigana, seen-only filtering, and the additional Parts/name controls
+remain planned. Production UserExamples edits take effect when you run Refresh.
 
 The **Refresh** tab saves **Update tags from source vocabulary** (off by default),
 **Update example words** (on by default), and **Update dictionary data** (off by
 default) for both manual and automatic refresh. Dictionary data refers to card
 content from the selected dictionaries; pack downloads stay under Dictionaries.
-These controls are independent of the automatic-refresh switch. Applying them to
-existing cards is pending the managed-field update workflow; they currently save
-preferences only. Example updates will also respect the category settings under Cards.
+These controls are independent of the automatic-refresh switch. Example updates
+respect both **Update example words** and each category's automatic-example-refresh
+setting under Cards. Refresh records generated values and preserves manual edits to
+managed fields, reporting conflicts. `UserExamples` is never overwritten. Older
+notes without a baseline need explicit migration approval during manual Refresh.
+Updates support Anki Undo and preserve note/card IDs, scheduling, history, tags and
+decks. Empty/ambiguous production updates keep their previous clues. Tag and
+dictionary-content updates remain planned; those two checkboxes save preferences only.
 
 The tab enables automatic refresh (off by default), with separate
 triggers for opening a profile and completing sync. Runs wait for the deck list,
 active dialogs, and other refreshes to finish; repeated triggers are combined.
 They use the same saved sources, dictionaries, generation choices, and creation
-review as manual refresh. New cards require approval, and existing cards remain
-untouched. Missing source settings are skipped automatically; use manual Refresh
-for setup guidance. Example refresh on existing cards remains future work.
+review as manual refresh. New cards require approval. Eligible existing notes have
+managed examples refreshed; legacy migrations and manual edits are left intact.
+Missing source settings are skipped automatically; use manual Refresh for setup
+and migration guidance.
 
 The **Dictionaries** tab manages KANJIDIC2 and KanjiVG independently. Choose the
 default (a compatible downloaded update or bundled offline data), a local override,

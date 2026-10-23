@@ -28,7 +28,7 @@ def open_refresh(mw, *, automatic=False):
         if mw.col is collection:
             showWarning(f"Katanki could not refresh:\n{error}\n\nReview Katanki → Settings.")
 
-    def finished(result):
+    def present(result, updated=0):
         try:
             if mw.col is not collection:
                 return
@@ -42,13 +42,16 @@ def open_refresh(mw, *, automatic=False):
                     )
                     return
             report, preview = result.report, result.preview
+            summary = f"Examples updated on {updated} notes. " if updated else ""
             if not report.scan.scanned_notes:
                 tooltip(
-                    "Refresh complete. No vocabulary notes matched your saved sources.", parent=mw
+                    f"Refresh complete. {summary}No vocabulary notes matched your saved sources.",
+                    parent=mw,
                 )
             elif not report.scan.candidates:
                 tooltip(
-                    "Refresh complete. No kanji found in the selected vocabulary fields.", parent=mw
+                    f"Refresh complete. {summary}No kanji found in the selected vocabulary fields.",
+                    parent=mw,
                 )
             elif not report.dictionary_loaded and any(
                 item.auto_generate for item in settings.generation
@@ -68,7 +71,8 @@ def open_refresh(mw, *, automatic=False):
                     else 0
                 )
                 tooltip(
-                    f"Refresh complete. No new cards to create. {existing} already present · "
+                    f"Refresh complete. {summary}No new cards to create. "
+                    f"{existing} already present · "
                     f"{result.ignored_count} ignored · {unavailable} unavailable.",
                     parent=mw,
                 )
@@ -76,6 +80,61 @@ def open_refresh(mw, *, automatic=False):
             failed(error)
         finally:
             mw._katanki_refresh_running = False
+
+    def finished(result):
+        examples = getattr(result, "examples", None)
+        if examples is None or not examples.updates:
+            if examples and examples.conflicts:
+                report_conflicts(examples.conflicts)
+            present(result)
+            return
+        if mw.col is not collection:
+            mw._katanki_refresh_running = False
+            return
+        if automatic and (
+            not load_settings(collection).refresh.enabled
+            or mw.state != "deckBrowser"
+            or mw.app.activeModalWidget() is not None
+        ):
+            present(result)
+            return
+        try:
+            migrate = False
+            migrations = tuple(update for update in examples.updates if update.migration)
+            if migrations and not automatic:
+                from .example_refresh import review_migration
+
+                migrate = review_migration(mw, migrations)
+            from aqt.operations import CollectionOp
+
+            from ..anki.refresh import apply_refresh_examples
+
+            def applied(outcome):
+                if mw.col is collection:
+                    if outcome.conflicts:
+                        report_conflicts(outcome.conflicts)
+                    tooltip(f"Updated examples on {outcome.updated} notes.", parent=mw)
+                present(result, outcome.updated)
+
+            CollectionOp(
+                parent=mw,
+                op=lambda col: apply_refresh_examples(col, result, settings, migrate=migrate),
+            ).success(applied).failure(failed).run_in_background()
+        except Exception as error:
+            failed(error)
+
+    def report_conflicts(conflicts):
+        message = "Example refresh preserved notes with conflicts:\n" + "\n".join(conflicts)
+        logger.warning(message)
+        if mw.col is collection:
+            if automatic:
+                tooltip(
+                    f"Example refresh: {len(conflicts)} conflicts; notes preserved. "
+                    "Run Refresh manually to review.",
+                    parent=mw,
+                )
+            else:
+                showWarning(message, parent=mw)
 
     try:
         QueryOp(

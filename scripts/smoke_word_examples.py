@@ -26,7 +26,12 @@ def main():
                 model = collection.models.new(spec.name)
                 model[MODEL_MARKER] = spec.key
                 for name in spec.fields:
-                    if name not in {"VocabExamples", "UserExamples", "ExampleLimit"}:
+                    if name not in {
+                        "VocabExamples",
+                        "UserExamples",
+                        "ExampleLimit",
+                        "KatankiExamplesState",
+                    }:
                         collection.models.add_field(model, collection.models.new_field(name))
                 legacy_back = re.sub(
                     r'<div class="katanki-examples".*?</script>\n',
