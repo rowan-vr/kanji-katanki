@@ -1,5 +1,14 @@
 # GitHub configuration
 
+The `SonarQube` workflow runs on pushes to `main`, pull requests, and manual dispatch.
+It builds the add-on and runs tests on Linux/Python 3.12 before uploading analysis
+and `coverage.xml` to the `rowan-vr_kanji-katanki` SonarQube Cloud project.
+Project settings live in `sonar-project.properties`. The repository Actions secret
+`SONAR_TOKEN` must contain a token authorized to analyze that project. Disable
+Automatic Analysis under SonarQube Cloud **Administration > Analysis Method**
+when switching to this CI analysis. Scans are skipped on fork and Dependabot pull
+requests because the Actions secret is unavailable; tests still run.
+
 The `CodeQL` workflow analyzes Python with the `security-extended` query suite on
 pushes to `main`, pull requests targeting `main`, Tuesdays at 04:23 UTC, and manual
 dispatch. It analyzes source without building the add-on or downloading datasets.
