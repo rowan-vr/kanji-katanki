@@ -189,7 +189,21 @@ targets must be replaced. Existing generated notes keep their tags and decks. Se
 versioned and stored in the current collection; they survive restarts. Subdecks are
 included at scan time. Refresh uses the saved source rules and generation preferences. Production can be enabled in settings, and creation requires approval. Missing/deleted source references are shown for review;
 unsupported settings versions are preserved and reported rather than reset.
-Version 1–3 settings migrate to version 4 without losing source rules or generation preferences.
+Version 1–4 settings migrate to version 5 without losing source rules or generation preferences.
+The **Cards** tab, between Generation and Dictionaries, has **Recognition**,
+**Production**, and **Parts** subtabs. Recognition and Production save whether to
+show front examples, use your vocabulary words alone or also default examples,
+show furigana, automatically refresh examples (on by default), and include new
+words or only seen words. Your vocabulary words come from the sources selected
+under Discovery. Defaults show examples from your vocabulary, include new words,
+and hide furigana. “Seen” means at least one source card has been reviewed.
+Parts instead saves whether to show the part's name on the front, show example
+kanji containing it on the back, use kanji from your vocabulary alone or also
+other kanji, and automatically refresh example kanji (on by default).
+These are saved preferences for the upcoming card rendering and example refresh
+work; they do not yet change new or existing cards. The default-word provider is
+still undecided.
+
 The **Dictionaries** tab manages KANJIDIC2 and KanjiVG independently. Choose the
 default (a compatible downloaded update or bundled offline data), a local override,
 or Disabled. KANJIDIC2 accepts XML/XML.gz;
