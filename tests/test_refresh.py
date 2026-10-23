@@ -149,4 +149,4 @@ def test_refresh_applies_examples_in_collection_operation_and_reviews_migration(
         SimpleNamespace(updated=1, conflicts=())
     )
     assert not mw._katanki_refresh_running
-    assert "Examples updated on 1 notes" in utils.tooltip.call_args.args[0]
+    assert "Existing-card updates on 1 notes" in utils.tooltip.call_args.args[0]

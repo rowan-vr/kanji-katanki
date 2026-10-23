@@ -1,4 +1,4 @@
-"""Plan and apply managed example updates without touching user fields or scheduling."""
+"""Refresh owned-note examples, dictionary content and tags without changing scheduling."""
 
 import json
 import re
@@ -7,8 +7,9 @@ from html import escape
 
 from ..dictionaries.manager import DictionaryManager
 from ..dictionaries.preferences import dictionary_sources
-from ..dictionaries.words import ATTRIBUTION, selected_words
+from ..dictionaries.words import ATTRIBUTION, WordSuggestions, selected_words
 from ..generation.cards import CardContent, normalize_prompt, note_type_spec
+from ..generation.destinations import creation_options
 from ..generation.examples import STATE_FIELD, encode_state, lines, managed_fields
 from ..generation.planner import NOTE_TYPES, Identity
 from ..generation.preview import build_preview
@@ -22,6 +23,8 @@ class ExampleUpdate:
     before: tuple[tuple[str, str], ...]
     after: tuple[tuple[str, str], ...]
     migration: bool = False
+    tags_before: tuple[str, ...] | None = None
+    tags_after: tuple[str, ...] | None = None
 
 
 @dataclass(frozen=True)
@@ -38,7 +41,13 @@ class ExampleRefreshResult:
 
 
 def plan_example_refresh(collection, report, settings):
-    if not settings.refresh.update_examples:
+    if not any(
+        (
+            settings.refresh.update_examples,
+            settings.refresh.update_source_tags,
+            settings.refresh.update_dictionary_data,
+        )
+    ):
         return ExampleRefreshPlan()
     owned = {}
     for note_type in NOTE_TYPES:
@@ -55,8 +64,20 @@ def plan_example_refresh(collection, report, settings):
                 entry = manager.lookup_kanji(identity.key)
                 if entry:
                     entries[identity.key] = entry
-    expanded = replace(report, entries=tuple(entries.values()))
-    word_provider = selected_words(settings.dictionaries)
+    strokes = {visual.character: visual for visual in report.strokes}
+    if settings.refresh.update_dictionary_data:
+        with DictionaryManager(dictionary_sources(settings.dictionaries)) as manager:
+            for identity in owned:
+                if identity.kind == "kanji" and identity.key not in strokes:
+                    visual = manager.lookup_strokes(identity.key)
+                    if visual:
+                        strokes[identity.key] = visual
+    expanded = replace(report, entries=tuple(entries.values()), strokes=tuple(strokes.values()))
+    word_provider = (
+        selected_words(settings.dictionaries)
+        if settings.refresh.update_examples
+        else WordSuggestions(())
+    )
     preview = build_preview(
         expanded,
         (),
@@ -72,9 +93,13 @@ def plan_example_refresh(collection, report, settings):
         },
     )
     contents = {content.identity: content for content in preview.contents}
+    tag_options = {
+        option.identity: option.tags
+        for option in creation_options(preview, report, settings, None, allow_missing_decks=True)
+    }
     parts_options = settings.card_settings("parts")
     for identity in owned:
-        if identity.kind == "primitive":
+        if identity.kind == "primitive" and not settings.refresh.update_dictionary_data:
             contents[identity] = CardContent(
                 identity,
                 identity.key,
@@ -106,26 +131,44 @@ def plan_example_refresh(collection, report, settings):
             continue
         note = collection.get_note(ids[0])
         content = contents.get(identity)
-        if content is None:
+        if content is None and (
+            settings.refresh.update_examples or settings.refresh.update_dictionary_data
+        ):
             conflicts.append(f"{label}: dictionary/component data unavailable; examples preserved.")
             continue
-        desired = managed_fields(content.fields(), identity)
+        desired = managed_fields(content.fields() if content else dict(note.items()), identity)
+        if not settings.refresh.update_examples:
+            desired = {name: note[name] if name in note else "" for name in desired}
         desired["Attribution"] = note["Attribution"]
         if (
-            any(word not in content.discovered_examples for word in content.examples)
+            settings.refresh.update_examples
+            and any(word not in content.discovered_examples for word in content.examples)
             and identity.kind == "kanji"
         ):
             attribution = escape(getattr(word_provider, "attribution", ATTRIBUTION))
             if attribution not in desired["Attribution"]:
                 desired["Attribution"] += "<br>" + attribution
-        if identity.note_type == "kanji-production":
+        if identity.note_type == "kanji-production" and (
+            settings.refresh.update_examples or settings.refresh.update_dictionary_data
+        ):
             options = settings.card_settings("production")
             words = lines(note["UserExamples"]) if "UserExamples" in note else ()
-            words = tuple(dict.fromkeys((*words, *content.examples)))
+            examples = (
+                content.examples
+                if settings.refresh.update_examples
+                else lines(note["VocabExamples"])
+                if "VocabExamples" in note
+                else ()
+            )
+            words = tuple(dict.fromkeys((*words, *examples)))
             shown = words[: options.example_limit] if options.example_limit else words
             if not options.show_examples:
                 shown = ()
-            meaning = " ".join(lines(note["Meanings"]))
+            meaning = (
+                ", ".join(content.meanings)
+                if settings.refresh.update_dictionary_data
+                else " ".join(lines(note["Meanings"]))
+            )
             if not shown or not meaning:
                 conflicts.append(f"{label}: empty production clues; current clues preserved.")
                 continue
@@ -133,7 +176,11 @@ def plan_example_refresh(collection, report, settings):
             desired["Prompt"] = "<br>".join(escape(line) for line in prompt.split("\n"))
         current = {name: note[name] if name in note else "" for name in desired}
         state = None
-        if STATE_FIELD in note and note[STATE_FIELD]:
+        if (
+            (settings.refresh.update_examples or settings.refresh.update_dictionary_data)
+            and STATE_FIELD in note
+            and note[STATE_FIELD]
+        ):
             try:
                 recorded = json.loads(note[STATE_FIELD])
                 if recorded["version"] != 1 or set(recorded["fields"]) != set(desired):
@@ -145,10 +192,35 @@ def plan_example_refresh(collection, report, settings):
         if state is not None and current != state:
             conflicts.append(f"{label}: manually edited managed examples; edits preserved.")
             continue
-        if state == desired and current == desired:
+        after = dict(desired) if settings.refresh.update_examples else {}
+        if settings.refresh.update_dictionary_data:
+            fields = content.fields()
+            for name in ("Meanings", "Readings", "Components", "Strokes"):
+                # Missing optional stroke data must not erase a working diagram.
+                if name == "Strokes" and not content.svg:
+                    continue
+                after[name] = fields[name]
+            after["Attribution"] = "<br>".join(
+                dict.fromkeys(
+                    (*note["Attribution"].split("<br>"), *fields["Attribution"].split("<br>"))
+                )
+            )
+            desired["Attribution"] = after["Attribution"]
+            if identity.note_type == "kanji-production":
+                after["Prompt"] = desired["Prompt"]
+        if settings.refresh.update_examples or (state is not None and after):
+            after[STATE_FIELD] = encode_state(desired)
+        tags_before = tags_after = None
+        if settings.refresh.update_source_tags:
+            tags_before = tuple(note.tags)
+            tags = {tag.casefold(): tag for tag in tags_before}
+            for tag in tag_options.get(identity, ()):
+                tags.setdefault(tag.casefold(), tag)
+            tags_after = tuple(tags.values())
+        if all(name in note and note[name] == value for name, value in after.items()) and (
+            tags_before == tags_after
+        ):
             continue
-        after = dict(desired)
-        after[STATE_FIELD] = encode_state(desired)
         if identity.note_type == "kanji-production":
             key = normalize_prompt(" ".join(lines(desired["Prompt"])))
             proposed.setdefault(key, []).append(note.id)
@@ -158,13 +230,17 @@ def plan_example_refresh(collection, report, settings):
                 identity,
                 tuple(note.items()),
                 tuple(after.items()),
-                migration=state is None,
+                migration=state is None and settings.refresh.update_examples,
+                tags_before=tags_before,
+                tags_after=tags_after,
             )
         )
     safe = []
     for update in updates:
         if update.identity.note_type == "kanji-production":
-            key = normalize_prompt(" ".join(lines(dict(update.after)["Prompt"])))
+            key = normalize_prompt(
+                " ".join(lines(dict(update.after).get("Prompt", dict(update.before)["Prompt"])))
+            )
             if occupied.get(key, set()) - {update.note_id} or len(proposed[key]) > 1:
                 conflicts.append(
                     f"{update.identity.key}: ambiguous production clues; current clues preserved."
@@ -182,7 +258,9 @@ def apply_example_refresh(collection, plan, *, migrate=False):
             conflicts.append(f"{update.identity.key}: legacy examples need migration review.")
             continue
         note = collection.get_note(update.note_id)
-        if tuple(note.items()) != update.before:
+        if tuple(note.items()) != update.before or (
+            update.tags_before is not None and tuple(note.tags) != update.tags_before
+        ):
             conflicts.append(
                 f"{update.identity.key}: note changed since preview; examples preserved."
             )
@@ -196,16 +274,24 @@ def apply_example_refresh(collection, plan, *, migrate=False):
     proposed = {}
     for update in updates:
         if update.identity.note_type == "kanji-production":
-            key = normalize_prompt(" ".join(lines(dict(update.after)["Prompt"])))
+            key = normalize_prompt(
+                " ".join(lines(dict(update.after).get("Prompt", dict(update.before)["Prompt"])))
+            )
             proposed.setdefault(key, []).append(update.note_id)
     safe = []
     for update in updates:
         note = collection.get_note(update.note_id)
-        if note.note_type().get("katanki_note_type") != update.identity.note_type:
+        identity_field = note_type_spec(update.identity.note_type).fields[0]
+        if (
+            note.note_type().get("katanki_note_type") != update.identity.note_type
+            or note[identity_field] != update.identity.key
+        ):
             conflicts.append(f"{update.identity.key}: ownership changed; examples preserved.")
             continue
         if update.identity.note_type == "kanji-production":
-            key = normalize_prompt(" ".join(lines(dict(update.after)["Prompt"])))
+            key = normalize_prompt(
+                " ".join(lines(dict(update.after).get("Prompt", dict(update.before)["Prompt"])))
+            )
             if occupied.get(key, set()) - {update.note_id} or len(proposed[key]) > 1:
                 conflicts.append(
                     f"{update.identity.key}: production clues now conflict; preserved."
@@ -247,6 +333,8 @@ def apply_example_refresh(collection, plan, *, migrate=False):
                 note = collection.get_note(update.note_id)
             for name, value in update.after:
                 note[name] = value
+            if update.tags_after is not None:
+                note.tags = list(update.tags_after)
             collection.update_note(note)
             count += 1
             collection.merge_undo_entries(undo)

@@ -18,6 +18,7 @@ class Note(dict):
     def __init__(self, nid, identity, fields):
         super().__init__(fields)
         self.id, self.identity = nid, identity
+        self.tags = []
 
     def note_type(self):
         return {
@@ -34,7 +35,9 @@ def setup(monkeypatch):
 
     def get_note(nid):
         note = notes[nid]
-        return Note(nid, note.identity, dict(note))
+        result = Note(nid, note.identity, dict(note))
+        result.tags = list(note.tags)
+        return result
 
     collection.get_note.side_effect = get_note
     collection.update_note.side_effect = lambda note: notes.update({note.id: note})
@@ -50,6 +53,10 @@ def setup(monkeypatch):
     manager = Mock()
     manager.__enter__ = Mock(return_value=manager)
     manager.__exit__ = Mock(return_value=False)
+    manager.lookup_strokes.return_value = None
+    monkeypatch.setattr(
+        refresh, "selected_words", lambda choices: SimpleNamespace(lookup=lambda key: ())
+    )
     manager.lookup_kanji.side_effect = lambda char: KanjiEntry(char, (), (), ("time",))
     monkeypatch.setattr(refresh, "DictionaryManager", lambda *args: manager)
     monkeypatch.setattr(refresh, "dictionary_sources", lambda *args: {})
@@ -224,3 +231,51 @@ def test_changed_settings_and_sources_invalidate_refresh_result(setup, monkeypat
     monkeypatch.setattr(workflow, "selected_notes", lambda *args: ())
     outcome = workflow.apply_refresh_examples(collection, result, settings)
     assert outcome.updated == 0 and "Source vocabulary changed" in outcome.conflicts[0]
+
+
+def test_dictionary_refresh_without_example_updates(setup):
+    collection, notes = setup
+    note = add(notes)
+    note["Meanings"] = "old meaning"
+    note["UserExamples"] = "keep this"
+    settings = Settings(refresh=RefreshSettings(update_examples=False, update_dictionary_data=True))
+    plan = refresh.plan_example_refresh(collection, report(), settings)
+    assert len(plan.updates) == 1
+    assert not plan.updates[0].migration
+    refresh.apply_example_refresh(collection, plan)
+    assert notes[1]["Meanings"] == "time"
+    assert notes[1]["UserExamples"] == "keep this"
+    assert notes[1]["VocabExamples"] == note["VocabExamples"]
+    assert not refresh.plan_example_refresh(collection, report(), settings).updates
+
+
+def test_tag_refresh_preserves_tags_and_rejects_stale_tags(setup):
+    from katanki.config import GenerationSettings
+
+    collection, notes = setup
+    note = add(notes)
+    note.tags = ["personal"]
+    settings = Settings(
+        refresh=RefreshSettings(update_examples=False, update_source_tags=True),
+        generation=(GenerationSettings(default_tags=("generated",)),) * 3,
+    )
+    plan = refresh.plan_example_refresh(collection, report(), settings)
+    assert len(plan.updates) == 1
+    note.tags.append("later")
+    assert refresh.apply_example_refresh(collection, plan).updated == 0
+    plan = refresh.plan_example_refresh(collection, report(), settings)
+    assert refresh.apply_example_refresh(collection, plan).updated == 1
+    assert notes[1].tags == ["personal", "later", "generated"]
+    assert not refresh.plan_example_refresh(collection, report(), settings).updates
+
+
+def test_combined_dictionary_and_example_refresh_keeps_valid_baseline(setup):
+    collection, notes = setup
+    note = add(notes)
+    note["Readings"] = "old"
+    settings = Settings(refresh=RefreshSettings(update_dictionary_data=True))
+    plan = refresh.plan_example_refresh(collection, report(), settings)
+    assert refresh.apply_example_refresh(collection, plan).updated == 1
+    assert notes[1]["Readings"] == ""
+    assert "時計" in notes[1]["VocabExamples"]
+    assert not refresh.plan_example_refresh(collection, report(), settings).updates
