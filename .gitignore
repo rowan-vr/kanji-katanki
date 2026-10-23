@@ -18,3 +18,4 @@ dist/
 # Dataset payloads and upstream notices are generated only during builds.
 /src/katanki/dictionaries/bundled/*
 !/src/katanki/dictionaries/bundled/SOURCES.json
+/src/katanki/dictionaries/word_pack/

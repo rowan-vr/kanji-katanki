@@ -16,10 +16,41 @@ class NoteTypeSpec:
     back: str
 
 
-BACK = """{{FrontSide}}<hr id=answer>
+BACK = r"""{{FrontSide}}<hr id=answer>
 <div class="character">{{Display}}</div>
 <div>{{Meanings}}</div><div>{{Readings}}</div>
 <div>Graphical components: {{Components}}</div>
+<div class="katanki-examples" data-limit="{{ExampleLimit}}">
+<div class="user-examples" hidden>{{UserExamples}}</div>
+<div class="managed-examples" hidden>{{VocabExamples}}</div>
+<div class="example-output"></div>
+</div>
+<script>
+(function() {
+  var root = document.currentScript.previousElementSibling;
+  var output = root.querySelector('.example-output'), seen = new Set();
+  var limit = Number(root.dataset.limit), count = 0;
+  if (limit < 0) return;
+  ['.user-examples', '.managed-examples'].forEach(function(selector) {
+    var source = root.querySelector(selector);
+    // Managed examples have one div per word. User examples accept one per line.
+    var words = selector === '.managed-examples'
+      ? Array.from(source.children).map(function(n) { return n.textContent; })
+      : source.innerHTML.replace(/<br\s*\/?\s*>|<\/(?:div|p)>/gi, '\n').split('\n')
+        .map(function(s) {
+          var node = document.createElement('div'); node.innerHTML = s;
+          return node.textContent;
+        });
+    words.forEach(function(word) {
+      word = word.trim();
+      if (!word || seen.has(word) || (limit && count >= limit)) return;
+      seen.add(word); count++;
+      var line = document.createElement('div'); line.textContent = word;
+      output.appendChild(line);
+    });
+  });
+})();
+</script>
 <div class="strokes">{{Strokes}}</div>
 <button type="button" onclick="katankiPlay(this)">Play strokes</button>
 <button type="button" onclick="katankiNumbers(this)">Stroke numbers</button>
@@ -84,6 +115,9 @@ def note_type_spec(key: str) -> NoteTypeSpec:
             "Components",
             "Strokes",
             "Attribution",
+            "VocabExamples",
+            "UserExamples",
+            "ExampleLimit",
         ),
         front,
         BACK,
@@ -101,12 +135,31 @@ class CardContent:
     prompt: str = ""
     attribution: tuple[str, ...] = ()
     examples: tuple[str, ...] = ()
+    example_limit: int = 5
+    show_examples: bool = True
+    discovered_examples: tuple[str, ...] = ()
 
     def fields(self) -> dict[str, str]:
         spec = note_type_spec(self.identity.note_type)
         return {
             spec.fields[0]: self.identity.key,
             "Display": escape(self.display),
+            "UserExamples": "",
+            "ExampleLimit": str(self.example_limit if self.show_examples else -1),
+            "VocabExamples": "".join(
+                '<div data-source="'
+                + (
+                    "components"
+                    if self.identity.kind == "primitive"
+                    else "vocabulary"
+                    if word in self.discovered_examples
+                    else "default"
+                )
+                + '">'
+                + escape(word)
+                + "</div>"
+                for word in self.examples
+            ),
             "Prompt": "<br>".join(escape(line) for line in self.prompt.split("\n")),
             "Meanings": escape(", ".join(self.meanings)),
             "Readings": escape(", ".join(self.readings)),

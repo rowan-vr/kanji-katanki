@@ -4,6 +4,7 @@ All mutations use Anki APIs. Existing notes are never updated, removed or moved.
 A stale preview may skip newly existing notes, but never adds extra creations.
 """
 
+import re
 from dataclasses import dataclass, replace
 
 from ..generation.cards import CSS, normalize_prompt, note_type_spec
@@ -35,6 +36,11 @@ def preview_generation(
         relevant.add("primitive-production")
     for note_type in sorted(relevant):
         existing.update(owned_identities(collection, note_type=note_type))
+    if generation_settings is not None:
+        choices["card_settings"] = {
+            category: generation_settings.card_settings(category)
+            for category in ("recognition", "production", "parts")
+        }
     preview = build_preview(report, tuple(existing), **choices)
     warnings = list(preview.warnings)
     for identity, note_ids in existing.items():
@@ -144,7 +150,8 @@ def apply_generation(
         if matches:
             spec = note_type_spec(note_type)
             model = matches[0]
-            if not set(spec.fields) <= {field["name"] for field in model["flds"]}:
+            legacy_fields = set(spec.fields) - {"VocabExamples", "UserExamples", "ExampleLimit"}
+            if not legacy_fields <= {field["name"] for field in model["flds"]}:
                 raise ValueError("A Katanki note type is missing required fields. Preview again.")
             if len(model["tmpls"]) != 1:
                 raise ValueError("Katanki generation requires one card template per note type.")
@@ -161,6 +168,29 @@ def apply_generation(
     undo = collection.add_custom_undo_entry("Kanji Katanki: generate cards")
     created = 0
     try:
+        # Add example storage through Anki APIs under the same Undo entry. Keep
+        # customized templates intact. Upgrade only our exact previous back template.
+        for note_type, model in models.items():
+            changed = False
+            spec = note_type_spec(note_type)
+            legacy_back = re.sub(
+                r'<div class="katanki-examples".*?</script>\n',
+                "",
+                spec.back,
+                count=1,
+                flags=re.DOTALL,
+            )
+            template = model["tmpls"][0]
+            if template["qfmt"] == spec.front and template["afmt"] == legacy_back:
+                template["afmt"] = spec.back
+                changed = True
+            for name in spec.fields:
+                if name not in {field["name"] for field in model["flds"]}:
+                    collection.models.add_field(model, collection.models.new_field(name))
+                    changed = True
+            if changed:
+                collection.models.update_dict(model)
+                collection.merge_undo_entries(undo)
         for identity in candidates_to_create:
             if identity.note_type not in models:
                 spec = note_type_spec(identity.note_type)
