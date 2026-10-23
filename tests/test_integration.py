@@ -69,6 +69,7 @@ def test_repeated_registration_does_not_add_a_second_menu(host):
     integration.register()
     integration.register()
     qt.QMenu.assert_called_once()
+    qt.QAction.assert_any_call("New Kanji Cards", menu)
     qt.QAction.assert_any_call("Refresh and generate Kanji Cards", menu)
     assert all(call.args[0] != "Analyze Collection" for call in qt.QAction.call_args_list)
     aqt.mw.menuBar().addMenu.assert_called_once_with(menu)
@@ -108,4 +109,22 @@ def test_settings_command_requires_profile(host):
     integration, aqt, _, utils = host
     aqt.mw.col = None
     integration.settings()
+    utils.showWarning.assert_called_once()
+
+
+def test_manual_command_opens_entry_without_collection_writes(host, monkeypatch):
+    integration, aqt, _, utils = host
+    manual = ModuleType("katanki.ui.manual")
+    manual.open_manual = Mock()
+    monkeypatch.setitem(sys.modules, manual.__name__, manual)
+    integration.new_kanji_cards()
+    manual.open_manual.assert_called_once_with(aqt.mw)
+    assert aqt.mw.col.mock_calls == []
+    utils.showWarning.assert_not_called()
+
+
+def test_manual_command_requires_profile(host):
+    integration, aqt, _, utils = host
+    aqt.mw.col = None
+    integration.new_kanji_cards()
     utils.showWarning.assert_called_once()

@@ -172,6 +172,13 @@ and count each source note once, even when it has multiple cards.
 
 The **Generation** tab has **Recognition**, **Production**, and **Parts** subtabs.
 Each saves automatic selection, a target deck, default tags, and source-tag copying.
+
+To add kanji outside discovery, choose **Katanki → New Kanji Cards**, paste or type
+kanji, then click **Review new cards**. Repeated characters and non-kanji text are
+ignored. No discovery sources are required. The same enabled generation categories,
+decks, tags, parts, ignored-card rules, and duplicate checks apply; approve creation
+in the review window. Pasted lists do not become example vocabulary.
+
 Only enabled categories participate in refresh; new cards require creation approval. Recognition and Production are enabled by default; Parts
 is opt-in. Parts enables graphical component recognition and its prerequisites;
 parts without a usable name remain unavailable.

@@ -127,7 +127,8 @@ A manifest might have `id`, `category`, `format`, `source`, `capabilities`, `lic
 - User can select target decks, note types and fields; scan only selected sources. Phase 2 uses selection for the current run; Phase 3 adds source configuration in the add-on settings and persistence across restarts.
 - Extract kanji code points, deduplicate at character level and report them; do not indiscriminately treat all CJK ideographs as supported Japanese kanji.
 - Preview total scanned notes, distinct kanji, existing Kanji Katanki kanji and missing kanji. Report unsupported/no-dictionary entries separately.
-- Support manual kanji entry or imported lists in a later phase.
+- Support manual kanji text entry using the configured discovery-to-generation workflow.
+  Imported lists remain a future enhancement.
 - Scanning is **read-only**; no source edits, tags or deletion. The later refresh workflow orchestrates scanning and separately approved generation; scanning itself never writes notes.
 
 ### FR-02 — Primitive graph
@@ -179,6 +180,7 @@ A manifest might have `id`, `category`, `format`, `source`, `capabilities`, `lic
 - Kanji GOD-like progress dashboard: unique kanji and primitive counts, unseen/learning/young/mature/relearning statuses, retention and progress over time.
 - **Separate recognition and writing metrics**; a recognized character must not count as handwriting-mastered unless corresponding writing evidence exists.
 - N5–N1 JLPT coverage by versioned unofficial dataset; other classification packs (Jōyō, school grade, frequency lists) later.
+- Allow automatic card generation for selected statistics/classification lists (such as JLPT), using the saved generation settings and creation safeguards.
 - Interactive searchable kanji grid with per-character details and stroke links.
 - Calculate counts on **unique identities**, not the number of vocabulary occurrences or review cards.
 - Derive review state from Anki data; no shadow scheduler. Clearly distinguish characters without a production note from failed writing cards.

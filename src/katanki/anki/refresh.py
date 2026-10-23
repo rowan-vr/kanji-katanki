@@ -2,11 +2,12 @@
 
 from dataclasses import dataclass
 
-from ..common.models import DiscoveryReport
+from ..common.models import DiscoveryReport, ScanResult
 from ..dictionaries.preferences import dictionary_sources
+from ..generation.discovery import extract_candidates
 from ..generation.planner import Identity
 from ..generation.preview import GenerationPreview
-from .analysis import analyze
+from .analysis import analyze, analyze_scan
 from .collection import resolve_sources
 from .generation import preview_generation
 from .ignored import load_ignored
@@ -20,12 +21,23 @@ class RefreshResult:
 
 
 def prepare_refresh(collection, settings):
-    ignored = load_ignored(collection)
     report = analyze(
         collection,
         resolve_sources(collection, settings.sources),
         dictionary_sources(settings.dictionaries),
     )
+    return _prepare_report(collection, settings, report)
+
+
+def prepare_manual(collection, settings, text):
+    # A pasted list is a set of characters, not a source of example vocabulary.
+    scan = ScanResult(0, tuple(sorted(extract_candidates(text))))
+    report = analyze_scan(collection, scan, dictionary_sources(settings.dictionaries))
+    return _prepare_report(collection, settings, report)
+
+
+def _prepare_report(collection, settings, report):
+    ignored = load_ignored(collection)
     if not report.entries:
         return RefreshResult(report, None, len(ignored))
     characters = tuple(entry.character for entry in report.entries)

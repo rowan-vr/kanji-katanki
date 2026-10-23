@@ -267,6 +267,10 @@ using the user's saved configuration.
   content and refreshing examples remain part of the unchecked work below.
   Jitendex default-word packs and dictionary-backed readings are deferred to a
   separate PR; export mapping and ranking still need investigation.
+- [x] Add **Katanki → New Kanji Cards** with a text box for manual kanji entry.
+  Unique characters use the same dictionary classification, configured generation,
+  parts, decks/tags, ignores, duplicate checks, and creation review as discovery;
+  no vocabulary sources are required. Evidence: `tests/test_manual.py`.
 - [ ] Implement the [card example design](CARD_EXAMPLES.md): managed
   `VocabExamples` and protected `UserExamples`, all eligible examples stored,
   per-category display limit (default 5; 0 = all), user examples first, stable
@@ -303,6 +307,9 @@ workflow and respects the user's update choices.
 Deliverable: a dashboard driven by actual Anki progress. Covers FR-05 and the
 detail-view portion of FR-04.
 
+- [ ] Allow automatic card creation from selected statistics/classification lists
+  (for example JLPT levels), reusing configured generation, duplicate checks,
+  ignores, and creation review.
 - [ ] Normalize Anki review snapshots without adding a separate scheduler.
 - [ ] Aggregate unique kanji/primitive states: unseen, learning, young, mature,
   and relearning; include retention and progress history.
@@ -393,7 +400,7 @@ accounts, telemetry, or network-required reviews.
 - [ ] FR-07: explicit Migaku Kanji GOD import with backup, dry-run mappings,
   unmappable-data warnings, confirmation, and copied-profile tests; preserve
   scheduling/history only where a safe mapping is proven.
-- [ ] Manual kanji entry and imported lists.
+- [ ] Imported kanji lists (manual text entry is delivered in Phase 3).
 - [ ] JMdict integration and optional vocabulary-writing cards using reading plus
   meaning/context, with homophone ambiguity controls.
 - [ ] Additional dictionary providers, capability/fallback selection, and supported
