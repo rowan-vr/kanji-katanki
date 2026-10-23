@@ -1,7 +1,7 @@
 """Explicit kanji entry using the configured generation and creation review."""
 
 from aqt.operations import QueryOp
-from aqt.qt import QDialog, QHBoxLayout, QLabel, QPlainTextEdit, QPushButton, QVBoxLayout
+from aqt.qt import QCheckBox, QDialog, QHBoxLayout, QLabel, QPlainTextEdit, QPushButton, QVBoxLayout
 from aqt.utils import showWarning
 
 from ..anki.refresh import prepare_manual
@@ -20,7 +20,9 @@ class ManualKanjiDialog(QDialog):
         layout = QVBoxLayout(self)
         hint = QLabel(
             "Paste or type kanji below. Repeated kanji and non-kanji text are ignored. "
-            "Cards use your enabled Generation categories, decks, tags, and Cards settings."
+            "Select the card types to create below. Automatic generation can stay off. "
+            "Production examples come from Jitendex, not the entered text. "
+            "Your deck, tag, and card settings still apply."
         )
         hint.setWordWrap(True)
         layout.addWidget(hint)
@@ -31,45 +33,76 @@ class ManualKanjiDialog(QDialog):
         self.status = QLabel()
         self.status.setWordWrap(True)
         layout.addWidget(self.status)
+        selection = QHBoxLayout()
+        self.type_buttons = {}
+        for category in ("recognition", "production", "parts"):
+            button = QCheckBox(category.title())
+            button.setChecked(category != "parts")
+            button.setToolTip(f"Include {category} cards for the entered kanji")
+            button.toggled.connect(self._update)
+            self.type_buttons[category] = button
+            selection.addWidget(button)
+        layout.addLayout(selection)
         row = QHBoxLayout()
         self.cancel = QPushButton("Cancel")
         self.cancel.clicked.connect(self.reject)
         row.addWidget(self.cancel)
         row.addStretch()
-        self.preview_button = QPushButton("Review new cards")
-        self.preview_button.clicked.connect(self._preview)
-        row.addWidget(self.preview_button)
+        self.create_button = QPushButton("Create")
+        self.create_button.clicked.connect(self._preview)
+        row.addWidget(self.create_button)
         layout.addLayout(row)
         self.text.textChanged.connect(self._update)
         self._update()
 
-    def _update(self):
+    def _update(self, *_):
         count = len(extract_candidates(self.text.toPlainText()))
-        self.preview_button.setEnabled(bool(count) and not self.busy)
-        self.status.setText(f"{count:,} unique kanji")
+        selected = any(button.isChecked() for button in self.type_buttons.values())
+        for button in self.type_buttons.values():
+            button.setEnabled(not self.busy)
+        self.create_button.setEnabled(bool(count) and selected and not self.busy)
+        self.status.setText(
+            f"{count:,} unique kanji" if selected else "Select at least one card type."
+        )
 
     def _set_busy(self, busy):
         self.busy = busy
         self.text.setEnabled(not busy)
         self.cancel.setEnabled(not busy)
         self._update()
+        if busy:
+            self.status.setText("Preparing kanji cards…")
 
     def _preview(self):
-        if self.busy or not self.preview_button.isEnabled():
+        if self.busy or not self.create_button.isEnabled():
             return
         try:
             settings = load_settings(self.mw.col)
             text = self.text.toPlainText()
+            categories = tuple(
+                kind for kind, button in self.type_buttons.items() if button.isChecked()
+            )
             self._set_busy(True)
             QueryOp(
                 parent=self.mw,
-                op=lambda collection: prepare_manual(collection, settings, text),
+                op=lambda collection: prepare_manual(
+                    collection, settings, text, categories=categories, progress=self._progress
+                ),
                 success=self._finished,
             ).failure(self._failed).with_progress(
                 "Katanki: preparing kanji cards"
             ).run_in_background()
         except Exception as error:
             self._failed(error)
+
+    def _progress(self, message):
+        # Background operations must queue all widget updates on Anki's main thread.
+        def update():
+            if self.busy:
+                self.status.setText(message)
+                self.mw.progress.update(label=message)
+
+        self.mw.taskman.run_on_main(update)
 
     def _finished(self, result):
         self._set_busy(False)
@@ -85,11 +118,15 @@ class ManualKanjiDialog(QDialog):
             items = result.preview.plan.items if result.preview else ()
             existing = sum(item.outcome == "skip" for item in items)
             unavailable = sum(item.outcome == "unavailable" for item in items)
+            reasons = tuple(
+                dict.fromkeys(item.reason for item in items if item.outcome == "unavailable")
+            )
             self.status.setText(
                 f"No new cards to create. {existing} already present · "
-                f"{result.ignored_count} saved ignores · {unavailable} unavailable · "
+                f"{result.ignored_count} saved ignores · {unavailable} missing · "
                 f"{len(result.report.unmatched)} unsupported kanji. "
-                "Check enabled Generation categories and Ignored cards in Settings."
+                "Check Ignored cards and dictionary settings."
+                + ("\n" + "\n".join(reasons) if reasons else "")
             )
 
     def _failed(self, error):

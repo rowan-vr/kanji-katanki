@@ -110,7 +110,11 @@ def test_all_limit_and_hidden_examples_preserve_storage():
     assert hidden.fields()["VocabExamples"] == content.fields()["VocabExamples"]
     assert hidden.fields()["ExampleLimit"] == "-1"
     options["production"] = replace(options["production"], show_examples=False)
-    assert any(item.outcome == "unavailable" for item in preview(options=options).plan.items)
+    result = preview(options=options)
+    assert all(item.outcome == "create" for item in result.plan.items)
+    production = next(c for c in result.contents if c.identity.note_type.endswith("production"))
+    assert production.prompt == "time"
+    assert production.examples == content.examples
 
 
 def test_part_suggestions_use_containing_kanji():

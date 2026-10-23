@@ -87,13 +87,17 @@ def test_optional_production_and_missing_diagram_fallback():
     assert str(FIXTURES) not in fields["Attribution"]
 
 
-def test_production_without_meaning_or_source_examples_is_unavailable():
-    for discovery in (
-        replace(report(), scan=ScanResult(1, ("景", "色"))),
-        replace(report(), entries=(KanjiEntry("景", (), (), ()),)),
-    ):
-        result = preview(discovery, recognition=(), production=("景",))
-        assert result.plan.items[0].outcome == "unavailable"
+def test_production_without_meaning_is_unavailable():
+    discovery = replace(report(), entries=(KanjiEntry("景", (), (), ()),))
+    result = preview(discovery, recognition=(), production=("景",))
+    assert result.plan.items[0].outcome == "unavailable"
+
+
+def test_production_without_examples_uses_meaning_only():
+    discovery = replace(report(), scan=ScanResult(1, ("景", "色")))
+    result = preview(discovery, recognition=(), production=("景",))
+    assert result.plan.items[0].outcome == "create"
+    assert result.contents[0].prompt == ", ".join(discovery.entries[0].meanings)
 
 
 def test_dictionary_text_and_prompts_are_escaped():

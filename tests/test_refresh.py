@@ -21,7 +21,9 @@ def refresh(monkeypatch):
     utils.tooltip, utils.showWarning = Mock(), Mock()
     generation = ModuleType("katanki.ui.generation")
     generation.CreationReviewDialog = Mock()
-    for module in (operations, utils, generation):
+    feedback = ModuleType("katanki.ui.refresh_feedback")
+    feedback.source_feedback = Mock()
+    for module in (operations, utils, generation, feedback):
         monkeypatch.setitem(sys.modules, module.__name__, module)
     path = Path(katanki.__file__).parent / "ui/refresh.py"
     spec = importlib.util.spec_from_file_location("katanki.ui._test_refresh", path)
@@ -35,7 +37,7 @@ def test_missing_sources_points_to_settings_without_starting_scan(refresh):
     module, operations, utils, mw = refresh
     module.open_refresh(mw)
     operations.QueryOp.assert_not_called()
-    assert "Settings → Discovery" in utils.showWarning.call_args.args[0]
+    assert "Settings → Discovery" in module.source_feedback.call_args.args[1]
     assert not getattr(mw, "_katanki_refresh_running", False)
 
 
@@ -71,7 +73,7 @@ def test_duplicate_click_is_ignored_and_async_failure_unblocks_retry(refresh):
     failed = operations.QueryOp.return_value.failure.call_args.args[0]
     failed(ValueError("Missing source deck"))
     assert not mw._katanki_refresh_running
-    assert "Missing source deck" in utils.showWarning.call_args.args[0]
+    assert "Missing source deck" in module.source_feedback.call_args.args[1]
 
 
 def test_operation_start_failure_clears_running_flag(refresh):
@@ -150,3 +152,29 @@ def test_refresh_applies_examples_in_collection_operation_and_reviews_migration(
     )
     assert not mw._katanki_refresh_running
     assert "Existing-card updates on 1 notes" in utils.tooltip.call_args.args[0]
+
+
+@pytest.mark.parametrize("notes,candidates", [(0, ()), (2, ())])
+def test_empty_results_offer_source_correction(refresh, notes, candidates):
+    module, operations, _, mw = refresh
+    module.load_settings.return_value = Settings(sources=(SourceRule("*", 10, ("Front",)),))
+    module.open_refresh(mw)
+    operations.QueryOp.call_args.kwargs["success"](
+        SimpleNamespace(
+            report=SimpleNamespace(
+                scan=SimpleNamespace(scanned_notes=notes, candidates=candidates)
+            ),
+            preview=None,
+        )
+    )
+    module.source_feedback.assert_called_once()
+    assert "save to retry Refresh" in module.source_feedback.call_args.args[1]
+    assert not mw._katanki_refresh_running
+
+
+def test_automatic_missing_sources_does_not_interrupt(refresh):
+    module, operations, utils, mw = refresh
+    module.open_refresh(mw, automatic=True)
+    module.source_feedback.assert_not_called()
+    utils.showWarning.assert_not_called()
+    operations.QueryOp.assert_not_called()

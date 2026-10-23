@@ -272,3 +272,21 @@ def test_replaced_local_zip_invalidates_suggestions_and_ignores_untrusted_sideca
             ),
         )
     assert provider.lookup("景") == ("景色",)
+
+
+def test_jitendex_reports_indexing_progress_and_reuses_cache(tmp_path, monkeypatch):
+    from katanki.dictionaries.adapters import jitendex_yomitan as adapter
+
+    path = local_dictionary(tmp_path)
+    progress = Mock()
+    convert = Mock(wraps=adapter.convert)
+    monkeypatch.setattr(adapter, "convert", convert)
+    provider = adapter.JitendexYomitan(path, progress=progress)
+    assert provider.lookup("景") == ("景観",)
+    messages = [call.args[0] for call in progress.call_args_list]
+    assert any("bank 1 of 1" in message for message in messages)
+    assert "Indexing Jitendex example words…" in messages
+    progress.reset_mock()
+    assert adapter.JitendexYomitan(path, progress=progress).lookup("景") == ("景観",)
+    convert.assert_called_once()
+    progress.assert_not_called()

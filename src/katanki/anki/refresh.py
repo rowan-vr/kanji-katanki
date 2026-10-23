@@ -1,6 +1,6 @@
 """Read-only refresh planning from saved categories, ownership, and ignored identities."""
 
-from dataclasses import dataclass
+from dataclasses import dataclass, replace
 
 from ..common.models import DiscoveryReport, ScanResult
 from ..config import load_settings
@@ -38,26 +38,50 @@ def prepare_refresh(collection, settings):
     return _prepare_report(collection, settings, report, examples=examples)
 
 
-def prepare_manual(collection, settings, text):
-    # A pasted list is a set of characters, not a source of example vocabulary.
+def prepare_manual(
+    collection, settings, text, *, categories=("recognition", "production", "parts"), progress=None
+):
+    if not categories or any(
+        item not in ("recognition", "production", "parts") for item in categories
+    ):
+        raise ValueError("Choose recognition, production, or parts cards.")
+    # Manual input selects characters; Jitendex supplies production example words.
     scan = ScanResult(0, tuple(sorted(extract_candidates(text))))
+    settings = replace(
+        settings,
+        cards=tuple(
+            replace(item, example_source="discovered_and_default") if index == 1 else item
+            for index, item in enumerate(settings.cards)
+        ),
+    )
+    if progress:
+        progress(f"Loading dictionaries and stroke data for {len(scan.candidates):,} kanji…")
     report = analyze_scan(collection, scan, dictionary_sources(settings.dictionaries))
-    return _prepare_report(collection, settings, report)
+    if progress:
+        progress("Checking existing cards and preparing examples…")
+    return _prepare_report(collection, settings, report, categories=categories, progress=progress)
 
 
-def _prepare_report(collection, settings, report, *, examples=None):
+def _prepare_report(collection, settings, report, *, examples=None, categories=None, progress=None):
     examples = examples or ExampleRefreshPlan()
     ignored = load_ignored(collection)
     if not report.entries:
         return RefreshResult(report, None, len(ignored), examples)
     characters = tuple(entry.character for entry in report.entries)
 
+    def enabled(mode):
+        return (
+            mode in categories
+            if categories is not None
+            else settings.generation_settings(mode).auto_generate
+        )
+
     def selected(mode):
-        if not settings.generation_settings(mode).auto_generate:
+        if not enabled(mode):
             return ()
         return tuple(key for key in characters if Identity(f"kanji-{mode}", key) not in ignored)
 
-    parts = settings.generation_settings("parts").auto_generate
+    parts = enabled("parts")
     component_keys = tuple(
         sorted(
             {
@@ -78,6 +102,7 @@ def _prepare_report(collection, settings, report, *, examples=None):
         include_primitives=parts,
         primitive_recognition=component_keys if parts else (),
         ignored=ignored,
+        progress=progress,
     )
     return RefreshResult(report, preview, len(ignored), examples)
 

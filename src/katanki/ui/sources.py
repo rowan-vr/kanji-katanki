@@ -200,7 +200,14 @@ class SourceSelector(QWidget):
     def rules(self):
         if not self.rows:
             raise ValueError("Add at least one vocabulary source.")
-        return tuple(row.rule() for row in self.rows)
+        rules = []
+        for index, row in enumerate(self.rows, 1):
+            try:
+                rules.append(row.rule())
+            except ValueError as error:
+                row.setFocus()
+                raise ValueError(f"Source {index}: {error}") from error
+        return tuple(rules)
 
     def selection(self):
         return resolve_sources(self.mw.col, self.rules())

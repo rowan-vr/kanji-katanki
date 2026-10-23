@@ -31,8 +31,9 @@ def build_preview(
     primitive_production: tuple[str, ...] = (),
     card_settings: Mapping[str, CardSettings] | None = None,
     word_suggestions=None,
+    progress=None,
 ) -> GenerationPreview:
-    """Kanji production uses meanings plus blanked words from selected sources.
+    """Kanji production uses meanings plus optional blanked example words.
 
     Prerequisites generate recognition only. Primitive production and mnemonic
     names remain independent choices. Generated content copies the scan snapshot;
@@ -98,7 +99,9 @@ def build_preview(
 
     selected = [(key, "recognition") for key in sorted(set(recognition))]
     selected += [(key, "production") for key in sorted(set(production))]
-    for key, mode in selected:
+    for index, (key, mode) in enumerate(selected, 1):
+        if progress:
+            progress(f"Preparing {mode}: {key} ({index:,} of {len(selected):,})…")
         identity = Identity(f"kanji-{mode}", key)
         entry = entries.get(key)
         reason = "" if entry else "No supported dictionary entry."
@@ -128,12 +131,10 @@ def build_preview(
                     (", ".join(entry.meanings), "", *(word.replace(key, "__") for word in shown))
                 )
                 if shown
-                else ""
+                else ", ".join(entry.meanings)
             )
             if not entry.meanings:
                 reason = "Kanji meaning is unavailable."
-            elif not shown:
-                reason = "No visible example words; review example source and visibility settings."
         units[identity] = LearningUnit(identity, parents, key, reason)
         if entry:
             contents[identity] = CardContent(
