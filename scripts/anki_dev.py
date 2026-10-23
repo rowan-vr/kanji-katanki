@@ -100,7 +100,9 @@ def smoke(base: Path) -> None:
 
 if __name__ == "__main__":
     parser = argparse.ArgumentParser(description=__doc__)
-    parser.add_argument("--smoke", action="store_true", help="Open and verify Anki, then exit")
+    mode = parser.add_mutually_exclusive_group()
+    mode.add_argument("--smoke", action="store_true", help="Open and verify Anki, then exit")
+    mode.add_argument("--run", action="store_true", help="Prepare the profile and launch Anki")
     args = parser.parse_args()
     os.environ.setdefault("QT_QUICK_BACKEND", "software")
     if args.smoke:
@@ -113,6 +115,8 @@ if __name__ == "__main__":
         os.environ["ANKI_SINGLE_INSTANCE_KEY"] = "katanki-development"
         base = (ROOT / ".anki-test").resolve()
         prepare(base)
+        if args.run:
+            os.execvp("anki", ["anki", "-b", str(base), "-p", "Katanki Development"])
         print(
             "Prepared isolated profile. Launch: "
             "env QT_QUICK_BACKEND=software ANKI_SINGLE_INSTANCE_KEY=katanki-development "

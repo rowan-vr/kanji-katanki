@@ -92,9 +92,10 @@ Use the Python interpreter that can import your installed Anki and Qt. On this
 Linux machine that is `/usr/bin/python` (the uv environment is separate):
 
 ```sh
-/usr/bin/python scripts/anki_dev.py
-ANKI_SINGLE_INSTANCE_KEY=katanki-development anki -b "$PWD/.anki-test" -p "Katanki Development"
+/usr/bin/python scripts/anki_dev.py --run
 ```
+
+Omit `--run` to prepare the profile and print the launch command without starting Anki.
 
 The helper builds and stages Kanji Katanki into `.anki-test/addons21/katanki`, creates
 an isolated **Katanki Development** profile, and disables automatic sync and
