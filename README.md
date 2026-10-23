@@ -216,7 +216,9 @@ Choose **Discovered and default words** to add Jitendex suggestions after your s
 vocabulary. The complete pinned Jitendex export lives at `bundled/jitendex.zip`
 with the other datasets; an in-memory index ranks common words. Recognition/Parts show examples on the back; Production shows
 masked clues. Furigana, seen-only filtering, and the additional Parts/name controls
-remain planned. Production UserExamples edits take effect when you run Refresh.
+are planned for Phase 4 alongside the interface improvements, together with live
+production clues after user edits. Production UserExamples edits currently take
+effect when you run Refresh.
 
 The **Refresh** tab saves **Update tags from source vocabulary** (off by default),
 **Update example words** (on by default), and **Update dictionary data** (off by

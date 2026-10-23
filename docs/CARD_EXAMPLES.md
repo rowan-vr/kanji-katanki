@@ -1,6 +1,7 @@
 # Card examples
 
-Phase 3 design, partially implemented. Creation and Refresh now store managed
+Card example design, partially implemented in Phase 3. Remaining example and
+rendering work is scheduled for Phase 4 alongside the interface improvements. Creation and Refresh now store managed
 suggestions in `VocabExamples` and protect `UserExamples`. Recognition and Parts
 show examples on the back. Production uses a generated `Prompt` snapshot rebuilt
 on Refresh, merging user examples first, deduplicating, limiting, and masking all

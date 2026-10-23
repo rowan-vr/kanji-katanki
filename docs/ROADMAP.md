@@ -3,7 +3,7 @@
 Progress tracker based on [the implementation specification](SPECIFICATION.md).
 The specification defines requirements; this file tracks delivery and verification.
 
-Last reviewed: **2026-10-23**. Current milestone: **Phase 3 — examples and automatic refresh**.
+Last reviewed: **2026-10-23**. Current milestone: **Phase 3 — saved settings and refresh**.
 Phase 1 ownership-count integration is delivered. Production uses kanji meanings
 and blanked examples copied from selected source vocabulary. Minimum
 supported versions remain an open decision; the verified local baseline is Linux
@@ -264,9 +264,9 @@ using the user's saved configuration.
   Verification, 2026-10-23: 189 unit tests, lint/formatting, real-collection
   persistence, and the packaged Qt-offscreen Anki smoke pass.
   This delivers the settings UI and persistence; applying display choices to card
-  content and refreshing examples remain part of the unchecked work below.
-  Jitendex packs and initial creation suggestions are delivered below; furigana
-  alignment and existing-note refresh remain pending.
+  content is partially delivered below, including existing-note refresh. Remaining
+  display work, furigana alignment, and seen/new filtering move to Phase 4 with
+  the interface improvements.
 - [x] Bundle a pinned Jitendex-derived offline word pack and suggest examples during creation.
   `scripts/bundle_datasets.py` verifies source checksums and packages licenses;
   normal add-on builds retain the complete 38.8 MB export plus a lightweight index
@@ -301,13 +301,6 @@ using the user's saved configuration.
   Verification, 2026-10-23: 251 tests, lint/formatting, offline add-on/candidate-pack
   builds and real Anki/Qt selection/update/fallback checks pass. Published assets
   were downloaded and hash-checked against the shared build lock.
-- [ ] Implement the [card example design](CARD_EXAMPLES.md): managed
-  `VocabExamples` and protected `UserExamples`, all eligible examples stored,
-  per-category display limit (default 5; 0 = all), user examples first, stable
-  deduplication, production masking, and ambiguity checks on the visible clues.
-  Parts uses example kanji on the back. The limit control is saved per category;
-  initial managed fields and back rendering are delivered. Production user examples,
-  furigana and seen/new filtering remain pending. Existing-note refresh is delivered below.
 - [x] Add automatic refresh with configurable triggers and clear enabled/disabled
   controls, reusing the same saved configuration and generation safeguards.
   Settings → Refresh has a master switch (default off), profile-open and sync-finish
@@ -370,6 +363,14 @@ workflow and respects the user's update choices.
 Deliverable: a dashboard driven by actual Anki progress. Covers FR-05 and the
 detail-view portion of FR-04.
 
+- [ ] Complete the [card example design](CARD_EXAMPLES.md) alongside the interface
+  improvements: furigana alignment, seen/new vocabulary filtering, live production
+  clues after editing `UserExamples`, and remaining display controls and preview
+  parity. Preserve the delivered managed/protected fields, all-example storage,
+  per-category limits (default 5; 0 = all), user-first stable deduplication,
+  production masking and visible-clue ambiguity checks, Parts back examples, and
+  protected existing-note refresh. Complete the remaining example acceptance
+  coverage as part of this work.
 - [ ] Allow automatic card creation from selected statistics/classification lists
   (for example JLPT levels), reusing configured generation, duplicate checks,
   ignores, and creation review.

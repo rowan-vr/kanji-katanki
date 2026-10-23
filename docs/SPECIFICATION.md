@@ -155,14 +155,16 @@ A manifest might have `id`, `category`, `format`, `source`, `capabilities`, `lic
   sources configured under Discovery; default dictionary examples are an optional
   additional source planned via Jitendex in a follow-up PR. `真ん中` supplies examples
   for `真` and `中`, not `間`.
-- Phase 3 example fields and rendering follow the
+- Example fields and rendering follow the
   [card example design](CARD_EXAMPLES.md): separate Katanki-managed `VocabExamples`
   and user-owned `UserExamples`, user examples first, deduplication, stable ordering,
   and a per-category display limit of 5 by default (0 means show all). Store all
   eligible examples; the limit controls rendering only. Production masks the target
   in both fields at rendering time. Parts uses example kanji containing the part,
   on the back, rather than vocabulary words. Keep meanings and examples separate
-  from the production prompt representation.
+  from the production prompt representation. Remaining example display work,
+  furigana, seen/new filtering, and live production rendering are scheduled for
+  Phase 4 alongside the interface improvements.
 - Preserve source deck data; no source-to-generated lifecycle tracking.
 - Deduplicate by NFC-normalized character/component key within its Katanki note type, **not** by note ID or source vocabulary origin. Store the character or component key directly; no synthetic identity field or configuration scope. Make reruns idempotent.
 - Before writes, show a detailed plan (create/skip/unavailable) and require explicit approval. Phase 3 must define how saved approval choices support one-button and automatic refresh while retaining these safeguards; saving source settings alone does not authorize writes.
@@ -288,6 +290,9 @@ once, then run all configured steps with a refresh button.
 
 **Deliverable:** Kanji GOD-style dashboard with real Anki progress.
 
+- [ ] Complete the remaining [card example design](CARD_EXAMPLES.md), including
+  furigana, seen/new filtering, live production clues after user edits, display
+  controls, preview parity, and acceptance coverage.
 - [ ] Normalized progress snapshots from Anki adapter.
 - [ ] Classification registry and sourced/versioned JLPT dataset.
 - [ ] Coverage graphs and recognition/writing mode toggle.
