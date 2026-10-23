@@ -126,7 +126,9 @@ def restore(*, offline: bool = False) -> None:
             for name in metadata["files"]:
                 source, target = pack_stage / name, stage / name
                 if name == "bundled/SOURCES.json" and (BUNDLED / "SOURCES.json").is_file():
-                    if source.read_bytes() != (BUNDLED / "SOURCES.json").read_bytes():
+                    if json.loads(source.read_text(encoding="utf-8")) != json.loads(
+                        (BUNDLED / "SOURCES.json").read_text(encoding="utf-8")
+                    ):
                         raise ValueError("Locked packs differ from tracked source provenance.")
                 if target.exists() and target.read_bytes() != source.read_bytes():
                     raise ValueError(f"Locked packs contain conflicting shared file: {name}")

@@ -64,3 +64,28 @@ def test_packaging_excludes_downloaded_user_data(tmp_path, monkeypatch):
     with ZipFile(build_addon.build(tmp_path / "addon.ankiaddon")) as archive:
         assert "__init__.py" in archive.namelist()
         assert not any("user_files" in name for name in archive.namelist())
+
+
+@pytest.mark.parametrize("changed", [False, True])
+def test_notice_verification_accepts_crlf_but_rejects_changed_content(
+    tmp_path, monkeypatch, changed
+):
+    from scripts import build_addon
+
+    source = tmp_path / "src" / "katanki"
+    bundled = source / "dictionaries" / "bundled"
+    bundled.mkdir(parents=True)
+    (bundled / "SOURCES.json").write_text(
+        json.dumps({"resources": {}, "derived_notices": {}}), encoding="utf-8"
+    )
+    (bundled / "NOTICE.txt").write_bytes(b"Attribution\nLicense terms\n")
+    text = b"Attribution\r\nLicense terms\r\n"
+    if changed:
+        text = text.replace(b"Attribution", b"Changed attribution")
+    (tmp_path / "THIRD_PARTY_NOTICES.md").write_bytes(text)
+    monkeypatch.setattr(build_addon, "ROOT", tmp_path)
+    if changed:
+        with pytest.raises(ValueError, match="Dataset notice changed"):
+            build_addon.verify_bundled_assets(source)
+    else:
+        build_addon.verify_bundled_assets(source)

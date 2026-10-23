@@ -14,10 +14,12 @@ from scripts import dataset_packs
 
 @pytest.fixture
 def build_environment(tmp_path, monkeypatch):
-    manifest, release, payload = candidate()
+    provenance = b'{"schema_version": 1, "resources": {}}\n'
+    manifest, release, payload = candidate(extra={"bundled/SOURCES.json": provenance})
     bundled = tmp_path / "dictionaries" / "bundled"
     bundled.mkdir(parents=True)
     (bundled / "old.txt").write_text("previous bundle")
+    (bundled / "SOURCES.json").write_bytes(provenance)
     lock = tmp_path / "lock.json"
     lock.write_text(json.dumps({"schema_version": 1, "datasets": {manifest.id: release}}))
     monkeypatch.setattr(dataset_packs, "BUNDLED", bundled)
@@ -57,3 +59,25 @@ def test_failed_build_preserves_prepared_defaults(build_environment, monkeypatch
     assert (bundled / "old.txt").read_text() == "previous bundle"
     if offline:
         network.assert_not_called()
+
+
+@pytest.mark.parametrize("changed", [False, True])
+def test_provenance_accepts_crlf_but_rejects_changed_content(
+    build_environment, monkeypatch, changed
+):
+    _, _, payload, bundled = build_environment
+    source = bundled / "SOURCES.json"
+    data = source.read_bytes().replace(b"\n", b"\r\n")
+    if changed:
+        data = data.replace(b'"schema_version": 1', b'"schema_version": 2')
+    source.write_bytes(data)
+    monkeypatch.setattr(dataset_packs, "download", Mock(return_value=payload))
+    if changed:
+        with pytest.raises(ValueError, match="tracked source provenance"):
+            dataset_packs.restore()
+        assert source.read_bytes() == data
+        assert (bundled / "old.txt").exists()
+    else:
+        dataset_packs.restore()
+        assert source.read_bytes().endswith(b"\n")
+        assert b"\r" not in source.read_bytes()

@@ -42,7 +42,9 @@ def verify_bundled_assets(source: Path) -> None:
     for name, expected in notices.items():
         if sha256((bundled / "licenses" / name).read_bytes()).hexdigest() != expected:
             raise ValueError(f"Bundled license/documentation checksum mismatch: {name}")
-    if (bundled / "NOTICE.txt").read_bytes() != (ROOT / "THIRD_PARTY_NOTICES.md").read_bytes():
+    if (bundled / "NOTICE.txt").read_text(encoding="utf-8") != (
+        ROOT / "THIRD_PARTY_NOTICES.md"
+    ).read_text(encoding="utf-8"):
         raise ValueError("Dataset notice changed. Rebuild bundled assets before packaging.")
 
 
