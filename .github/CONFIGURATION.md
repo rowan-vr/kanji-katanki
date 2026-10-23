@@ -44,5 +44,8 @@ is required. Include this workflow in the tagged commit before publishing a rele
 An existing asset with the same name is not overwritten; remove it before rerunning
 the upload if a replacement is needed.
 
-Dependabot checks GitHub Actions monthly. Issue and pull request templates collect
+Dependabot checks Python dependencies in `pyproject.toml` and `uv.lock` weekly using
+the `uv` ecosystem, and GitHub Actions monthly. Each ecosystem allows up to five
+open version-update pull requests. Updates require review and are not auto-merged.
+Issue and pull request templates collect
 reproduction details, validation, and collection impact.
