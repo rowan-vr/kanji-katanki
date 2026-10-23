@@ -3,7 +3,7 @@
 Progress tracker based on [the implementation specification](SPECIFICATION.md).
 The specification defines requirements; this file tracks delivery and verification.
 
-Last reviewed: **2026-10-23**. Current milestone: **Phase 3 — automatic refresh**.
+Last reviewed: **2026-10-23**. Current milestone: **Phase 3 — examples and automatic refresh**.
 Phase 1 ownership-count integration is delivered. Production uses kanji meanings
 and blanked examples copied from selected source vocabulary. Minimum
 supported versions remain an open decision; the verified local baseline is Linux
@@ -265,18 +265,34 @@ using the user's saved configuration.
   persistence, and the packaged Qt-offscreen Anki smoke pass.
   This delivers the settings UI and persistence; applying display choices to card
   content and refreshing examples remain part of the unchecked work below.
-  Jitendex default-word packs and dictionary-backed readings are deferred to a
-  separate PR; export mapping and ranking still need investigation.
+  Jitendex packs and initial creation suggestions are delivered below; furigana
+  alignment and existing-note refresh remain pending.
+- [x] Bundle a pinned Jitendex-derived offline word pack and suggest examples during creation.
+  `scripts/bundle_words.py` verifies source/generated checksums and packages licenses;
+  normal add-on builds retain the complete 38.8 MB export plus a lightweight index
+  of 17,126 common word forms. The full add-on stays below 50 MB; filtering applies
+  only to suggestions. Defaults are opt-in through
+  the existing discovered/default setting and follow deduplicated source vocabulary.
+  Recognition backs and production clues use the suggestions; Parts backs use
+  containing kanji from the scan. All managed suggestions are stored separately,
+  limits apply at display/clue generation, and ambiguity checks use visible clues.
+  Exact previous stock templates can be upgraded under Undo; custom templates remain
+  untouched. Evidence: `tests/test_word_suggestions.py`, packaging/offline checks,
+  `scripts/smoke_word_examples.py`. Verification, 2026-10-23: 196 unit tests,
+  lint/formatting, offline add-on build, real Anki migration/Undo and packaged
+  Qt rendering checks pass (Linux Anki 26.09.3 / Python 3.14.8).
 - [x] Add **Katanki → New Kanji Cards** with a text box for manual kanji entry.
   Unique characters use the same dictionary classification, configured generation,
   parts, decks/tags, ignores, duplicate checks, and creation review as discovery;
   no vocabulary sources are required. Evidence: `tests/test_manual.py`.
+
 - [ ] Implement the [card example design](CARD_EXAMPLES.md): managed
   `VocabExamples` and protected `UserExamples`, all eligible examples stored,
   per-category display limit (default 5; 0 = all), user examples first, stable
   deduplication, production masking, and ambiguity checks on the visible clues.
   Parts uses example kanji on the back. The limit control is saved per category;
-  rendering, fields, and refresh integration are pending.
+  initial managed fields and back rendering are delivered. Production user examples,
+  furigana, seen/new filtering and safe existing-note refresh remain pending.
 - [x] Add automatic refresh with configurable triggers and clear enabled/disabled
   controls, reusing the same saved configuration and generation safeguards.
   Settings → Refresh has a master switch (default off), profile-open and sync-finish

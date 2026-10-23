@@ -9,10 +9,36 @@ Select decks, a note type, and fields in **Analyze Collection**, then scan offli
 | KANJIDIC2 | 2026-10-23 | 13,108 entries; Japanese on/kun readings, English meanings, grade, primary stroke count | CC BY-SA 4.0 + EDRDG terms |
 | KanjiVG | r20260714 | 6,703 canonical non-variant SVG files | CC BY-SA 3.0 |
 
-JMdict is deferred until vocabulary-aware features need it. An unofficial JLPT
-source has not been selected. Neither is bundled speculatively.
+Jitendex 2026.10.03.0 is also bundled in full: the original 38.8 MB Yomitan
+archive plus a lightweight CC BY-SA 4.0 suggestion index with 17,126 common
+headword/reading/priority rows (about 540 KB before ZIP compression). The complete
+add-on stays below 50 MB. JMdict
+is included through Jitendex; no separate JMdict archive is needed. An unofficial
+JLPT source has not been selected.
 
-The add-on archive is approximately 5 MiB and includes offline defaults. Dataset
+The word pack currently follows a separate build lock, `datasets/jitendex-lock.json`,
+and is not part of the independent dictionary-update catalog. Normal builds download
+the pinned Yomitan archive, verify its hash, and deterministically prepare
+`dictionaries/word_pack/words.json`, retains `jitendex-yomitan.zip` byte-for-byte,
+and copies attribution, provenance and license text. Generated
+payloads are ignored by Git. `scripts/bundle_words.py --offline` rebuilds from
+verified `data/upstream/` inputs; `build_addon.py --offline` also accepts an already
+verified prepared word pack. Changing the baseline requires reviewing the source
+revision, checksums, conversion output and notices in the word lock together.
+No word dictionary is downloaded during card creation or review. See
+[card examples](CARD_EXAMPLES.md#default-words) for filtering and ranking.
+
+The word pack is an adaptation of Jitendex © Stephen Kraus and JMdict © the
+Electronic Dictionary Research and Development Group. It remains CC BY-SA 4.0;
+its original attribution and the full license are included in `word_pack/NOTICE.txt`
+and `word_pack/CC-BY-SA-4.0.txt`. The bundled EDRDG terms in `bundled/licenses/`
+also apply. The full archive preserves all upstream entries, definitions, example
+sentences, tags, ruby markup, images and metadata, including embedded font licenses.
+Tatoeba sentence data remains CC BY 2.0 FR; the full text is copied to
+`word_pack/CC-BY-2.0-FR.html`. The suggestion index alone omits definitions,
+sentences, audio and positioning, and filters for common words.
+
+The add-on archive is approximately 44 MB and includes offline defaults. Dataset
 payloads and copied upstream notices stay out of Git. Versioned packs live as
 GitHub Release assets in this same repository, under `datasets-…` tags.
 

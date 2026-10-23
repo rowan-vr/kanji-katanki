@@ -1,0 +1,25 @@
+{
+  "version": "2026.10.03.0",
+  "pack_sha256": "4e20eeded73c695625764775403a0da38c4eeacf5f7b27ef350659056af23bc7",
+  "notice": "Jitendex word pack, version 2026.10.03.0\n\n© CC BY-SA 4.0 Stephen Kraus 2023-2026\n\nYou are free to use, modify, and redistribute Jitendex files under the terms of the Creative Commons Attribution-ShareAlike License (V4.0)\n\nJitendex includes material from several copyrighted sources in compliance with the terms and conditions of those projects.\n\n• JMdict (EDICT, etc.) dictionary data is provided by the Electronic Dictionaries Research Group. Visit edrdg.org for more information.\n• Example sentences (Japanese and English) are provided by Tatoeba (https://tatoeba.org/). This data is licensed CC BY 2.0 FR.\n\nSources: https://jitendex.org/pages/legal.html ; https://www.edrdg.org/edrdg/licence.html\nThe original jitendex-yomitan.zip is included byte-for-byte, retaining the complete dictionary, definitions, examples, spelling/reading restrictions, tags, structured ruby markup, images, metadata and embedded Hanazono/GlyphWiki font license. Jitendex is CC BY-SA 4.0; Tatoeba sentence data is CC BY 2.0 FR. Full license texts are included alongside the archive. The EDRDG terms are also included in bundled/licenses/EDRDG-LICENCE.html. Furigana positioning is attributed to the JmdictFurigana project (https://github.com/Doublevil/JmdictFurigana), under CC BY-SA.\nKanji Katanki additionally derives words.json as a lightweight suggestion index: common contemporary kanji headwords, valid readings and priority scores only. The index remains CC BY-SA 4.0. The full archive retains entries excluded from automatic suggestions; no upstream dictionary content has been removed from that archive.",
+  "resources": {
+    "jitendex-yomitan.zip": {
+      "url": "https://github.com/stephenmk/stephenmk.github.io/releases/download/2026.10.03.0/jitendex-yomitan.zip",
+      "sha256": "e914c76596220dffc6ee0c069cd05992f03adb2988c12c3cebe817a3ac271356",
+      "bytes": 38831822,
+      "kind": "data"
+    },
+    "CC-BY-SA-4.0.txt": {
+      "url": "https://creativecommons.org/licenses/by-sa/4.0/legalcode.txt",
+      "sha256": "28a9529c7d0bb4dc51f4bf5c116a3d16ef247a052f7591466768ddf563fd1cf5",
+      "bytes": 20138,
+      "kind": "notice"
+    },
+    "CC-BY-2.0-FR.html": {
+      "url": "https://creativecommons.org/licenses/by/2.0/fr/legalcode",
+      "sha256": "597d4c64f6606c64da65ba6c079e5cc87e4cce2b5187eda908c939b538e7ab9b",
+      "bytes": 39479,
+      "kind": "notice"
+    }
+  }
+}

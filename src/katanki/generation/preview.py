@@ -4,7 +4,9 @@ from collections.abc import Mapping
 from dataclasses import dataclass
 
 from ..common.models import DiscoveryReport
-from .cards import CardContent, normalize_prompt, vocabulary_prompt
+from ..config import CardSettings
+from ..dictionaries.words import ATTRIBUTION, bundled_words
+from .cards import CardContent, normalize_prompt
 from .destinations import CreationOptions
 from .planner import GenerationPlan, Identity, LearningUnit, plan_generation
 
@@ -27,6 +29,8 @@ def build_preview(
     component_names: Mapping[str, str] | None = None,
     primitive_recognition: tuple[str, ...] = (),
     primitive_production: tuple[str, ...] = (),
+    card_settings: Mapping[str, CardSettings] | None = None,
+    word_suggestions=None,
 ) -> GenerationPreview:
     """Kanji production uses meanings plus blanked words from selected sources.
 
@@ -35,6 +39,8 @@ def build_preview(
     deleting source vocabulary cannot change existing generated cards.
     """
     component_names = component_names or {}
+    card_settings = card_settings or {}
+    word_suggestions = word_suggestions or bundled_words()
     entries = {entry.character: entry for entry in report.entries}
     strokes = {entry.character: entry for entry in report.strokes}
     components = {}
@@ -77,6 +83,16 @@ def build_preview(
             components=component.prerequisites,
             prompt=prompt,
             attribution=report.attribution,
+            examples=tuple(
+                sorted(
+                    visual.character
+                    for visual in report.strokes
+                    if visual.character != key
+                    and any(part.key == key for part in visual.component_entries)
+                )
+            ),
+            example_limit=card_settings.get("parts", CardSettings()).example_limit,
+            show_examples=card_settings.get("parts", CardSettings()).show_examples,
         )
         return identity
 
@@ -93,13 +109,31 @@ def build_preview(
                 reason = "Component prerequisites cannot be assessed without stroke data."
             else:
                 parents = tuple(add_component(parent) for parent in visual.prerequisites)
-        prompt, examples = "", ()
+        options = card_settings.get(mode, CardSettings())
+        discovered = tuple(sorted({word for word in report.scan.vocabulary if key in word}))
+        defaults = (
+            word_suggestions.lookup(key)
+            if options.example_source == "discovered_and_default"
+            else ()
+        )
+        examples = tuple(dict.fromkeys((*discovered, *defaults)))
+        shown = examples[: options.example_limit] if options.example_limit else examples
+        if not options.show_examples:
+            shown = ()
+        prompt = ""
         if mode == "production" and entry:
-            prompt, examples = vocabulary_prompt(key, entry.meanings, report.scan.vocabulary)
+            # Order and limit before checking ambiguity; hidden words are not clues.
+            prompt = (
+                "\n".join(
+                    (", ".join(entry.meanings), "", *(word.replace(key, "__") for word in shown))
+                )
+                if shown
+                else ""
+            )
             if not entry.meanings:
                 reason = "Kanji meaning is unavailable."
-            elif not examples:
-                reason = "No matching example words in the selected sources."
+            elif not shown:
+                reason = "No visible example words; review example source and visibility settings."
         units[identity] = LearningUnit(identity, parents, key, reason)
         if entry:
             contents[identity] = CardContent(
@@ -110,8 +144,11 @@ def build_preview(
                 visual.components if visual else (),
                 visual.svg if visual else b"",
                 prompt,
-                report.attribution,
+                report.attribution + ((ATTRIBUTION,) if defaults else ()),
                 examples,
+                options.example_limit,
+                options.show_examples,
+                discovered,
             )
             if visual is None:
                 warnings.append(f"{key}: stroke diagram unavailable.")

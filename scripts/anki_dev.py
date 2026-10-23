@@ -81,6 +81,9 @@ def smoke(base: Path) -> None:
             from scripts.smoke_generation import exercise_stroke_controls
 
             exercise_stroke_controls(mw)
+            from scripts.smoke_word_examples import exercise_example_rendering
+
+            exercise_example_rendering(mw)
             print(
                 "PASS: packaged discovery preserves data; generation preview cancel/approve, "
                 "card creation, stroke-number toggle and playback pass in real Qt/Anki."

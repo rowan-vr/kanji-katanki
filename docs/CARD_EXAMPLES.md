@@ -1,8 +1,12 @@
 # Card examples
 
-Design for Phase 3. The settings UI, including per-category example limits, is in
-place. Example fields, rendering, and updates to existing cards still need
-implementation.
+Phase 3 design, partially implemented. New cards now store managed suggestions in
+`VocabExamples`, reserve `UserExamples`, and show word/containing-kanji suggestions
+on the back. Production clues still use a generated `Prompt` snapshot. Settings
+control default words, visibility and limits during creation. User examples on
+production fronts, furigana, seen/new filtering, and automatic updates to existing
+notes remain to be implemented. Exact previous stock templates are upgraded when
+creating more notes of that type; customized templates are preserved.
 
 ## Fields
 
@@ -64,26 +68,42 @@ policy is still open.
 
 ## Default words
 
-Jitendex is the planned source for a separate follow-up PR. Download a pinned
-Yomitan export during the build and prepare an offline Katanki word pack from it;
-a separate JMdict bundle is not needed. Jitendex includes JMdict data and
-JmdictFurigana positioning data. Inspect an export before defining the importer,
-ranking, and furigana representation. See the [downloads](https://jitendex.org/pages/downloads.html)
-and [source attribution](https://jitendex.org/pages/legal.html).
+Builds include the complete Jitendex Yomitan archive plus a lightweight suggestion
+index from the pinned
+2026.10.03.0 Yomitan export. `datasets/jitendex-lock.json` records its immutable
+release URL, source and generated SHA-256 checksums, version, and attribution.
+The export was inspected before implementing conversion: each term-bank row is a
+valid spelling/reading pair. Katanki retains common kanji headwords (★, score at
+least 100), omits irregular/rare/obsolete forms and kana-preferred or archaic
+entries, and ranks by score, length, spelling and reading. One suggestion is shown
+per spelling. Source vocabulary precedes defaults and wins duplicate matching.
+The suggestion index contains 17,126 word/reading/score rows, approximately 540 KB.
+The full 38.8 MB export is retained byte-for-byte, including all entries, definitions,
+examples, tags, structured ruby markup, images, and metadata. Common-word filtering
+only affects automatic suggestions; it does not discard the full dictionary.
+The complete add-on remains under the 50 MB packaging budget.
 
-Prefer common contemporary words containing the target kanji. Filter out rare or
-archaic spellings and forms usually written in kana where appropriate. Respect
-spelling/reading restrictions. Defaults would follow the user's vocabulary words
-in the display order.
+Readings are retained as whole-word readings; furigana positions are not inferred.
+The index omits definitions, sentences, audio, and positional data; these omissions
+do not apply to the original archive. The derivative remains CC BY-SA 4.0. Both
+the full export and index include attribution and license texts offline, including
+CC BY 2.0 FR for Tatoeba sentences in the archive. See
+[downloads](https://jitendex.org/pages/downloads.html) and
+[source attribution](https://jitendex.org/pages/legal.html).
 
-The pack would include version information, attribution, and notices, like the
-existing dictionary packs. Card rendering stays offline. Dictionary readings can
-help with furigana, but do not always resolve ambiguous readings or show which
-kana belongs to each kanji.
+Enable **Discovered and default words** in the card category settings to include
+Jitendex suggestions. Parts suggestions come from kanji in the current discovery
+snapshot whose KanjiVG component entries contain the part. They require no word
+review-status or furigana filtering. All managed suggestions are stored even when
+hidden or beyond the display limit. Production ambiguity uses only the limited,
+visible, masked clues. Existing notes are not refreshed by this initial step.
+
+Dictionary readings can help with future furigana, but whole-word readings do not
+always resolve ambiguous readings or show which kana belongs to each kanji.
 
 ## Open questions
 
-- Jitendex export mapping, example ranking, and pack contents (follow-up PR).
+- Refining word ranking and expanding the conservative default-word coverage.
 - Editable example format, optional readings, and duplicate matching rules.
 - Furigana alignment and handling of ambiguous readings.
 - Whether seen-only filtering excludes defaults without a matching reviewed word.
@@ -92,6 +112,16 @@ kana belongs to each kanji.
 - Handling updates that would make production clues empty or ambiguous.
 
 ## Verification
+
+Initial creation implementation verified on 2026-10-23: 196 automated tests pass;
+lint and formatting pass. The offline packaged build includes the word pack,
+checksums, provenance and licenses. Real Anki checks cover field/template migration,
+custom-template preservation, unchanged existing scheduling, and grouped Undo.
+The packaged Qt webview checks user ordering, duplicates, limits (including 0),
+hidden examples, and the shared preview renderer. Host baseline: Linux Anki
+26.09.3 / Python 3.14.8. Tests do not claim existing-example refresh or furigana.
+
+Remaining acceptance coverage for the full design:
 
 Cover limits including 0 and more user examples than the limit, ordering,
 duplicates, masking, ambiguity after limiting, Parts examples, and preview parity.
