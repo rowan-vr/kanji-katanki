@@ -10,6 +10,7 @@ from dataclasses import dataclass, replace
 from ..generation.cards import CSS, normalize_prompt, note_type_spec
 from ..generation.destinations import creation_options
 from ..generation.discovery import visible_text
+from ..generation.examples import STATE_FIELD
 from ..generation.preview import GenerationPreview, build_preview
 from ..generation.review import exclude_ignored
 from .identities import MODEL_MARKER, owned_identities
@@ -150,7 +151,12 @@ def apply_generation(
         if matches:
             spec = note_type_spec(note_type)
             model = matches[0]
-            legacy_fields = set(spec.fields) - {"VocabExamples", "UserExamples", "ExampleLimit"}
+            legacy_fields = set(spec.fields) - {
+                "VocabExamples",
+                "UserExamples",
+                "ExampleLimit",
+                STATE_FIELD,
+            }
             if not legacy_fields <= {field["name"] for field in model["flds"]}:
                 raise ValueError("A Katanki note type is missing required fields. Preview again.")
             if len(model["tmpls"]) != 1:

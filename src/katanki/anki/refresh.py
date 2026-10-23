@@ -3,12 +3,19 @@
 from dataclasses import dataclass
 
 from ..common.models import DiscoveryReport, ScanResult
+from ..config import load_settings
 from ..dictionaries.preferences import dictionary_sources
-from ..generation.discovery import extract_candidates
+from ..generation.discovery import extract_candidates, scan_notes
 from ..generation.planner import Identity
 from ..generation.preview import GenerationPreview
 from .analysis import analyze, analyze_scan
-from .collection import resolve_sources
+from .collection import resolve_sources, selected_notes
+from .example_refresh import (
+    ExampleRefreshPlan,
+    ExampleRefreshResult,
+    apply_example_refresh,
+    plan_example_refresh,
+)
 from .generation import preview_generation
 from .ignored import load_ignored
 
@@ -18,6 +25,7 @@ class RefreshResult:
     report: DiscoveryReport
     preview: GenerationPreview | None
     ignored_count: int
+    examples: ExampleRefreshPlan = ExampleRefreshPlan()
 
 
 def prepare_refresh(collection, settings):
@@ -26,7 +34,8 @@ def prepare_refresh(collection, settings):
         resolve_sources(collection, settings.sources),
         dictionary_sources(settings.dictionaries),
     )
-    return _prepare_report(collection, settings, report)
+    examples = plan_example_refresh(collection, report, settings)
+    return _prepare_report(collection, settings, report, examples=examples)
 
 
 def prepare_manual(collection, settings, text):
@@ -36,10 +45,11 @@ def prepare_manual(collection, settings, text):
     return _prepare_report(collection, settings, report)
 
 
-def _prepare_report(collection, settings, report):
+def _prepare_report(collection, settings, report, *, examples=None):
+    examples = examples or ExampleRefreshPlan()
     ignored = load_ignored(collection)
     if not report.entries:
-        return RefreshResult(report, None, len(ignored))
+        return RefreshResult(report, None, len(ignored), examples)
     characters = tuple(entry.character for entry in report.entries)
 
     def selected(mode):
@@ -69,4 +79,18 @@ def _prepare_report(collection, settings, report):
         primitive_recognition=component_keys if parts else (),
         ignored=ignored,
     )
-    return RefreshResult(report, preview, len(ignored))
+    return RefreshResult(report, preview, len(ignored), examples)
+
+
+def apply_refresh_examples(collection, result, settings, *, migrate=False):
+    """Reject a scan invalidated by settings/source edits while a review was open."""
+    from anki.collection import OpChanges
+
+    if load_settings(collection) != settings:
+        return ExampleRefreshResult(OpChanges(), 0, ("Settings changed; run Refresh again.",))
+    current = scan_notes(selected_notes(collection, resolve_sources(collection, settings.sources)))
+    if current != result.report.scan:
+        return ExampleRefreshResult(
+            OpChanges(), 0, ("Source vocabulary changed; run Refresh again.",)
+        )
+    return apply_example_refresh(collection, result.examples, migrate=migrate)

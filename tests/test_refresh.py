@@ -16,6 +16,7 @@ from katanki.config import GenerationSettings, Settings, SourceRule
 def refresh(monkeypatch):
     operations = ModuleType("aqt.operations")
     operations.QueryOp = Mock()
+    operations.CollectionOp = Mock()
     utils = ModuleType("aqt.utils")
     utils.tooltip, utils.showWarning = Mock(), Mock()
     generation = ModuleType("katanki.ui.generation")
@@ -107,3 +108,45 @@ def test_automatic_result_waits_if_review_started_during_scan(refresh):
     module.CreationReviewDialog.assert_not_called()
     mw._katanki_automatic_refresh.request.assert_called_once_with("on_profile_open")
     assert not mw._katanki_refresh_running
+
+
+@pytest.mark.parametrize("automatic", [False, True])
+def test_refresh_applies_examples_in_collection_operation_and_reviews_migration(
+    refresh, monkeypatch, automatic
+):
+    import katanki.anki.refresh as workflow
+    from katanki.config import RefreshSettings
+
+    module, operations, utils, mw = refresh
+    module.load_settings.return_value = Settings(
+        sources=(SourceRule("*", 10, ("Front",)),), refresh=RefreshSettings(enabled=True)
+    )
+    mw.state = "deckBrowser"
+    mw.app = SimpleNamespace(activeModalWidget=lambda: None)
+    review = ModuleType("katanki.ui.example_refresh")
+    review.review_migration = Mock(return_value=True)
+    monkeypatch.setitem(sys.modules, review.__name__, review)
+    apply = Mock()
+    monkeypatch.setattr(workflow, "apply_refresh_examples", apply)
+    result = SimpleNamespace(
+        report=SimpleNamespace(
+            scan=SimpleNamespace(scanned_notes=1, candidates=("景",)), dictionary_loaded=True
+        ),
+        preview=None,
+        ignored_count=0,
+        examples=SimpleNamespace(updates=(SimpleNamespace(migration=True),), conflicts=()),
+    )
+    module.open_refresh(mw, automatic=automatic)
+    operations.QueryOp.call_args.kwargs["success"](result)
+    assert mw._katanki_refresh_running
+    if automatic:
+        review.review_migration.assert_not_called()
+    else:
+        review.review_migration.assert_called_once()
+    operations.CollectionOp.call_args.kwargs["op"](mw.col)
+    assert apply.call_args.kwargs["migrate"] is (not automatic)
+    operations.CollectionOp.return_value.success.call_args.args[0](
+        SimpleNamespace(updated=1, conflicts=())
+    )
+    assert not mw._katanki_refresh_running
+    assert "Examples updated on 1 notes" in utils.tooltip.call_args.args[0]

@@ -4,6 +4,7 @@ import unicodedata
 from dataclasses import dataclass
 from html import escape
 
+from .examples import STATE_FIELD, encode_state, managed_fields
 from .planner import NOTE_TYPES, Identity
 
 
@@ -118,6 +119,7 @@ def note_type_spec(key: str) -> NoteTypeSpec:
             "VocabExamples",
             "UserExamples",
             "ExampleLimit",
+            STATE_FIELD,
         ),
         front,
         BACK,
@@ -141,7 +143,7 @@ class CardContent:
 
     def fields(self) -> dict[str, str]:
         spec = note_type_spec(self.identity.note_type)
-        return {
+        values = {
             spec.fields[0]: self.identity.key,
             "Display": escape(self.display),
             "UserExamples": "",
@@ -167,6 +169,8 @@ class CardContent:
             "Strokes": self.svg.decode("utf-8") if self.svg else "Stroke data unavailable",
             "Attribution": "<br>".join(escape(line) for line in self.attribution),
         }
+        values[STATE_FIELD] = encode_state(managed_fields(values, self.identity))
+        return values
 
 
 def normalize_prompt(text: str) -> str:

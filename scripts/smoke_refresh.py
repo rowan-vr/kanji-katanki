@@ -165,6 +165,23 @@ def exercise_refresh(mw, action):
         after = snapshot(mw.col)
         run("noop")
         assert snapshot(mw.col) == after
+        # Refresh existing examples through the real QueryOp -> CollectionOp UI path.
+        save_settings(
+            mw.col, replace(settings, refresh=replace(settings.refresh, update_examples=True))
+        )
+        source_note = mw.col.get_note(note.id)
+        source_note[source.fields[0]] = "時々"
+        mw.col.update_note(source_note)
+        before_updates = snapshot(mw.col)
+        run("noop")
+        identity_notes = owned_identities(mw.col, note_type="kanji-recognition")
+        time_id = identity_notes[Identity("kanji-recognition", "時")][0]
+        assert "時々" in mw.col.get_note(time_id)["VocabExamples"]
+        assert any("Examples updated on" in message for message in messages)
+        mw.col.undo()
+        assert snapshot(mw.col) == before_updates, "Example refresh Undo changed prior data"
+        run("noop")
+        save_settings(mw.col, settings)
         parts_deck = mw.col.decks.id("Refresh::Parts")
         fixtures = Path(__file__).resolve().parents[1] / "tests/fixtures"
         parts_settings = replace(

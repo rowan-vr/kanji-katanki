@@ -292,14 +292,15 @@ using the user's saved configuration.
   deduplication, production masking, and ambiguity checks on the visible clues.
   Parts uses example kanji on the back. The limit control is saved per category;
   initial managed fields and back rendering are delivered. Production user examples,
-  furigana, seen/new filtering and safe existing-note refresh remain pending.
+  furigana and seen/new filtering remain pending. Existing-note refresh is delivered below.
 - [x] Add automatic refresh with configurable triggers and clear enabled/disabled
   controls, reusing the same saved configuration and generation safeguards.
   Settings → Refresh has a master switch (default off), profile-open and sync-finish
   triggers. Version 6 migrates versions 1–5 with automation disabled. Triggers
   coalesce and wait for the deck list, modal dialogs, progress operations, and
   active refreshes; profile closure discards pending work. Automatic scans use
-  the existing creation review and never update existing notes. Results arriving
+  the existing creation review; managed example updates now follow the update
+  preferences and edit-protection rules below. Results arriving
   during review are deferred; disabling automation cancels a pending run.
   Evidence: `anki/automatic_refresh.py`, `tests/test_automatic_refresh.py`,
   `tests/test_refresh.py`, and Save/Cancel/reopen checks in `scripts/smoke_settings.py`.
@@ -309,7 +310,7 @@ using the user's saved configuration.
   timed out in `QApplication.__init__`, before add-on loading; the new Refresh
   UI Save/Cancel/reopen assertions are added but host execution remains pending.
   Human visual review and Windows/macOS remain pending.
-- [ ] Define how refresh updates vocabulary examples on existing cards while
+- [x] Define how refresh updates vocabulary examples on existing cards while
   preserving user edits, note/card identities, scheduling, and review history;
   require explicit opt-in for updates as established in Phase 2.
   Refresh settings now save **Update tags from source vocabulary** (default off)
@@ -317,10 +318,18 @@ using the user's saved configuration.
   independently of automatic triggers. Dictionary updates here mean existing-card
   content from selected dictionaries, rather than downloading dictionary packs.
   Existing version 6 settings receive these defaults without changing other choices.
-  These are preferences only; applying updates, protecting user edits, and category
-  example-refresh gating remain pending. Save/Cancel/reopen assertions cover all three
-  controls in `scripts/smoke_settings.py`; collection-reopen verification persists
-  nondefault choices.
+  Example updates now apply through Anki CollectionOp and grouped Undo, independently
+  of new-card creation. Both refresh gates are respected. Generated-value baselines
+  protect manual edits; legacy notes require explicit before/after migration review.
+  Automatic refresh skips unapproved migrations. UserExamples, IDs, scheduling,
+  history, tags and decks are preserved. Source removal clears recognition/Parts
+  examples without deleting notes; empty/ambiguous production updates are withheld.
+  Stale notes, source scans, settings and new clue collisions are rechecked before
+  writes. Tag/dictionary-content updates remain pending. Save/Cancel/reopen assertions
+  cover the settings in `scripts/smoke_settings.py`.
+  Verification, 2026-10-23: 238 unit tests, lint/format checks, offline build,
+  `scripts/smoke_example_refresh.py` (real Anki updates/Undo), and the packaged Qt
+  Refresh-button update/rendering smoke pass on Linux Anki 26.09.3 / Python 3.14.8.
 - [ ] Show progress, results, and actionable errors; make empty or invalid source
   settings easy to correct.
 - [ ] Verify saved settings survive restarts, repeated refreshes create no
