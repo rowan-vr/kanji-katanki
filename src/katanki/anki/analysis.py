@@ -3,7 +3,7 @@
 from dataclasses import replace
 from pathlib import Path
 
-from ..common.models import DiscoveryReport, ScanSelection
+from ..common.models import DiscoveryReport, ScanResult, ScanSelection
 from ..config import load_settings
 from ..dictionaries.manager import DictionaryManager
 from ..dictionaries.preferences import dictionary_sources
@@ -19,6 +19,13 @@ def analyze(
     sources: dict[str, Path] | None = None,
 ) -> DiscoveryReport:
     scan = scan_notes(selected_notes(collection, selection))
+    return analyze_scan(collection, scan, sources)
+
+
+def analyze_scan(
+    collection, scan: ScanResult, sources: dict[str, Path] | None = None
+) -> DiscoveryReport:
+    """Classify candidates from discovery or explicit kanji input."""
     if sources is None:
         sources = dictionary_sources(load_settings(collection).dictionaries)
     with DictionaryManager(sources) as manager:

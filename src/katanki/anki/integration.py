@@ -26,6 +26,19 @@ def refresh_and_generate() -> None:
         )
 
 
+def new_kanji_cards() -> None:
+    try:
+        if mw is None or mw.col is None:
+            showWarning("Open an Anki profile before adding kanji cards.")
+            return
+        from ..ui.manual import open_manual
+
+        open_manual(mw)
+    except Exception:
+        logger.exception("Katanki manual kanji entry failed")
+        showWarning("Katanki could not open New Kanji Cards. See Anki's console for details.")
+
+
 def settings() -> None:
     try:
         if mw is None or mw.col is None:
@@ -56,6 +69,9 @@ def register() -> None:
     action = QAction("Refresh and generate Kanji Cards", menu)
     action.triggered.connect(refresh_and_generate)
     menu.addAction(action)
+    manual_action = QAction("New Kanji Cards", menu)
+    manual_action.triggered.connect(new_kanji_cards)
+    menu.addAction(manual_action)
     menu.addSeparator()
     settings_action = QAction("Settings…", menu)
     settings_action.triggered.connect(settings)

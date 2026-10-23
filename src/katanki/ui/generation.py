@@ -31,9 +31,10 @@ from ..generation.review import category_for, exclude_ignored, render_card_previ
 
 
 class CreationReviewDialog(QDialog):
-    def __init__(self, mw, preview):
+    def __init__(self, mw, preview, *, summary_label="Refresh complete"):
         super().__init__(mw)
         self.mw, self.original = mw, preview
+        self.summary_label = summary_label
         self.busy = False
         self.preview = preview
         self.ignored = load_ignored(mw.col)
@@ -189,7 +190,7 @@ class CreationReviewDialog(QDialog):
             if item.outcome == "unavailable" and item.unit.identity not in self.ignored
         ]
         self.summary.setText(
-            f"Refresh complete · {existing:,} already present · {len(creating):,} new cards"
+            f"{self.summary_label} · {existing:,} already present · {len(creating):,} new cards"
         )
         details = [f"{item.unit.identity.key}: {item.reason}" for item in blocked]
         self.status.setText(
