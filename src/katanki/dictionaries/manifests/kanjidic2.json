@@ -19,8 +19,8 @@
   "default": true,
   "bundled": {
     "path": "bundled/kanjidic2.xml",
-    "sha256": "95be75f98e6f6912c1621e6773233b3f84064c3751b37b2b71230532e43f7c5d",
-    "version": "2026-10-22",
+    "sha256": "abfb5260d60bfde0401350f13930cd11b57d686c04b70549ea77f53a6aca7be5",
+    "version": "2026-10-23",
     "entries": 13108,
     "license_files": [
       "bundled/NOTICE.txt",

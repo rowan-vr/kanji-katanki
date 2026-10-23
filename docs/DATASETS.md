@@ -6,7 +6,7 @@ Select decks, a note type, and fields in **Analyze Collection**, then scan offli
 
 | Dataset | Bundled snapshot | Contents | Data license |
 | --- | --- | --- | --- |
-| KANJIDIC2 | 2026-10-22 | 13,108 entries; Japanese on/kun readings, English meanings, grade, primary stroke count | CC BY-SA 4.0 + EDRDG terms |
+| KANJIDIC2 | 2026-10-23 | 13,108 entries; Japanese on/kun readings, English meanings, grade, primary stroke count | CC BY-SA 4.0 + EDRDG terms |
 | KanjiVG | r20260714 | 6,703 canonical non-variant SVG files | CC BY-SA 3.0 |
 
 JMdict is deferred until vocabulary-aware features need it. An unofficial JLPT
@@ -115,20 +115,20 @@ Choose a new tag every time; never replace a published asset. To change KanjiVG,
 edit the pinned URL and `kanjivg_release` in `bundled/SOURCES.json` first. The raw
 source lock is preparation provenance, not the normal build's download target.
 
-Publish packs before promoting their catalog. For example, for the initial packs
-prepared in this workspace, upload these exact files without regenerating them:
+Publish packs before promoting their catalog. The initial packs are already
+published under `datasets-2026-10-23`; the equivalent publishing command is:
 
 ```sh
-gh release create datasets-2026-10-22 \
+gh release create datasets-2026-10-23 \
   dist/datasets/kanjidic2.zip dist/datasets/kanjivg.zip dist/datasets/catalog.json \
   --repo rowan-vr/kanji-katanki --prerelease \
-  --title 'Dictionary packs 2026-10-22' \
+  --title 'Dictionary packs 2026-10-23' \
   --notes 'Offline defaults and independent dictionary updates; license notices included.'
 ```
 
-The initial catalog references that tag. Until those assets are uploaded, a cold
-build cannot fetch them. Already prepared defaults and the local verified pack
-cache work offline. The initial publication is a required bootstrap step.
+The initial catalog references the published `datasets-2026-10-23` prerelease.
+Its packs match the checked-in manifests and source provenance. Cold builds fetch
+those assets; prepared defaults and the verified pack cache also work offline.
 
 After checking published assets, review and promote `datasets/catalog.json` to
 advertise updates. For a new bundled baseline, also copy that catalog to
@@ -211,7 +211,8 @@ run asynchronously, active license notices change with the pack, returning to
 bundled data works, offline checks preserve defaults, and Cancel does not save
 automatic-check preferences. Existing generation and collection-preservation
 checks pass too. Initial release packs are prepared locally and hash-checked
-against both catalogs; uploading them to GitHub remains the rollout prerequisite.
+against both catalogs. The published October 23 prerelease has been downloaded
+and verified against the refreshed manifests and source provenance.
 
 ## Verification recorded on 2026-10-22
 

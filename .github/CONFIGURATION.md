@@ -20,7 +20,7 @@ excluded from the add-on release job.
 
 The separate `Dataset packs` workflow prepares monthly candidate artifacts. Manual
 runs can publish validated assets; catalog promotion is reviewed separately.
-Upload the initial `datasets-2026-10-22` assets before relying on cold CI builds.
+The initial `datasets-2026-10-23` prerelease is published and supplies cold CI builds.
 See [dataset maintenance](../docs/DATASETS.md#maintainer-preparation-and-regular-updates).
 
 These checks do not launch Anki or establish host compatibility on those operating

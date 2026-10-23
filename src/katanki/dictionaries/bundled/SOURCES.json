@@ -5,8 +5,8 @@
     "kanjidic2.xml.gz": {
       "kind": "data",
       "url": "https://www.edrdg.org/kanjidic/kanjidic2.xml.gz",
-      "sha256": "de62d4185ad8ac2921b37733f1effcb937b04aade11780920f14cf9fed79c08d",
-      "bytes": 1488573
+      "sha256": "eb725c13e2d01852b19ea041ee86acf9e10042535ee2238eecc0e04fd46b4f71",
+      "bytes": 1488574
     },
     "kanjivg-source.zip": {
       "kind": "data",
