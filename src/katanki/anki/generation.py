@@ -25,6 +25,7 @@ def preview_generation(
     fallback_deck_id=None,
     allow_missing_decks=False,
     ignored=(),
+    progress=None,
     **choices,
 ):
     existing = {}
@@ -39,12 +40,14 @@ def preview_generation(
     for note_type in sorted(relevant):
         existing.update(owned_identities(collection, note_type=note_type))
     if generation_settings is not None:
-        choices["word_suggestions"] = selected_words(generation_settings.dictionaries)
+        choices["word_suggestions"] = selected_words(
+            generation_settings.dictionaries, progress=progress
+        )
         choices["card_settings"] = {
             category: generation_settings.card_settings(category)
             for category in ("recognition", "production", "parts")
         }
-    preview = build_preview(report, tuple(existing), **choices)
+    preview = build_preview(report, tuple(existing), progress=progress, **choices)
     warnings = list(preview.warnings)
     for identity, note_ids in existing.items():
         if len(note_ids) > 1:
@@ -52,6 +55,8 @@ def preview_generation(
                 f"{identity.key} ({identity.note_type}): duplicate owned notes {note_ids}."
             )
     preview = exclude_ignored(preview, ignored)
+    if progress:
+        progress("Checking production clues against existing cards…")
     _validate_prompts(collection, preview)
     preview = replace(preview, warnings=tuple(warnings))
     if generation_settings is not None:
@@ -71,6 +76,8 @@ def preview_generation(
                 and collection.decks.get(options.deck_id, default=False) is None
             ):
                 raise ValueError("A target deck is missing. Review Generation settings.")
+    if progress:
+        progress("Card review ready.")
     return preview
 
 

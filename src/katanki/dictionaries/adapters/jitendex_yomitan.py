@@ -3,8 +3,9 @@
 import json
 import math
 import re
-from functools import lru_cache
+from collections import OrderedDict
 from pathlib import Path
+from threading import Lock
 from zipfile import BadZipFile, ZipFile
 
 from ...generation.discovery import extract_candidates
@@ -24,9 +25,11 @@ def nodes(value):
 
 def eligible(row):
     word, reading, tags, _, score, definitions, _, _ = row
-    if not extract_candidates(word) or score < 100 or "★" not in tags:
+    if score < 100 or "★" not in tags:
         return False
     if any(tag in tags for tag in ("rarely", "obsolete", "old", "irregular")):
+        return False
+    if not extract_candidates(word):
         return False
     return not any(
         node.get("data", {}).get("code") in {"uk", "arch", "obs", "rare"}
@@ -66,16 +69,19 @@ def _index(archive):
     return index
 
 
-def convert(source):
+def convert(source, *, progress=None):
     """Retain valid spelling/reading pairs; never cross-join alternative forms."""
     try:
         with _open(source) as archive:
             index = _index(archive)
             words, count, banks = set(), 0, 0
-            for name in sorted(archive.namelist()):
-                if not re.fullmatch(r"term_bank_[0-9]+\.json", name):
-                    continue
+            names = sorted(
+                name for name in archive.namelist() if re.fullmatch(r"term_bank_[0-9]+\.json", name)
+            )
+            for name in names:
                 banks += 1
+                if progress:
+                    progress(f"Loading Jitendex examples: bank {banks:,} of {len(names):,}…")
                 info = archive.getinfo(name)
                 if info.file_size > MAX_BANK:
                     raise ValueError("Jitendex term bank is too large.")
@@ -104,17 +110,50 @@ def convert(source):
         raise ValueError("Invalid Jitendex Yomitan dictionary.") from error
 
 
-@lru_cache(maxsize=4)
-def _suggestions(path, size, modified):
+_suggestion_cache = OrderedDict()
+_suggestion_cache_lock = Lock()
+
+
+def _suggestions(path, size, modified, progress=None):
+    from .. import suggestion_cache
     from ..words import WordSuggestions
 
+    key = (path, size, modified)
+    with _suggestion_cache_lock:
+        cached = _suggestion_cache.get(key)
+        if cached is not None:
+            _suggestion_cache.move_to_end(key)
+            return cached
     source = Path(path)
-    payload, _ = convert(source)
-    return WordSuggestions(json.loads(payload)["words"])
+    cache_path = suggestion_cache.location(source)
+    digest = None
+    result = None
+    if cache_path is not None:
+        if progress:
+            progress("Checking saved Jitendex index…")
+        digest = suggestion_cache.fingerprint(source)
+        result = suggestion_cache.load(cache_path, digest)
+        if result is not None and progress:
+            progress("Loaded saved Jitendex index.")
+    if result is None:
+        payload, _ = convert(source, progress=progress)
+        if progress:
+            progress("Indexing Jitendex example words…")
+        result = WordSuggestions(json.loads(payload)["words"])
+        if cache_path is not None:
+            if progress:
+                progress("Saving Jitendex index for next time…")
+            suggestion_cache.save(cache_path, digest, result)
+    with _suggestion_cache_lock:
+        _suggestion_cache[key] = result
+        while len(_suggestion_cache) > 4:
+            _suggestion_cache.popitem(last=False)
+    return result
 
 
 class JitendexYomitan:
-    def __init__(self, source):
+    def __init__(self, source, *, progress=None):
+        self.progress = progress
         self.source = Path(source)
         try:
             with _open(self.source) as archive:
@@ -128,9 +167,9 @@ class JitendexYomitan:
 
     def lookup(self, character):
         stat = self.source.stat()
-        return _suggestions(str(self.source.resolve()), stat.st_size, stat.st_mtime_ns).lookup(
-            character
-        )
+        return _suggestions(
+            str(self.source.resolve()), stat.st_size, stat.st_mtime_ns, self.progress
+        ).lookup(character)
 
     def lookup_words(self, character):
         return self.lookup(character)

@@ -55,6 +55,7 @@ class CreationReviewDialog(QDialog):
         self.tabs = QTabWidget()
         split.addWidget(self.tabs)
         self.tiles, self.decks = {}, {}
+        self.category_tabs = {}
         contents = {content.identity: content for content in preview.contents}
         self.contents = contents
         self.options = {item.identity: item for item in preview.creations}
@@ -108,7 +109,7 @@ class CreationReviewDialog(QDialog):
                 self.items[identity] = tile
             self.tiles[category] = tiles
             column.addWidget(tiles)
-            self.tabs.addTab(page, category.title())
+            self.category_tabs[category] = self.tabs.addTab(page, category.title())
         side = QWidget()
         side_layout = QVBoxLayout(side)
         self.card_details = QLabel("Select a card to see its front and back.")
@@ -194,14 +195,33 @@ class CreationReviewDialog(QDialog):
         )
         details = [f"{item.unit.identity.key}: {item.reason}" for item in blocked]
         self.status.setText(
-            f"{len(self.ignored):,} saved ignores · {len(blocked):,} unavailable. "
+            f"{len(self.ignored):,} saved ignores · {len(blocked):,} missing. "
             "Ignore choices are saved immediately, including when you cancel."
         )
         self.status.setToolTip("\n".join((*details, *self.preview.warnings)))
-        targets_ready = all(
-            self.decks[category_for(item.unit.identity)].currentData() is not None
-            for item in creating
+        missing_targets = sorted(
+            {
+                category_for(item.unit.identity)
+                for item in creating
+                if self.decks[category_for(item.unit.identity)].currentData() is None
+            }
         )
+        for category, index in self.category_tabs.items():
+            needs_deck = category in missing_targets
+            self.decks[category].setStyleSheet(
+                "QComboBox { color: #e05252; border: 1px solid #e05252; }" if needs_deck else ""
+            )
+            self.tabs.tabBar().setTabTextColor(index, QColor("#e05252") if needs_deck else QColor())
+            self.tabs.setTabText(
+                index, f"{category.title()} — Choose deck" if needs_deck else category.title()
+            )
+            self.tabs.setTabToolTip(
+                index, "Choose a target deck to create these cards." if needs_deck else ""
+            )
+        targets_ready = not missing_targets
+        if missing_targets:
+            categories = ", ".join(category.title() for category in missing_targets)
+            self.status.setText(f"Choose a target deck in {categories} to enable card creation.")
         self.create_button.setText(f"Create {len(creating):,} cards")
         self.create_button.setEnabled(bool(creating) and targets_ready and not self.busy)
         self.create_button.setToolTip(

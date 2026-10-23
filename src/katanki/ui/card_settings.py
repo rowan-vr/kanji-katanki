@@ -55,7 +55,7 @@ class CardSettingsPanel(QWidget):
                 "Your vocabulary words + default examples", "discovered_and_default"
             )
             self.source.setToolTip(
-                "Default examples from Jitendex are planned for a later release."
+                "Default example words come from the selected Jitendex dictionary."
             )
         self.source.setCurrentIndex(self.source.findData(settings.example_source))
         form.addRow("Kanji sources" if parts else "Word sources", self.source)
@@ -83,9 +83,8 @@ class CardSettingsPanel(QWidget):
         sources_hint.setWordWrap(True)
         layout.addWidget(sources_hint)
         hint = QLabel(
-            "These preferences are saved per category. Applying them to generated cards "
-            "and automatically refreshing examples is planned for the card refresh work."
-            + ("" if parts else " Default examples from Jitendex are planned for a later release.")
+            "These preferences are saved per category. "
+            "Example visibility and limits also apply to production clues."
         )
         hint.setWordWrap(True)
         layout.addWidget(hint)

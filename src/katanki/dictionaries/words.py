@@ -21,12 +21,12 @@ class WordSuggestions:
         return tuple(dict.fromkeys(word for word, _ in self.by_character.get(character, ())))
 
 
-def selected_words(choices=()):
+def selected_words(choices=(), *, progress=None):
     from .adapters.jitendex_yomitan import JitendexYomitan
     from .preferences import dictionary_sources
 
     path = dictionary_sources(choices).get("jitendex")
-    return JitendexYomitan(path) if path else WordSuggestions(())
+    return JitendexYomitan(path, progress=progress) if path else WordSuggestions(())
 
 
 def bundled_words():
