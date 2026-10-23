@@ -10,17 +10,19 @@ logger = logging.getLogger(f"addon.{__name__}")
 MENU_NAME = "katanki_menu"
 
 
-def analyze_collection() -> None:
+def refresh_and_generate() -> None:
     try:
         if mw is None or mw.col is None:
             showWarning("Open an Anki profile before using Kanji Katanki.")
             return
-        from ..ui.discovery import open_discovery
+        from ..ui.refresh import open_refresh
 
-        open_discovery(mw)
+        open_refresh(mw)
     except Exception:
-        logger.exception("Kanji Katanki Analyze Collection failed")
-        showWarning("Kanji Katanki could not open the dialog. See Anki's console for details.")
+        logger.exception("Kanji Katanki refresh failed")
+        showWarning(
+            "Kanji Katanki could not refresh. Review Settings or see Anki's console for details."
+        )
 
 
 def settings() -> None:
@@ -41,8 +43,8 @@ def register() -> None:
         return
     menu = QMenu("Katanki", mw.menuBar())
     menu.setObjectName(MENU_NAME)
-    action = QAction("Analyze Collection", menu)
-    action.triggered.connect(analyze_collection)
+    action = QAction("Refresh and generate Kanji Cards", menu)
+    action.triggered.connect(refresh_and_generate)
     menu.addAction(action)
     menu.addSeparator()
     settings_action = QAction("Settings…", menu)

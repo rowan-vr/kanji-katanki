@@ -9,16 +9,31 @@ from dataclasses import dataclass, replace
 from ..generation.cards import CSS, normalize_prompt, note_type_spec
 from ..generation.destinations import creation_options
 from ..generation.discovery import visible_text
-from ..generation.planner import NOTE_TYPES
 from ..generation.preview import GenerationPreview, build_preview
+from ..generation.review import exclude_ignored
 from .identities import MODEL_MARKER, owned_identities
 
 
 def preview_generation(
-    collection, report, *, generation_settings=None, fallback_deck_id=None, **choices
+    collection,
+    report,
+    *,
+    generation_settings=None,
+    fallback_deck_id=None,
+    allow_missing_decks=False,
+    ignored=(),
+    **choices,
 ):
     existing = {}
-    for note_type in NOTE_TYPES:
+    relevant = set()
+    for category in ("recognition", "production"):
+        if choices.get(category):
+            relevant.add(f"kanji-{category}")
+    if choices.get("include_primitives") or choices.get("primitive_recognition"):
+        relevant.add("primitive-recognition")
+    if choices.get("primitive_production"):
+        relevant.add("primitive-production")
+    for note_type in sorted(relevant):
         existing.update(owned_identities(collection, note_type=note_type))
     preview = build_preview(report, tuple(existing), **choices)
     warnings = list(preview.warnings)
@@ -27,15 +42,25 @@ def preview_generation(
             warnings.append(
                 f"{identity.key} ({identity.note_type}): duplicate owned notes {note_ids}."
             )
+    preview = exclude_ignored(preview, ignored)
     _validate_prompts(collection, preview)
     preview = replace(preview, warnings=tuple(warnings))
     if generation_settings is not None:
         preview = replace(
             preview,
-            creations=creation_options(preview, report, generation_settings, fallback_deck_id),
+            creations=creation_options(
+                preview,
+                report,
+                generation_settings,
+                fallback_deck_id,
+                allow_missing_decks=allow_missing_decks,
+            ),
         )
         for options in preview.creations:
-            if collection.decks.get(options.deck_id, default=False) is None:
+            if (
+                options.deck_id is not None
+                and collection.decks.get(options.deck_id, default=False) is None
+            ):
                 raise ValueError("A target deck is missing. Review Generation settings.")
     return preview
 
@@ -43,7 +68,12 @@ def preview_generation(
 def _validate_prompts(collection, preview):
     """Compare generated clues with existing production notes as well as this plan."""
     prompts = {}
-    for note_type in ("kanji-production", "primitive-production"):
+    production_types = {
+        item.unit.identity.note_type
+        for item in preview.plan.items
+        if item.outcome == "create" and item.unit.identity.note_type.endswith("production")
+    }
+    for note_type in sorted(production_types):
         for identity, ids in owned_identities(collection, note_type=note_type).items():
             for note_id in ids:
                 note = collection.get_note(note_id)

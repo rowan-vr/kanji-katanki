@@ -32,12 +32,10 @@ def snapshot(collection):
     }
 
 
-def exercise_dialog(mw, action):
-    from aqt.qt import QTimer
+def exercise_discovery(mw):
 
     from katanki.anki.analysis import analyze
     from katanki.common.models import ScanSelection
-    from katanki.ui.discovery import DiscoveryDialog
 
     parent, child, model_id = seed_collection(mw.col)
     before = snapshot(mw.col)
@@ -64,68 +62,4 @@ def exercise_dialog(mw, action):
     assert {entry.character for entry in bundled.strokes} == set("景色")
     assert all("fixture" not in meaning for entry in bundled.entries for meaning in entry.meanings)
     assert snapshot(mw.col) == before
-    errors = []
-    completed = False
-    started = False
-    phase = "fixtures"
-    timer = QTimer(mw)
-    timer.setInterval(50)
-
-    def drive():
-        nonlocal started, completed, phase
-        dialog = next(
-            (
-                widget
-                for widget in mw.app.topLevelWidgets()
-                if isinstance(widget, DiscoveryDialog) and widget.isVisible()
-            ),
-            None,
-        )
-        if dialog is None:
-            return
-        try:
-            if not started:
-                started = True
-                from katanki.config import SourceRule
-
-                dialog.source_selector.restore((SourceRule("", model_id, ("Front",), (parent,)),))
-                for dataset_id, path in sources.items():
-                    dialog.sources[dataset_id].setText(str(path))
-                dialog._scan()
-            elif dialog.report is not None and not dialog.busy:
-                assert not dialog.preview.pixmap().isNull(), "SVG preview did not render"
-                assert "SHA-256" in dialog.provenance.toPlainText()
-                if phase == "fixtures":
-                    assert dialog.report == first
-                    assert "Scanned notes: 2" in dialog.summary.text()
-                    assert "fixture scenery" in dialog.detail.toPlainText()
-                    for entry in dialog.sources.values():
-                        entry.clear()
-                    phase = "bundled"
-                    dialog._scan()
-                else:
-                    assert dialog.report == bundled
-                    assert "fixture scenery" not in dialog.detail.toPlainText()
-                    completed = True
-                    timer.stop()
-                    dialog.reject()
-            elif not dialog.busy:
-                raise AssertionError(dialog.summary.text())
-        except Exception as error:
-            errors.append(error)
-            timer.stop()
-            dialog.reject()
-
-    timer.timeout.connect(drive)
-    timer.start()
-    action.trigger()
-    timer.stop()
-    if errors:
-        raise errors[0]
-    assert completed, "Discovery dialog check did not finish"
-    assert snapshot(mw.col) == before, "UI scan changed collection data"
-    from scripts.smoke_generation import exercise_generation_dialog, exercise_stroke_controls
-
-    exercise_generation_dialog(mw, first)
-    exercise_stroke_controls(mw)
     return True

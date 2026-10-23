@@ -213,7 +213,7 @@ using the user's saved configuration.
   selected fields and count each note once. Explicit deck choices retain IDs.
   Evidence: `config/__init__.py`, `ui/settings.py`, `tests/test_settings.py`, and
   `scripts/smoke_settings.py` (real collection close/reopen, 2026-10-23).
-  Settings and Analyze Collection are now under the top-level **Katanki** menu.
+  Refresh and Settings are under the top-level **Katanki** menu.
   The source editor uses compact labeled rows and a checkbox popup for fields;
   multi-field summaries keep longer note types from making the editor taller.
   **Test discovery** scans unsaved source rows in the background and shows note,
@@ -223,7 +223,7 @@ using the user's saved configuration.
   configuration and safe migrations.
   Recognition, Production, and Parts subtabs save category selection, target decks,
   default tags, and all/filtered source-tag copying. Enabled categories are selected
-  when opening Generate; preview approval still gates writes. Recognition and Production default on.
+  during refresh; the single creation review gates new cards. Recognition and Production default on.
   Part tags inherit source vocabulary tags through the component graph. Decks/tags
   are snapshotted in the preview and applied only to new notes. Missing settings use safe defaults;
   malformed/future versions fail without overwriting data. Version 1/2 settings
@@ -235,8 +235,23 @@ using the user's saved configuration.
   Attribution includes source/license links, bundled versions/counts/checksums, and
   packaged notice copies. Real-host smoke covers Save/reopen, checks without writes,
   and disabled sources respected by discovery.
-- [ ] Provide one refresh button that loads the configured sources and preferences,
+- [x] Provide one refresh button that loads the configured sources and preferences,
   scans vocabulary, plans generation, and applies the configured workflow.
+  **Katanki → Refresh and generate Kanji Cards** replaces Analyze Collection.
+  Saved sources/dictionaries are scanned in the background; enabled generation
+  categories and deck/tag preferences populate one creation review. Refresh itself
+  requires no approval; existing cards are skipped. Only eligible new cards are
+  shown as green tiles under Recognition/Production/Parts tabs. Disabled categories
+  are excluded. Left-click renders a front/back preview inline; right-click saves
+  a per-card-type ignore immediately, including on Cancel. Settings → Ignored cards
+  restores eligibility for future refreshes. Missing decks can be chosen in this
+  same review. Explicit approval gates creation; refresh never deletes notes.
+  The old `ui/discovery.py` and old generation/verification windows are deleted.
+  Evidence: `ui/refresh.py`, `tests/test_refresh.py`, `scripts/smoke_refresh.py`.
+  Real-host verification covers Cancel with exact data preservation, approval,
+  category decks/tags, duplicate clicks, tile state/preview, persistent ignore/restore,
+  and quiet no-op refreshes without a review window. Parts-only tabs and choosing
+  missing target decks in the same review are host-verified.
 - [ ] Add automatic refresh with configurable triggers and clear enabled/disabled
   controls, reusing the same saved configuration and generation safeguards.
 - [ ] Define how refresh updates vocabulary examples on existing cards while
@@ -247,7 +262,7 @@ using the user's saved configuration.
 - [ ] Verify saved settings survive restarts, repeated refreshes create no
   duplicates, and manual/automatic refresh preserve existing review progress.
 
-Verification, 2026-10-23: 119 unit tests pass; lint and formatting pass.
+Verification, 2026-10-23: 131 unit tests pass; lint and formatting pass.
 `scripts/smoke_settings.py` confirms persistence after closing/reopening a real
 Anki collection, mixed note types/fields, and overlapping wildcard deduplication. Category generation checks verify separate
 recognition/production/parts decks, default/filtered/inherited tags, missing-deck

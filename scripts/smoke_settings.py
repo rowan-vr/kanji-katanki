@@ -9,7 +9,6 @@ ROOT = Path(__file__).resolve().parents[1]
 
 def exercise_settings_dialog(mw, selection):
     from katanki.config import Settings, SourceRule, load_settings
-    from katanki.ui.discovery import DiscoveryDialog
     from katanki.ui.settings import SettingsDialog
 
     original = load_settings(mw.col)
@@ -52,9 +51,6 @@ def exercise_settings_dialog(mw, selection):
     for category, panel in reopened.generation_panels.items():
         assert panel.settings() == expected.generation_settings(category)
     reopened.reject()
-    discovery = DiscoveryDialog(mw)
-    assert discovery.source_selector.rules() == rules
-    discovery.reject()
     # Exercise adding/removing and editing rows, then restore the fixture scan defaults.
     row = reopened.sources.add_rule(
         SourceRule("Japanese::*", selection.note_type_id, selection.fields)
@@ -127,7 +123,6 @@ def exercise_dictionary_settings(mw, selection):
 
     from katanki.anki.analysis import analyze
     from katanki.config import DictionaryChoice, load_settings, save_settings
-    from katanki.ui.discovery import DiscoveryDialog
     from katanki.ui.settings import SettingsDialog
     from scripts.smoke_discovery import snapshot
 
@@ -165,10 +160,6 @@ def exercise_dictionary_settings(mw, selection):
     reopened = SettingsDialog(mw)
     assert reopened.dictionary_panel.choices() == expected
     reopened.reject()
-    discovery = DiscoveryDialog(mw)
-    assert discovery.sources["kanjidic2"].text() == str(ROOT / "tests/fixtures/kanjidic2.xml")
-    assert "kanjivg" in discovery.disabled_datasets
-    discovery.reject()
     report = analyze(mw.col, selection)
     assert report.dictionary_loaded and report.entries and not report.strokes
     save_settings(
