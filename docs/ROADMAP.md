@@ -265,7 +265,13 @@ using the user's saved configuration.
   persistence, and the packaged Qt-offscreen Anki smoke pass.
   This delivers the settings UI and persistence; applying display choices to card
   content and refreshing examples remain part of the unchecked work below.
-  Default-word and vocabulary-reading providers are still undecided.
+  Jitendex default-word packs and dictionary-backed readings are deferred to a
+  separate PR; export mapping and ranking still need investigation.
+- [ ] Implement the [card example design](CARD_EXAMPLES.md): managed
+  `VocabExamples` and protected `UserExamples`, all eligible examples stored,
+  per-category display limit (default 5; 0 = all), user examples first, stable
+  deduplication, production masking, and ambiguity checks on the visible clues.
+  Parts uses example kanji on the back. Implementation is pending.
 - [ ] Add automatic refresh with configurable triggers and clear enabled/disabled
   controls, reusing the same saved configuration and generation safeguards.
 - [ ] Define how refresh updates vocabulary examples on existing cards while

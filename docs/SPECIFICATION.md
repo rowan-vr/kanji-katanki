@@ -142,14 +142,26 @@ A manifest might have `id`, `category`, `format`, `source`, `capabilities`, `lic
 
 - Generate permanent **Kanji Katanki-owned** notes for recognized kanji and optional primitives from the selected vocabulary sources.
 - Use separate recognition and production note types for kanji and primitives, each with one card template and native independent Anki scheduling. Generate only the modes explicitly selected for each character/primitive; production is opt-in.
-- Recognition: character → meaning/reading. Kanji production: dictionary meanings plus matching words from selected source vocabulary, with every occurrence of the target kanji blanked (`時間` → `__間` for `時`). Include all distinct matching words; choose production with a checkbox, without entering a prompt. Missing meanings/examples or identical generated clues are reported as unavailable. **Vocabulary writing** is a separate optional template: reading + meaning/context → full written word; never rely on reading alone for homophones.
-- Kanji production card fronts show the asked kanji's meaning and example words
-  fetched from the selected vocabulary list, with every occurrence of that kanji
-  replaced by `_`. Include all matching vocabulary entries, including single-kanji
-  entries; do not substitute a dictionary-provided example list. For `時`, `時間`
-  appears as `_間`; for `間`, `時間` and `間` appear as `時_` and `_`.
-  `真ん中` supplies examples for `真` and `中`, not `間`. Recognition cards retain
-  the character → meaning/reading direction above.
+- Recognition: character → meaning/reading, with optional front examples. Kanji
+  production uses dictionary meanings and optional masked examples; blank every
+  occurrence of the target (`時間` → `__間` for `時`). Choose production with a
+  checkbox, without entering a manual prompt. Validate the final visible clues
+  after example visibility and limits are applied; report missing/ambiguous clues
+  as unavailable. **Vocabulary writing** remains a separate optional template:
+  reading + meaning/context → full written word, accounting for homophones.
+- Store every eligible selected-vocabulary example, including single-kanji words,
+  independently of how many examples are displayed. Vocabulary comes from the
+  sources configured under Discovery; default dictionary examples are an optional
+  additional source planned via Jitendex in a follow-up PR. `真ん中` supplies examples
+  for `真` and `中`, not `間`.
+- Phase 3 example fields and rendering follow the
+  [card example design](CARD_EXAMPLES.md): separate Katanki-managed `VocabExamples`
+  and user-owned `UserExamples`, user examples first, deduplication, stable ordering,
+  and a per-category display limit of 5 by default (0 means show all). Store all
+  eligible examples; the limit controls rendering only. Production masks the target
+  in both fields at rendering time. Parts uses example kanji containing the part,
+  on the back, rather than vocabulary words. Keep meanings and examples separate
+  from the production prompt representation.
 - Preserve source deck data; no source-to-generated lifecycle tracking.
 - Deduplicate by NFC-normalized character/component key within its Katanki note type, **not** by note ID or source vocabulary origin. Store the character or component key directly; no synthetic identity field or configuration scope. Make reruns idempotent.
 - Before writes, show a detailed plan (create/skip/unavailable) and require explicit approval. Phase 3 must define how saved approval choices support one-button and automatic refresh while retaining these safeguards; saving source settings alone does not authorize writes.
@@ -336,7 +348,12 @@ once, then run all configured steps with a refresh button.
   fallback and local/disabled sources. Additional providers/per-character assets
   remain later work.
 - Source and validation of unofficial JLPT levels; meaning of “coverage” when a dataset omits characters.
-- Kanji production fronts: **resolved** by user decision. Use kanji meanings plus all distinct matching words from selected vocabulary fields, blanking the target character; no manual prompts. Block identical generated clues and preserve copied examples after source deletion. Persistent source settings are next.
+- Kanji production fronts: **resolved**, extended 2026-10-23. Use kanji meanings
+  with configurable masked examples. Store all eligible vocabulary examples plus
+  user-added examples separately; show user examples first with a default limit
+  of 5 (0 = all). Validate the visible clues after filtering/limits. Explicitly
+  enabled example refresh preserves user content and review progress. See
+  [card example design](CARD_EXAMPLES.md). Jitendex default example-word support is deferred to a separate PR.
 - Primitive naming system and component-vs-radical distinctions.
 - Add-on folder/packaging approach for `src/` layout and embedded frontend resources.
 
