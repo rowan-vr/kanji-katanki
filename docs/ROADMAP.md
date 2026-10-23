@@ -398,21 +398,34 @@ workflow and respects the user's update choices.
 
 ## Phase 4 — Statistics and modern interface
 
-Deliverable: a dashboard driven by actual Anki progress. Covers FR-05 and the
-detail-view portion of FR-04.
+Deliverable: polished, portable review cards and a dashboard driven by actual
+Anki progress. Covers FR-03, FR-05 and the detail-view portion of FR-04.
 
-- [ ] Complete the [card example design](CARD_EXAMPLES.md) alongside the interface
-  improvements: furigana alignment, seen/new vocabulary filtering, live production
+- [ ] **Polish card layouts.** Improve recognition, production, and Parts review
+  layouts for desktop and mobile, including readable typography, spacing,
+  responsive examples, and usable stroke controls. Cards must remain fully
+  studyable offline without the add-on, including after export/import and on
+  AnkiMobile and AnkiDroid. Package required templates, styles, scripts, and media
+  with the notes/deck; review must not depend on an add-on bridge, local server,
+  installed dictionaries, or source vocabulary decks. The add-on is for easy
+  creation and refresh, not a requirement for studying existing cards.
+  Include the remaining [card example design](CARD_EXAMPLES.md): furigana
+  alignment, seen/new vocabulary filtering, live production
   clues after editing `UserExamples`, and remaining display controls and preview
   parity. Preserve the delivered managed/protected fields, all-example storage,
   per-category limits (default 5; 0 = all), user-first stable deduplication,
   production masking and visible-clue ambiguity checks, Parts back examples, and
   protected existing-note refresh. Complete the remaining example acceptance
-  coverage as part of this work.
+  coverage as part of this work. Resolve source-dependent filtering at creation
+  or refresh and store the data needed for independent review on the notes.
+  Verify front/back rendering, examples, masking, furigana, and stroke controls
+  on desktop and mobile, plus an exported deck imported into a clean profile
+  without the add-on or source decks, offline.
 - [ ] Allow automatic card creation from selected statistics/classification lists
   (for example JLPT levels), reusing configured generation, duplicate checks,
   ignores, and creation review.
-- [ ] Normalize Anki review snapshots without adding a separate scheduler.
+- [ ] Read existing card states and review history from Anki for the dashboard.
+  Anki continues to control scheduling and due dates.
 - [ ] Aggregate unique kanji/primitive states: unseen, learning, young, mature,
   and relearning; include retention and progress history.
 - [ ] Separate recognition and writing evidence; distinguish missing production
@@ -427,8 +440,9 @@ detail-view portion of FR-04.
 - [ ] Test unique-identity counts, duplicate suppression, mixed progress, missing
   writing cards, and classification gaps.
 
-Acceptance: dashboard counts match Anki evidence and never imply writing mastery
-from recognition alone.
+Acceptance: polished cards work on desktop and mobile and remain studyable
+offline after export/import without the add-on or source decks. Dashboard counts
+match Anki evidence and never imply writing mastery from recognition alone.
 
 ## Phase 5 — Public beta
 

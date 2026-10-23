@@ -166,6 +166,13 @@ A manifest might have `id`, `category`, `format`, `source`, `capabilities`, `lic
   furigana, seen/new filtering, and live production rendering are scheduled for
   Phase 4 alongside the interface improvements.
 - Preserve source deck data; no source-to-generated lifecycle tracking.
+- Review cards must be self-contained and responsive on desktop Anki, AnkiMobile,
+  and AnkiDroid, including after deck export/import. Include required templates,
+  styles, scripts, and media so study works offline without the add-on, installed
+  dictionaries, a local server, or source vocabulary decks. The add-on provides
+  easy creation and refresh; existing cards do not require it for study.
+  Resolve source-dependent example filtering during creation or refresh and
+  retain the data needed for independent review on the notes.
 - Deduplicate by NFC-normalized character/component key within its Katanki note type, **not** by note ID or source vocabulary origin. Store the character or component key directly; no synthetic identity field or configuration scope. Make reruns idempotent.
 - Before writes, show a detailed plan (create/skip/unavailable) and require explicit approval. Phase 3 must define how saved approval choices support one-button and automatic refresh while retaining these safeguards; saving source settings alone does not authorize writes.
 - Preserve all existing Kanji Katanki note IDs, card IDs, scheduling and review history on rerun. Do not overwrite user edits without opt-in.
@@ -288,12 +295,18 @@ once, then run all configured steps with a refresh button.
 
 ### Phase 4 — Statistics and modern interface
 
-**Deliverable:** Kanji GOD-style dashboard with real Anki progress.
+**Deliverable:** Polished, portable review cards and a Kanji GOD-style dashboard
+with real Anki progress.
 
-- [ ] Complete the remaining [card example design](CARD_EXAMPLES.md), including
+- [ ] **Polish card layouts.** Improve recognition, production, and Parts layouts
+  for desktop and mobile, and complete the remaining
+  [card example design](CARD_EXAMPLES.md), including
   furigana, seen/new filtering, live production clues after user edits, display
-  controls, preview parity, and acceptance coverage.
-- [ ] Normalized progress snapshots from Anki adapter.
+  controls, preview parity, and acceptance coverage. Verify offline study on
+  desktop, AnkiMobile, and AnkiDroid, plus export/import into a clean profile
+  without the add-on or source decks, including required media and stroke controls.
+- [ ] Read existing card states and review history from Anki for the dashboard;
+  Anki continues to control scheduling and due dates.
 - [ ] Classification registry and sourced/versioned JLPT dataset.
 - [ ] Coverage graphs and recognition/writing mode toggle.
 - [ ] Searchable kanji explorer + detail pane.
