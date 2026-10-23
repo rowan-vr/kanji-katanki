@@ -15,6 +15,7 @@ def exercise_settings_dialog(mw, selection):
     cancelled = SettingsDialog(mw)
     cancelled.primitives.setChecked(not original.include_primitives)
     cancelled.card_panels["recognition"].refresh.setChecked(False)
+    cancelled.card_panels["recognition"].limit.setValue(0)
     cancelled.reject()
     assert load_settings(mw.col) == original, "Cancel saved settings"
 
@@ -46,6 +47,8 @@ def exercise_settings_dialog(mw, selection):
     assert [dialog.card_tabs.tabText(i) for i in range(3)] == ["Recognition", "Production", "Parts"]
     for index, panel in enumerate(dialog.card_panels.values()):
         assert panel.refresh.isChecked()
+        assert panel.limit.value() == 5
+        panel.limit.setValue((0, 3, 10)[index])
         panel.examples.setChecked(index != 0)
         panel.source.setCurrentIndex(index % 2)
         if panel.category == "parts":

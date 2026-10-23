@@ -261,7 +261,7 @@ using the user's saved configuration.
   it has no furigana or word review-status controls. Versions 1–4 migrate without modifying saved data
   or losing existing preferences. Evidence: `tests/test_card_settings.py`;
   `scripts/smoke_settings.py` covers tab order, independent Save/Cancel and reopening.
-  Verification, 2026-10-23: 182 unit tests, lint/formatting, real-collection
+  Verification, 2026-10-23: 189 unit tests, lint/formatting, real-collection
   persistence, and the packaged Qt-offscreen Anki smoke pass.
   This delivers the settings UI and persistence; applying display choices to card
   content and refreshing examples remain part of the unchecked work below.
@@ -271,7 +271,8 @@ using the user's saved configuration.
   `VocabExamples` and protected `UserExamples`, all eligible examples stored,
   per-category display limit (default 5; 0 = all), user examples first, stable
   deduplication, production masking, and ambiguity checks on the visible clues.
-  Parts uses example kanji on the back. Implementation is pending.
+  Parts uses example kanji on the back. The limit control is saved per category;
+  rendering, fields, and refresh integration are pending.
 - [ ] Add automatic refresh with configurable triggers and clear enabled/disabled
   controls, reusing the same saved configuration and generation safeguards.
 - [ ] Define how refresh updates vocabulary examples on existing cards while

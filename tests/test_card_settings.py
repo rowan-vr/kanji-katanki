@@ -20,7 +20,7 @@ def test_independent_card_preferences_survive_json_roundtrip():
         cards=(
             CardSettings(False, "discovered", False, False, False),
             CardSettings(True, "discovered_and_default", True, True, False),
-            CardSettings(show_name=False),
+            CardSettings(show_name=False, example_limit=0),
         )
     )
     restored = from_dict(json.loads(json.dumps(settings.to_dict())))
@@ -85,3 +85,23 @@ def test_existing_version_five_settings_default_to_showing_part_name():
     for profile in saved["cards"].values():
         profile.pop("show_name")
     assert from_dict(saved).card_settings("parts").show_name is True
+
+
+@pytest.mark.parametrize("limit", [-1, True, "5", 1.5, None, 2_147_483_648])
+def test_invalid_example_limits_fail_without_writes(limit):
+    collection = Mock()
+    collection.get_config.return_value = {
+        "version": 5,
+        "cards": {"recognition": {"example_limit": limit}},
+    }
+    with pytest.raises(ValueError):
+        load_settings(collection)
+    collection.set_config.assert_not_called()
+
+
+def test_example_limits_default_and_roundtrip_independently():
+    settings = from_dict({"version": 5, "cards": {"parts": {"example_limit": 0}}})
+    assert settings.card_settings("recognition").example_limit == 5
+    assert settings.card_settings("production").example_limit == 5
+    assert settings.card_settings("parts").example_limit == 0
+    assert from_dict(json.loads(json.dumps(settings.to_dict()))) == settings

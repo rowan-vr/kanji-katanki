@@ -1,7 +1,8 @@
 # Card examples
 
-Design for Phase 3. The settings UI is in place; example fields, display limits,
-rendering, and updates to existing cards still need implementation.
+Design for Phase 3. The settings UI, including per-category example limits, is in
+place. Example fields, rendering, and updates to existing cards still need
+implementation.
 
 ## Fields
 

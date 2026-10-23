@@ -58,6 +58,7 @@ class CardSettings:
     auto_refresh: bool = True
     include_new: bool = True
     show_name: bool = True
+    example_limit: int = 5
 
     def __post_init__(self):
         if any(
@@ -71,6 +72,8 @@ class CardSettings:
             )
         ):
             raise ValueError("Card switches must be enabled or disabled.")
+        if type(self.example_limit) is not int or not 0 <= self.example_limit <= 2_147_483_647:
+            raise ValueError("Example limit must be a nonnegative whole number (0 means all).")
         if self.example_source not in ("discovered", "discovered_and_default"):
             raise ValueError("Choose discovered words or discovered and default words.")
 
@@ -256,6 +259,7 @@ def from_dict(data) -> Settings:
                     entry.get("auto_refresh", True),
                     entry.get("include_new", True),
                     entry.get("show_name", True),
+                    entry.get("example_limit", 5),
                 )
             )
         cards = tuple(parsed)
