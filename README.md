@@ -189,7 +189,7 @@ targets must be replaced. Existing generated notes keep their tags and decks. Se
 versioned and stored in the current collection; they survive restarts. Subdecks are
 included at scan time. Refresh uses the saved source rules and generation preferences. Production can be enabled in settings, and creation requires approval. Missing/deleted source references are shown for review;
 unsupported settings versions are preserved and reported rather than reset.
-Version 1–4 settings migrate to version 5 without losing source rules or generation preferences.
+Version 1–5 settings migrate to version 6 without losing source rules or generation preferences.
 The **Cards** tab, between Generation and Dictionaries, has **Recognition**,
 **Production**, and **Parts** subtabs. Recognition and Production save whether to
 show front examples, use your vocabulary words alone or also default examples,
@@ -204,6 +204,22 @@ Each category also saves an example display limit: 5 by default, with 0 meaning
 show all. The limit includes user examples; all eligible examples remain stored.
 These are saved preferences for the upcoming card rendering and example refresh
 work; they do not yet change new or existing cards. Jitendex default-word support is planned for a separate PR.
+
+The **Refresh** tab saves **Update tags from source vocabulary** (off by default),
+**Update example words** (on by default), and **Update dictionary data** (off by
+default) for both manual and automatic refresh. Dictionary data refers to card
+content from the selected dictionaries; pack downloads stay under Dictionaries.
+These controls are independent of the automatic-refresh switch. Applying them to
+existing cards is pending the managed-field update workflow; they currently save
+preferences only. Example updates will also respect the category settings under Cards.
+
+The tab enables automatic refresh (off by default), with separate
+triggers for opening a profile and completing sync. Runs wait for the deck list,
+active dialogs, and other refreshes to finish; repeated triggers are combined.
+They use the same saved sources, dictionaries, generation choices, and creation
+review as manual refresh. New cards require approval, and existing cards remain
+untouched. Missing source settings are skipped automatically; use manual Refresh
+for setup guidance. Example refresh on existing cards remains future work.
 
 The **Dictionaries** tab manages KANJIDIC2 and KanjiVG independently. Choose the
 default (a compatible downloaded update or bundled offline data), a local override,

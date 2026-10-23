@@ -2,6 +2,7 @@
 
 from aqt.operations import QueryOp
 from aqt.qt import (
+    QCheckBox,
     QDialog,
     QDialogButtonBox,
     QHBoxLayout,
@@ -15,7 +16,7 @@ from aqt.qt import (
 from aqt.utils import showWarning
 
 from ..anki.collection import resolve_sources, selected_notes
-from ..config import GENERATION_CATEGORIES, Settings, load_settings, save_settings
+from ..config import GENERATION_CATEGORIES, RefreshSettings, Settings, load_settings, save_settings
 from ..dictionaries.preferences import dictionary_sources
 from ..generation.discovery import scan_notes
 from .card_settings import CardSettingsPanel
@@ -82,6 +83,51 @@ class SettingsDialog(QDialog):
         self.tabs.addTab(self.dictionary_panel, "Dictionaries")
         self.ignored_panel = IgnoredCardsPanel(mw)
         self.tabs.addTab(self.ignored_panel, "Ignored cards")
+        refresh_panel = QWidget()
+        refresh_layout = QVBoxLayout(refresh_panel)
+        refresh_layout.addWidget(QLabel("Card updates — manual and automatic refresh"))
+        self.refresh_tags = QCheckBox("Update tags from source vocabulary")
+        self.refresh_examples = QCheckBox("Update example words")
+        self.refresh_dictionary = QCheckBox("Update dictionary data")
+        self.refresh_dictionary.setToolTip(
+            "Refresh dictionary-derived content on existing cards using the selected "
+            "dictionaries. Dictionary pack downloads are managed under Dictionaries."
+        )
+        self.refresh_dictionary.setChecked(settings.refresh.update_dictionary_data)
+        self.refresh_tags.setChecked(settings.refresh.update_source_tags)
+        self.refresh_examples.setChecked(settings.refresh.update_examples)
+        refresh_layout.addWidget(self.refresh_tags)
+        refresh_layout.addWidget(self.refresh_examples)
+        refresh_layout.addWidget(self.refresh_dictionary)
+        update_hint = QLabel(
+            "These preferences are saved for the upcoming existing-card update workflow. "
+            "Refresh currently skips existing cards. Example updates will also respect "
+            "each category's automatic-example-refresh setting under Cards."
+        )
+        update_hint.setWordWrap(True)
+        refresh_layout.addWidget(update_hint)
+        refresh_layout.addWidget(QLabel("Automatic refresh triggers"))
+        self.refresh_enabled = QCheckBox("Enable automatic refresh")
+        self.refresh_open = QCheckBox("When a profile opens")
+        self.refresh_sync = QCheckBox("After sync completes")
+        self.refresh_enabled.setChecked(settings.refresh.enabled)
+        self.refresh_open.setChecked(settings.refresh.on_profile_open)
+        self.refresh_sync.setChecked(settings.refresh.after_sync)
+        for control in (self.refresh_enabled, self.refresh_open, self.refresh_sync):
+            refresh_layout.addWidget(control)
+        self.refresh_enabled.toggled.connect(self.refresh_open.setEnabled)
+        self.refresh_enabled.toggled.connect(self.refresh_sync.setEnabled)
+        self.refresh_open.setEnabled(settings.refresh.enabled)
+        self.refresh_sync.setEnabled(settings.refresh.enabled)
+        explanation = QLabel(
+            "Automatic refresh waits for the deck list and uses your saved sources and "
+            "generation choices. New cards still require approval in the creation review. "
+            "New-card creation and existing-card updates use separate settings."
+        )
+        explanation.setWordWrap(True)
+        refresh_layout.addWidget(explanation)
+        refresh_layout.addStretch()
+        self.tabs.addTab(refresh_panel, "Refresh")
         self.buttons = QDialogButtonBox(
             QDialogButtonBox.StandardButton.Save | QDialogButtonBox.StandardButton.Cancel
         )
@@ -146,6 +192,14 @@ class SettingsDialog(QDialog):
                 ),
                 self.dictionary_panel.choices(),
                 tuple(self.card_panels[category].settings() for category in GENERATION_CATEGORIES),
+                RefreshSettings(
+                    self.refresh_enabled.isChecked(),
+                    self.refresh_open.isChecked(),
+                    self.refresh_sync.isChecked(),
+                    self.refresh_tags.isChecked(),
+                    self.refresh_examples.isChecked(),
+                    self.refresh_dictionary.isChecked(),
+                ),
             )
             dictionary_sources(settings.dictionaries)
             self.sources.selection()

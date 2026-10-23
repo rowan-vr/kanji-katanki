@@ -80,3 +80,30 @@ def test_operation_start_failure_clears_running_flag(refresh):
     with pytest.raises(RuntimeError, match="Could not start"):
         module.open_refresh(mw)
     assert not mw._katanki_refresh_running
+
+
+def test_closed_profile_discards_background_result(refresh):
+    module, operations, utils, mw = refresh
+    module.load_settings.return_value = Settings(sources=(SourceRule("*", 10, ("Front",)),))
+    module.open_refresh(mw)
+    mw.col = None
+    operations.QueryOp.call_args.kwargs["success"](None)
+    module.CreationReviewDialog.assert_not_called()
+    utils.showWarning.assert_not_called()
+    assert not mw._katanki_refresh_running
+
+
+def test_automatic_result_waits_if_review_started_during_scan(refresh):
+    module, operations, _, mw = refresh
+    from katanki.config import RefreshSettings
+
+    module.load_settings.return_value = Settings(
+        sources=(SourceRule("*", 10, ("Front",)),), refresh=RefreshSettings(True)
+    )
+    mw.state = "review"
+    mw._katanki_automatic_refresh = Mock()
+    module.open_refresh(mw, automatic=True)
+    operations.QueryOp.call_args.kwargs["success"](None)
+    module.CreationReviewDialog.assert_not_called()
+    mw._katanki_automatic_refresh.request.assert_called_once_with("on_profile_open")
+    assert not mw._katanki_refresh_running

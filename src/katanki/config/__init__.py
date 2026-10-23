@@ -5,7 +5,7 @@ from dataclasses import asdict, dataclass
 from ..common.models import ScanSelection
 
 CONFIG_KEY = "katanki_settings"
-VERSION = 5
+VERSION = 6
 
 
 @dataclass(frozen=True)
@@ -94,6 +94,30 @@ class DictionaryChoice:
 
 
 @dataclass(frozen=True)
+class RefreshSettings:
+    enabled: bool = False
+    on_profile_open: bool = True
+    after_sync: bool = True
+    update_source_tags: bool = False
+    update_examples: bool = True
+    update_dictionary_data: bool = False
+
+    def __post_init__(self):
+        if any(
+            type(value) is not bool
+            for value in (
+                self.enabled,
+                self.on_profile_open,
+                self.after_sync,
+                self.update_source_tags,
+                self.update_examples,
+                self.update_dictionary_data,
+            )
+        ):
+            raise ValueError("Refresh switches must be enabled or disabled.")
+
+
+@dataclass(frozen=True)
 class Settings:
     sources: tuple[SourceRule, ...] = ()
     destination_deck_id: int | None = None
@@ -101,8 +125,11 @@ class Settings:
     generation: tuple[GenerationSettings, ...] = ()
     dictionaries: tuple[DictionaryChoice, ...] = ()
     cards: tuple[CardSettings, ...] = ()
+    refresh: RefreshSettings = RefreshSettings()
 
     def __post_init__(self):
+        if not isinstance(self.refresh, RefreshSettings):
+            raise ValueError("Invalid refresh settings.")
         if not self.generation:
             object.__setattr__(
                 self,
@@ -143,6 +170,7 @@ class Settings:
             sources.append(entry)
         return {
             "version": VERSION,
+            "refresh": asdict(self.refresh),
             "dictionaries": [asdict(choice) for choice in self.dictionaries],
             "cards": {
                 category: asdict(self.card_settings(category)) for category in GENERATION_CATEGORIES
@@ -168,7 +196,7 @@ def from_dict(data) -> Settings:
         return Settings()
     if not isinstance(data, dict) or type(data.get("version")) is not int:
         raise ValueError("Invalid Katanki settings format. Saved settings were preserved.")
-    if data["version"] not in (1, 2, 3, 4, VERSION):
+    if data["version"] not in (1, 2, 3, 4, 5, VERSION):
         raise ValueError("Unsupported Katanki settings version. Saved settings were preserved.")
     if data["version"] == 1:
         legacy = data.get("source")
@@ -263,7 +291,25 @@ def from_dict(data) -> Settings:
                 )
             )
         cards = tuple(parsed)
-    return Settings(tuple(rules), destination, primitives, generation, tuple(dictionaries), cards)
+    refresh = data.get("refresh", {}) if data["version"] >= 6 else {}
+    if not isinstance(refresh, dict):
+        raise ValueError("Invalid refresh settings.")
+    return Settings(
+        tuple(rules),
+        destination,
+        primitives,
+        generation,
+        tuple(dictionaries),
+        cards,
+        RefreshSettings(
+            refresh.get("enabled", False),
+            refresh.get("on_profile_open", True),
+            refresh.get("after_sync", True),
+            refresh.get("update_source_tags", False),
+            refresh.get("update_examples", True),
+            refresh.get("update_dictionary_data", False),
+        ),
+    )
 
 
 def load_settings(collection) -> Settings:

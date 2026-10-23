@@ -3,7 +3,7 @@
 Progress tracker based on [the implementation specification](SPECIFICATION.md).
 The specification defines requirements; this file tracks delivery and verification.
 
-Last reviewed: **2026-10-23**. Current milestone: **Phase 3 — settings foundation**.
+Last reviewed: **2026-10-23**. Current milestone: **Phase 3 — automatic refresh**.
 Phase 1 ownership-count integration is delivered. Production uses kanji meanings
 and blanked examples copied from selected source vocabulary. Minimum
 supported versions remain an open decision; the verified local baseline is Linux
@@ -273,11 +273,34 @@ using the user's saved configuration.
   deduplication, production masking, and ambiguity checks on the visible clues.
   Parts uses example kanji on the back. The limit control is saved per category;
   rendering, fields, and refresh integration are pending.
-- [ ] Add automatic refresh with configurable triggers and clear enabled/disabled
+- [x] Add automatic refresh with configurable triggers and clear enabled/disabled
   controls, reusing the same saved configuration and generation safeguards.
+  Settings → Refresh has a master switch (default off), profile-open and sync-finish
+  triggers. Version 6 migrates versions 1–5 with automation disabled. Triggers
+  coalesce and wait for the deck list, modal dialogs, progress operations, and
+  active refreshes; profile closure discards pending work. Automatic scans use
+  the existing creation review and never update existing notes. Results arriving
+  during review are deferred; disabling automation cancels a pending run.
+  Evidence: `anki/automatic_refresh.py`, `tests/test_automatic_refresh.py`,
+  `tests/test_refresh.py`, and Save/Cancel/reopen checks in `scripts/smoke_settings.py`.
+  Verification, 2026-10-23: 213 unit tests and lint/formatting pass; real-Anki
+  collection persistence (including nondefault refresh choices) and idempotent
+  category generation pass. The packaged Qt-offscreen smoke was attempted but
+  timed out in `QApplication.__init__`, before add-on loading; the new Refresh
+  UI Save/Cancel/reopen assertions are added but host execution remains pending.
+  Human visual review and Windows/macOS remain pending.
 - [ ] Define how refresh updates vocabulary examples on existing cards while
   preserving user edits, note/card identities, scheduling, and review history;
   require explicit opt-in for updates as established in Phase 2.
+  Refresh settings now save **Update tags from source vocabulary** (default off)
+  **Update example words** (default on), and **Update dictionary data** (default off),
+  independently of automatic triggers. Dictionary updates here mean existing-card
+  content from selected dictionaries, rather than downloading dictionary packs.
+  Existing version 6 settings receive these defaults without changing other choices.
+  These are preferences only; applying updates, protecting user edits, and category
+  example-refresh gating remain pending. Save/Cancel/reopen assertions cover all three
+  controls in `scripts/smoke_settings.py`; collection-reopen verification persists
+  nondefault choices.
 - [ ] Show progress, results, and actionable errors; make empty or invalid source
   settings easy to correct.
 - [ ] Verify saved settings survive restarts, repeated refreshes create no

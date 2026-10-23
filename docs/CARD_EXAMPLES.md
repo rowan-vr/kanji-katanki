@@ -39,9 +39,15 @@ Previews and actual cards must render the same content.
 
 ## Refreshing existing cards
 
-The automatic-example-refresh setting controls updates to managed examples for
-each category. It defaults to on. When refresh runs automatically is configured
-separately.
+Settings → Refresh saves a global **Update example words** switch (default on)
+for manual and automatic refresh. Each category's automatic-example-refresh
+setting also controls its managed examples and defaults to on; both must be
+enabled for updates. When refresh runs automatically is configured separately.
+These preferences are saved; applying existing-card updates remains pending.
+
+Refresh also saves **Update tags from source vocabulary** (default off), separate
+from example updates. Tags must remain unchanged when this switch is off. Safe
+handling of source-derived versus manually added tags still needs implementation.
 
 Refresh never changes `UserExamples`. For managed fields, compare the current
 value with the last generated value before updating. Leave manual edits intact
@@ -49,7 +55,7 @@ and report conflicts. Existing notes have no recorded generated values, so they
 need a migration step before automatic updates can safely begin.
 
 Updates use Anki APIs and support Undo. Preserve note/card IDs, scheduling,
-review history, tags, and decks. Removing source vocabulary must never delete a
+review history, and decks. Preserve tags unless source-tag updates are enabled. Removing source vocabulary must never delete a
 generated note.
 
 For updates that would leave a production card without valid or distinct clues,
