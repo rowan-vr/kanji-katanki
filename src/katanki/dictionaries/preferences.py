@@ -1,6 +1,8 @@
 """Resolve saved dataset choices and check local sources without collection writes."""
 
+import json
 import re
+from hashlib import sha256
 from pathlib import Path
 
 from ..config import DictionaryChoice
@@ -29,6 +31,10 @@ def dictionary_sources(choices: tuple[DictionaryChoice, ...]) -> dict[str, Path]
             path = Path(choice.path.strip()).expanduser()
             if not path.exists():
                 raise ValueError(f"{manifest.name}: the selected local path does not exist.")
+            if manifest.format == "jitendex_yomitan" and (
+                not path.is_file() or path.suffix.lower() != ".zip"
+            ):
+                raise ValueError("Jitendex: choose a Yomitan ZIP file.")
             if manifest.format == "kanjidic2_xml" and not path.is_file():
                 raise ValueError(f"{manifest.name}: choose an XML or XML.gz file.")
             if manifest.format == "kanjivg_svg" and not (
@@ -63,6 +69,17 @@ def check_dictionary(choice: DictionaryChoice) -> str:
             if manager.lookup_strokes(character) is None:
                 raise ValueError("The sample stroke file could not be loaded.")
             sample = f"\nSample stroke {character} validated; other strokes load on demand."
+        words = manager.providers.get("words")
+        if words is not None:
+            from .adapters.jitendex_yomitan import convert
+
+            payload, index = convert(words.source)
+            sample = (
+                f"\n{index['term_count']:,} term rows validated; "
+                f"{len(json.loads(payload)['words']):,} eligible word forms.\n"
+                + words.attribution
+                + f"\nSHA-256 {sha256(words.source.read_bytes()).hexdigest()}"
+            )
         return (
             "Dataset loaded successfully." + sample + "\n\n" + "\n".join(manager.source_details())
         )

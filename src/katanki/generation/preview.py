@@ -144,7 +144,8 @@ def build_preview(
                 visual.components if visual else (),
                 visual.svg if visual else b"",
                 prompt,
-                report.attribution + ((ATTRIBUTION,) if defaults else ()),
+                report.attribution
+                + ((getattr(word_suggestions, "attribution", ATTRIBUTION),) if defaults else ()),
                 examples,
                 options.example_limit,
                 options.show_examples,

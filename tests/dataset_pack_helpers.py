@@ -14,8 +14,11 @@ FIXTURES = Path(__file__).parent / "fixtures"
 
 
 def next_version(version):
-    current = datetime.strptime(str(packs.revision(version)), "%Y%m%d").date()
+    date = version[:10].replace(".", "-") if "." in version else str(packs.revision(version))
+    current = datetime.strptime(date, "%Y-%m-%d" if "." in version else "%Y%m%d").date()
     newer = current + timedelta(days=1)
+    if "." in version:
+        return f"{newer:%Y.%m.%d}.0"
     return f"r{newer:%Y%m%d}" if version.startswith("r") else newer.isoformat()
 
 
@@ -29,18 +32,42 @@ def candidate(*, version=None, dataset_id="kanjidic2", extra=None):
             .replace(b"2026-10-22 (synthetic fixture)", version.encode())
         )
         name, entries = "kanjidic2.xml", 2
+    elif dataset_id == "jitendex":
+        stream = io.BytesIO()
+        with ZipFile(stream, "w") as archive:
+            archive.writestr(
+                "index.json",
+                json.dumps(
+                    {
+                        "format": 3,
+                        "revision": version,
+                        "title": "Synthetic Jitendex",
+                        "attribution": "Synthetic test dictionary",
+                    }
+                ),
+            )
+            archive.writestr(
+                "term_bank_1.json",
+                json.dumps(
+                    [
+                        ["景観", "けいかん", "★", "", 200, ["synthetic scenery"], 1, ""],
+                    ]
+                ),
+            )
+        payload, name, entries = stream.getvalue(), "jitendex.zip", 1
     else:
         stream = io.BytesIO()
         with ZipFile(stream, "w") as archive:
             archive.writestr("0666f.svg", (FIXTURES / "kanjivg/0666f.svg").read_bytes())
         payload, name, entries = stream.getvalue(), "kanjivg.zip", 1
-    files = {f"bundled/{name}": payload, "bundled/NOTICE.txt": b"fixture attribution"}
+    prefix = "bundled"
+    files = {f"{prefix}/{name}": payload, f"{prefix}/NOTICE.txt": b"fixture attribution"}
     bundle = dict(
-        path=f"bundled/{name}",
+        path=f"{prefix}/{name}",
         version=version,
         entries=entries,
         sha256=sha256(payload).hexdigest(),
-        license_files=["bundled/NOTICE.txt"],
+        license_files=[f"{prefix}/NOTICE.txt"],
     )
     if extra:
         files.update(extra)

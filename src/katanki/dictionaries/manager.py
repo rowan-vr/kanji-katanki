@@ -3,12 +3,17 @@
 from hashlib import sha256
 from pathlib import Path
 
+from .adapters.jitendex_yomitan import JitendexYomitan
 from .adapters.kanjidic2_xml import KanjidicXml
 from .adapters.kanjivg_svg import KanjiVgSvg
 from .registry import bundled_path, list_datasets, verify_bundle
 from .updates import default_source, installed
 
-ADAPTERS = {"kanjidic2_xml": KanjidicXml, "kanjivg_svg": KanjiVgSvg}
+ADAPTERS = {
+    "kanjidic2_xml": KanjidicXml,
+    "kanjivg_svg": KanjiVgSvg,
+    "jitendex_yomitan": JitendexYomitan,
+}
 
 
 class DictionaryManager:
@@ -57,10 +62,16 @@ class DictionaryManager:
                 if is_bundled
                 else getattr(provider, "version", "local SVG files")
             )
+            if manifest.format == "jitendex_yomitan":
+                self.attributions.append(provider.attribution)
+                self.provenance.append(
+                    f"Jitendex: {version}; {path}; SHA-256 {sha256(path.read_bytes()).hexdigest()}"
+                )
+                continue
             self.attributions.append(
                 f"{manifest.name} ({version}); {manifest.attribution}; "
                 f"{manifest.license_name}; {manifest.license_url}; source {manifest.source}; "
-                "adapted by Kanji Katanki (selected fields, sanitized stroke/component SVGs)."
+                "adapted by Kanji Katanki (selected fields and sanitized SVGs)."
             )
             fingerprint = ""
             if hasattr(provider, "source_bytes"):
@@ -82,6 +93,10 @@ class DictionaryManager:
     def lookup_kanji(self, character):
         provider = self.providers.get("kanji")
         return provider.lookup_kanji(character) if provider else None
+
+    def lookup_words(self, character):
+        provider = self.providers.get("words")
+        return provider.lookup_words(character) if provider else ()
 
     def lookup_strokes(self, character):
         provider = self.providers.get("strokes")

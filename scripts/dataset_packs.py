@@ -8,7 +8,7 @@ import sys
 from hashlib import sha256
 from pathlib import Path
 from tempfile import TemporaryDirectory
-from zipfile import ZIP_DEFLATED, ZipFile, ZipInfo
+from zipfile import ZIP_DEFLATED, ZIP_STORED, ZipFile, ZipInfo
 
 ROOT = Path(__file__).resolve().parents[1]
 sys.path.insert(0, str(ROOT / "src"))
@@ -34,7 +34,13 @@ def prepare(tag: str, output: Path, *, refresh: bool = False) -> dict:
     from scripts.build_addon import verify_bundled_assets
     from scripts.bundle_datasets import prepare_from_sources
 
-    prepare_from_sources(refresh=refresh, offline=not refresh)
+    if refresh:
+        prepare_from_sources(refresh=True)
+    else:
+        try:
+            verify_bundled_assets(ROOT / "src" / "katanki")
+        except (OSError, ValueError):
+            prepare_from_sources(offline=True)
     verify_bundled_assets(ROOT / "src" / "katanki")
     output.mkdir(parents=True, exist_ok=True)
     catalog = {"schema_version": 1, "datasets": {}}
@@ -61,7 +67,7 @@ def prepare(tag: str, output: Path, *, refresh: bool = False) -> dict:
                 info = ZipInfo(name, date_time=(1980, 1, 1, 0, 0, 0))
                 info.create_system = 3
                 info.external_attr = 0o644 << 16
-                info.compress_type = ZIP_DEFLATED
+                info.compress_type = ZIP_STORED if name == "bundled/jitendex.zip" else ZIP_DEFLATED
                 archive.writestr(info, payload)
         data = path.read_bytes()
         entry = {

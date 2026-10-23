@@ -66,3 +66,23 @@ add optional playback and stroke-number controls; the data is not relicensed MIT
 The datasets and adapted data/visuals are supplied without warranties. See their
 full license texts and EDRDG licence statement for the applicable disclaimers,
 conditions, and limitations. The MIT code license does not supersede them.
+
+
+## Jitendex
+
+Jitendex © Stephen Kraus, licensed under CC BY-SA 4.0. The full pinned Yomitan
+archive is copied byte-for-byte, preserving definitions, images, examples,
+structured furigana markup, and embedded Hanazono/GlyphWiki font licenses.
+JMdict material is © the Electronic Dictionary Research and Development Group
+and subject to its attribution and redistribution terms. Tatoeba example sentences
+are provided by Tatoeba contributors under CC BY 2.0 FR. Furigana positioning
+comes from JmdictFurigana contributors under CC BY-SA.
+
+Kanji Katanki derives an in-memory list of common contemporary word forms for
+suggestions; this selection remains CC BY-SA 4.0. The original export is intact.
+The full upstream attribution, EDRDG terms and CC license texts are included
+under `dictionaries/bundled/licenses/`.
+
+Sources: https://jitendex.org/pages/legal.html ;
+https://www.edrdg.org/edrdg/licence.html ;
+https://github.com/Doublevil/JmdictFurigana

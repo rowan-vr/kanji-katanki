@@ -17,7 +17,10 @@ RELEASE_PREFIX = "https://github.com/rowan-vr/kanji-katanki/releases/download/da
 
 
 def revision(version: str) -> int:
-    """Current datasets use dated versions: YYYY-MM-DD or rYYYYMMDD."""
+    """Sort dated datasets and Jitendex YYYY.MM.DD.build revisions independently."""
+    yomitan = re.fullmatch(r"(\d{4})\.(\d{2})\.(\d{2})\.(\d{1,4})", version)
+    if yomitan:
+        return int("".join(yomitan.groups()[:3])) * 10000 + int(yomitan[4])
     digits = "".join(re.findall(r"\d", version))
     if len(digits) != 8:
         raise ValueError("Dictionary versions must contain an eight-digit date.")
@@ -109,8 +112,12 @@ def _unpack(data: bytes, dataset_id: str, release: dict, destination: Path) -> d
             or files.get(bundle["path"]) != bundle.get("sha256")
         ):
             raise ValueError("Incomplete dictionary payload or license metadata.")
-        filename = {"kanjidic2": "kanjidic2.xml", "kanjivg": "kanjivg.zip"}[dataset_id]
-        if bundle["path"] != f"bundled/{filename}":
+        filename = {
+            "kanjidic2": "bundled/kanjidic2.xml",
+            "kanjivg": "bundled/kanjivg.zip",
+            "jitendex": "bundled/jitendex.zip",
+        }[dataset_id]
+        if bundle["path"] != filename:
             raise ValueError("Unexpected dictionary payload filename.")
         for name, expected in files.items():
             path = PurePosixPath(name)
@@ -146,6 +153,12 @@ def validate_contents(dataset_id: str, root: Path, bundle: dict) -> None:
             or provider.lookup_kanji("景") is None
         ):
             raise ValueError("Dictionary pack has invalid KANJIDIC2 contents.")
+    elif dataset_id == "jitendex":
+        from .adapters.jitendex_yomitan import convert
+
+        _, index = convert(path)
+        if index["revision"] != bundle["version"] or index["term_count"] != bundle["entries"]:
+            raise ValueError("Dictionary pack has invalid Jitendex contents.")
     else:
         with KanjiVgSvg(path) as provider:
             names = provider.archive.namelist()

@@ -231,7 +231,7 @@ using the user's saved configuration.
   migrate to version 5 while preserving source IDs and deck/component preferences.
   Preview approval remains required; background triggers and update approvals belong
   to the remaining refresh work.
-  Dictionaries settings select bundled/local/disabled KANJIDIC2 and KanjiVG sources;
+  Dictionaries settings select bundled/local/disabled KANJIDIC2, KanjiVG and Jitendex sources;
   background checks expose detected provenance, errors, and a sample stroke check.
   Attribution includes source/license links, bundled versions/counts/checksums, and
   packaged notice copies. Real-host smoke covers Save/reopen, checks without writes,
@@ -268,7 +268,7 @@ using the user's saved configuration.
   Jitendex packs and initial creation suggestions are delivered below; furigana
   alignment and existing-note refresh remain pending.
 - [x] Bundle a pinned Jitendex-derived offline word pack and suggest examples during creation.
-  `scripts/bundle_words.py` verifies source/generated checksums and packages licenses;
+  `scripts/bundle_datasets.py` verifies source checksums and packages licenses;
   normal add-on builds retain the complete 38.8 MB export plus a lightweight index
   of 17,126 common word forms. The full add-on stays below 50 MB; filtering applies
   only to suggestions. Defaults are opt-in through
@@ -286,6 +286,21 @@ using the user's saved configuration.
   parts, decks/tags, ignores, duplicate checks, and creation review as discovery;
   no vocabulary sources are required. Evidence: `tests/test_manual.py`.
 
+- [x] Integrate Jitendex into the shared dictionary list and independent update sequence.
+  Bundled/installed/local Yomitan ZIP/disabled selection drives generation and
+  example Refresh. Settings exposes validation, versions, fingerprints, original
+  attribution, license notices and bundled fallback. Maintainer preparation and the
+  monthly/manual workflow produce three verified packs and a candidate catalog;
+  Jitendex same-day build revisions sort correctly. All payloads now live under
+  `bundled/` and normal builds restore all three packs from the same build lock.
+  Source preparation uses the shared `bundled/SOURCES.json`; there is no separate
+  word-pack build path. The combined baseline is published under
+  `datasets-2026-10-23-jitendex`; merging the catalog advertises it to clients. Older
+  published releases remain available for earlier commits. Evidence: `tests/test_jitendex_dictionary.py`,
+  `tests/test_dataset_pack_builds.py`, and `scripts/smoke_settings.py`.
+  Verification, 2026-10-23: 251 tests, lint/formatting, offline add-on/candidate-pack
+  builds and real Anki/Qt selection/update/fallback checks pass. Published assets
+  were downloaded and hash-checked against the shared build lock.
 - [ ] Implement the [card example design](CARD_EXAMPLES.md): managed
   `VocabExamples` and protected `UserExamples`, all eligible examples stored,
   per-category display limit (default 5; 0 = all), user examples first, stable

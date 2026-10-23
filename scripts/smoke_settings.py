@@ -184,6 +184,9 @@ def exercise_dictionary_settings(mw, selection):
     dialog = SettingsDialog(mw)
     assert dialog.tabs.tabText(3) == "Dictionaries"
     panels = dialog.dictionary_panel.panels
+    assert "jitendex" in panels
+    assert "Yomitan" in panels["jitendex"].path.placeholderText()
+    assert "436,555" in panels["jitendex"].about.toPlainText()
     kanji = panels["kanjidic2"]
     assert "EDRDG" in kanji.about.toPlainText()
     assert "SHA-256" in kanji.about.toPlainText()
@@ -247,9 +250,6 @@ def exercise_dictionary_updates(mw):
     sys.path.insert(0, str(ROOT / "tests"))
     from dataset_pack_helpers import candidate
 
-    manifest, release, payload = candidate()
-    catalog = json.dumps({"schema_version": 1, "datasets": {manifest.id: release}}).encode()
-
     def wait(dialog, action, *, update=False):
         loop = QEventLoop()
         poll, deadline = QTimer(mw), QTimer(mw)
@@ -284,44 +284,67 @@ def exercise_dictionary_updates(mw):
         assert not dialog.busy, "Dictionary operation did not finish"
         return messages
 
-    with TemporaryDirectory(prefix="katanki-update-smoke-") as directory:
-        with (
-            patch.object(updates, "USER_DATA", Path(directory)),
-            patch.object(
-                updates,
-                "download",
-                side_effect=lambda url, **_: catalog if url == updates.CATALOG_URL else payload,
-            ) as network,
-        ):
-            dialog = SettingsDialog(mw)
-            panel = dialog.dictionary_panel
-            kanji = panel.panels[manifest.id]
-            messages = wait(dialog, panel._check_updates)
-            assert any("Dictionary updates are available" in text for text in messages)
-            assert "Last successful check" in panel.update_status.text()
-            assert "Check complete: updates available for KANJIDIC2." in panel.update_status.text()
-            assert kanji.update_button.isEnabled()
-            messages = wait(dialog, panel._check_updates, update=True)
-            assert any("KANJIDIC2: updated to" in text for text in messages)
-            assert "Downloaded version" in kanji.update_status.text()
-            assert "fixture attribution" in kanji.notice.toPlainText()
-            messages = wait(dialog, panel._check_updates)
-            assert "All dictionaries are up to date." in messages
-            assert "Check complete: no dictionary updates available." in panel.update_status.text()
-            kanji.mode.setCurrentIndex(kanji.mode.findData("local"))
-            assert not kanji.update_button.isEnabled() and not kanji.bundled_button.isEnabled()
-            kanji.mode.setCurrentIndex(kanji.mode.findData("bundled"))
-            kanji.bundled_button.click()
-            assert "Bundled version" in kanji.update_status.text()
-            network.side_effect = OSError("offline")
-            messages = wait(dialog, panel._check_updates)
-            assert any("Update check failed:" in text and "offline" in text for text in messages)
-            assert "Update check failed" in panel.update_status.text()
-            panel.automatic.setChecked(True)
-            dialog.reject()
-            assert not updates.preferences().get("automatic", False), (
-                "Cancel saved update preferences"
-            )
+    for dataset_id in ("kanjidic2", "jitendex"):
+        manifest, release, payload = candidate(dataset_id=dataset_id)
+        catalog = json.dumps({"schema_version": 1, "datasets": {manifest.id: release}}).encode()
+        with TemporaryDirectory(prefix="katanki-update-smoke-") as directory:
+            with (
+                patch.object(updates, "USER_DATA", Path(directory)),
+                patch.object(
+                    updates,
+                    "download",
+                    side_effect=lambda url, catalog=catalog, payload=payload, **_: (
+                        catalog if url == updates.CATALOG_URL else payload
+                    ),
+                ) as network,
+            ):
+                dialog = SettingsDialog(mw)
+                panel = dialog.dictionary_panel
+                kanji = panel.panels[manifest.id]
+                messages = wait(dialog, panel._check_updates)
+                assert any("Dictionary updates are available" in text for text in messages)
+                assert "Last successful check" in panel.update_status.text()
+                assert (
+                    f"Check complete: updates available for {manifest.name}."
+                    in panel.update_status.text()
+                )
+                assert kanji.update_button.isEnabled()
+                messages = wait(dialog, panel._check_updates, update=True)
+                assert any(f"{manifest.name}: updated to" in text for text in messages)
+                assert "Downloaded version" in kanji.update_status.text()
+                if dataset_id == "jitendex":
+                    from katanki.dictionaries.words import selected_words
+
+                    assert selected_words().lookup("景") == ("景観",)
+                assert "fixture attribution" in kanji.notice.toPlainText()
+                messages = wait(dialog, panel._check_updates)
+                assert "All dictionaries are up to date." in messages
+                assert (
+                    "Check complete: no dictionary updates available." in panel.update_status.text()
+                )
+                kanji.mode.setCurrentIndex(kanji.mode.findData("local"))
+                assert not kanji.update_button.isEnabled() and not kanji.bundled_button.isEnabled()
+                if dataset_id == "jitendex":
+                    kanji.path.setText(str(updates.default_source(manifest)))
+                    wait(dialog, kanji._check)
+                    assert kanji.status.text() == "Check passed"
+                    assert "Synthetic test dictionary" in kanji.check_details.toPlainText()
+                    kanji.mode.setCurrentIndex(kanji.mode.findData("disabled"))
+                    assert not selected_words((kanji.choice(),)).lookup("景")
+                kanji.mode.setCurrentIndex(kanji.mode.findData("bundled"))
+                kanji.bundled_button.click()
+                assert "Bundled version" in kanji.update_status.text()
+                network.side_effect = OSError("offline")
+                messages = wait(dialog, panel._check_updates)
+                assert any(
+                    "Update check failed:" in text and "offline" in text for text in messages
+                )
+                assert "Update check failed" in panel.update_status.text()
+                panel.automatic.setChecked(True)
+                dialog.reject()
+                assert not updates.preferences().get("automatic", False), (
+                    "Cancel saved update preferences"
+                )
     print(
         "PASS: async dictionary checks, validated install, notices, fallback, and offline failure"
     )

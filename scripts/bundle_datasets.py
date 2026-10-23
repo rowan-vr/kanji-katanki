@@ -14,6 +14,7 @@ from zipfile import ZIP_STORED, ZipFile, ZipInfo
 
 ROOT = Path(__file__).resolve().parents[1]
 sys.path.insert(0, str(ROOT / "src"))
+from katanki.dictionaries.adapters.jitendex_yomitan import convert  # noqa: E402
 from katanki.dictionaries.adapters.kanjidic2_xml import KanjidicXml  # noqa: E402
 from katanki.dictionaries.adapters.kanjivg_svg import KanjiVgSvg  # noqa: E402
 
@@ -142,8 +143,42 @@ def write_kanjivg(source: Path, target: Path, notices: Path):
     return count
 
 
+def pin_jitendex_release(lock):
+    """Resolve upstream latest only during explicit maintainer source refresh."""
+    from katanki.dictionaries.downloads import download
+
+    release = json.loads(
+        download(
+            "https://api.github.com/repos/stephenmk/stephenmk.github.io/releases/latest",
+            limit=1024 * 1024,
+        )
+    )
+    asset = next(item for item in release["assets"] if item["name"] == "jitendex-yomitan.zip")
+    lock["resources"]["jitendex-yomitan.zip"]["url"] = asset["browser_download_url"]
+
+
+def write_jitendex(source, target, notices):
+    """Validate and preserve the full upstream ZIP, including its embedded licenses."""
+    _, index = convert(source)
+    shutil.copyfile(source, target)
+    (notices / "Jitendex-Attribution.txt").write_text(
+        f"Jitendex {index['revision']}\n\n"
+        + index.get("attribution", "")
+        + "\n\nOriginal Yomitan archive retained byte-for-byte. "
+        "Kanji Katanki selects common contemporary words for suggestions at lookup time. "
+        "The selected-word index is a CC BY-SA 4.0 adaptation. "
+        "See NOTICE.txt, the EDRDG terms and CC license texts in this bundle.\n"
+        "Furigana positioning: JmdictFurigana contributors, CC BY-SA; "
+        "https://github.com/Doublevil/JmdictFurigana\n",
+        encoding="utf-8",
+    )
+    return index["revision"], index["term_count"]
+
+
 def prepare_from_sources(*, refresh=False, offline=False):
     lock = json.loads((BUNDLED / "SOURCES.json").read_text(encoding="utf-8"))
+    if refresh:
+        pin_jitendex_release(lock)
     if not offline:
         refresh_sources(lock, CACHE, update_lock=refresh)
     verify_inputs(lock, CACHE)
@@ -156,10 +191,13 @@ def prepare_from_sources(*, refresh=False, offline=False):
                 shutil.copyfile(CACHE / name, notices / name)
         version, kanji_count = write_kanjidic(CACHE / "kanjidic2.xml.gz", stage / "kanjidic2.xml")
         stroke_count = write_kanjivg(CACHE / "kanjivg-source.zip", stage / "kanjivg.zip", notices)
+        word_version, word_count = write_jitendex(
+            CACHE / "jitendex-yomitan.zip", stage / "jitendex.zip", notices
+        )
         lock["derived_notices"] = {
             path.name: sha256(path.read_bytes()).hexdigest()
             for path in notices.iterdir()
-            if path.name.startswith("KanjiVG-")
+            if path.name.startswith(("KanjiVG-", "Jitendex-"))
         }
         shutil.copyfile(ROOT / "THIRD_PARTY_NOTICES.md", stage / "NOTICE.txt")
         (stage / "SOURCES.json").write_text(json.dumps(lock, indent=2) + "\n", encoding="utf-8")
@@ -173,6 +211,7 @@ def prepare_from_sources(*, refresh=False, offline=False):
         for dataset_id, filename, dataset_version, count in (
             ("kanjidic2", "kanjidic2.xml", version, kanji_count),
             ("kanjivg", "kanjivg.zip", lock["kanjivg_release"], stroke_count),
+            ("jitendex", "jitendex.zip", word_version, word_count),
         ):
             license_files = ["bundled/NOTICE.txt", "bundled/SOURCES.json"] + [
                 f"bundled/licenses/{path.name}" for path in sorted(notices.iterdir())
@@ -209,7 +248,10 @@ def prepare_from_sources(*, refresh=False, offline=False):
             path.write_text(
                 json.dumps(manifest, ensure_ascii=False, indent=2) + "\n", encoding="utf-8"
             )
-    print(f"Bundled {kanji_count} kanji entries and {stroke_count} canonical stroke SVGs.")
+    print(
+        f"Bundled {kanji_count} kanji entries, {stroke_count} stroke SVGs "
+        f"and {word_count} word rows."
+    )
 
 
 def bundle(*, refresh=False, offline=False):

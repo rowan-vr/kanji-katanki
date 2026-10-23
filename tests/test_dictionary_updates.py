@@ -51,7 +51,9 @@ def test_local_and_disabled_choices_remain_independent_of_installed_updates(stor
         DictionaryChoice("kanjidic2", "local", str(FIXTURES / "kanjidic2.xml")),
         DictionaryChoice("kanjivg", "disabled"),
     )
-    assert dictionary_sources(choices) == {"kanjidic2": FIXTURES / "kanjidic2.xml"}
+    assert dictionary_sources(choices)["kanjidic2"] == FIXTURES / "kanjidic2.xml"
+    assert "kanjivg" not in dictionary_sources(choices)
+    assert "jitendex" in dictionary_sources(choices)
 
 
 @pytest.mark.parametrize("failure", ["network", "hash", "archive", "contents", "activation"])

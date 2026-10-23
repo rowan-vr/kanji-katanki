@@ -86,10 +86,11 @@ notes/cards are never removed. Jitendex remains available offline for defaults.
 
 ## Default words
 
-Builds include the complete Jitendex Yomitan archive plus a lightweight suggestion
-index from the pinned
-2026.10.03.0 Yomitan export. `datasets/jitendex-lock.json` records its immutable
-release URL, source and generated SHA-256 checksums, version, and attribution.
+Builds include the complete Jitendex Yomitan archive. A lightweight suggestion
+index is compiled in memory on first use from the pinned
+2026.10.03.0 Yomitan export. The shared `bundled/SOURCES.json` records upstream
+provenance; `datasets/bundled-lock.json` pins the published release pack.
+Jitendex lives at `bundled/jitendex.zip` alongside the other dataset payloads.
 The export was inspected before implementing conversion: each term-bank row is a
 valid spelling/reading pair. Katanki retains common kanji headwords (★, score at
 least 100), omits irregular/rare/obsolete forms and kana-preferred or archaic
@@ -102,7 +103,7 @@ only affects automatic suggestions; it does not discard the full dictionary.
 The complete add-on remains under the 50 MB packaging budget.
 
 Readings are retained as whole-word readings; furigana positions are not inferred.
-The index omits definitions, sentences, audio, and positional data; these omissions
+The in-memory index omits definitions, sentences, audio, and positional data; these omissions
 do not apply to the original archive. The derivative remains CC BY-SA 4.0. Both
 the full export and index include attribution and license texts offline, including
 CC BY 2.0 FR for Tatoeba sentences in the archive. See
@@ -110,7 +111,12 @@ CC BY 2.0 FR for Tatoeba sentences in the archive. See
 [source attribution](https://jitendex.org/pages/legal.html).
 
 Enable **Discovered and default words** in the card category settings to include
-Jitendex suggestions. Parts suggestions come from kanji in the current discovery
+Jitendex suggestions. The Dictionaries tab selects the bundled/installed version,
+a local Yomitan ZIP override, or Disabled. Generation and Refresh use that selection;
+turning Jitendex off keeps discovered source words. Jitendex receives compatible
+independent updates through the shared dataset update sequence.
+
+Parts suggestions come from kanji in the current discovery
 snapshot whose KanjiVG component entries contain the part. They require no word
 review-status or furigana filtering. All managed suggestions are stored even when
 hidden or beyond the display limit. Production ambiguity uses only the limited,

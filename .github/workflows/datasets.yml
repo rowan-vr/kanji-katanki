@@ -65,4 +65,4 @@ jobs:
         shell: bash
         run: |
           gh run download "$GITHUB_RUN_ID" --name dataset-packs --dir packs
-          gh release create "$DATASET_TAG" packs/kanjidic2.zip packs/kanjivg.zip packs/catalog.json --target "$GITHUB_SHA" --prerelease --title "Dictionary packs $DATASET_TAG" --notes "Validated dictionary snapshots. Catalog promotion is reviewed separately; see the workflow artifact for source locks and manifests."
+          gh release create "$DATASET_TAG" packs/kanjidic2.zip packs/kanjivg.zip packs/jitendex.zip packs/catalog.json --target "$GITHUB_SHA" --prerelease --title "Dictionary packs $DATASET_TAG" --notes "Validated dictionary snapshots. Catalog promotion is reviewed separately; see the workflow artifact for source locks and manifests."

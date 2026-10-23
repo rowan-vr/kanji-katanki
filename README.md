@@ -213,8 +213,8 @@ Each category also saves an example display limit: 5 by default, with 0 meaning
 show all. The limit includes user examples; all eligible examples remain stored.
 Example visibility, sources, limits, and refresh settings now apply to card examples.
 Choose **Discovered and default words** to add Jitendex suggestions after your source
-vocabulary. The complete pinned Jitendex export is bundled offline; a small index
-ranks common words. Recognition/Parts show examples on the back; Production shows
+vocabulary. The complete pinned Jitendex export lives at `bundled/jitendex.zip`
+with the other datasets; an in-memory index ranks common words. Recognition/Parts show examples on the back; Production shows
 masked clues. Furigana, seen-only filtering, and the additional Parts/name controls
 remain planned. Production UserExamples edits take effect when you run Refresh.
 
@@ -240,13 +240,22 @@ managed examples refreshed; legacy migrations and manual edits are left intact.
 Missing source settings are skipped automatically; use manual Refresh for setup
 and migration guidance.
 
-The **Dictionaries** tab manages KANJIDIC2 and KanjiVG independently. Choose the
+The **Dictionaries** tab manages KANJIDIC2, KanjiVG, and Jitendex independently.
+All three use the same published release packs, build lock and update catalog. Choose the
 default (a compatible downloaded update or bundled offline data), a local override,
 or Disabled. KANJIDIC2 accepts XML/XML.gz;
 KanjiVG accepts an extracted `kanji/` SVG directory or canonical SVG ZIP. **Check
 dictionary** loads the current selection without saving settings or changing notes.
 Stroke checks verify a sample SVG; remaining strokes load on demand. Bundled checks
 also verify the packaged checksum and required notices.
+
+For Jitendex, choose a compatible **Yomitan ZIP** as a local override or choose
+**Disabled** to stop adding dictionary defaults. Discovered vocabulary remains
+available. Generation and Refresh use the active bundled, installed-update or local
+source. **Check dictionary** reports its detected version, attribution, fingerprint,
+term count and eligible suggestion count. Jitendex's About panel explains how
+suggestions are picked: common contemporary forms, ordered by priority then length;
+your source vocabulary comes first. Local overrides preserve their original archive.
 
 **About & attribution** shows credits, source/license links, bundled versions,
 entry counts and SHA-256 checksums. **License notices** exposes the bundled upstream
