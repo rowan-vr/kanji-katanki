@@ -35,7 +35,13 @@ def prepare(base: Path) -> None:
     destination = base / "addons21" / "katanki"
     # Replace only our own staged code, preserving every profile and collection.
     if destination.exists():
-        shutil.rmtree(destination)
+        for child in destination.iterdir():
+            if child.name == "user_files":
+                continue
+            if child.is_dir():
+                shutil.rmtree(child)
+            else:
+                child.unlink()
     from zipfile import ZipFile
 
     with ZipFile(build(ROOT / "dist" / "kanji-katanki.ankiaddon")) as archive:

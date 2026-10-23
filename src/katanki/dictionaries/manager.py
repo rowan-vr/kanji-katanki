@@ -5,7 +5,8 @@ from pathlib import Path
 
 from .adapters.kanjidic2_xml import KanjidicXml
 from .adapters.kanjivg_svg import KanjiVgSvg
-from .registry import bundled_path, bundled_sources, list_datasets, verify_bundle
+from .registry import bundled_path, list_datasets, verify_bundle
+from .updates import default_source, installed
 
 ADAPTERS = {"kanjidic2_xml": KanjidicXml, "kanjivg_svg": KanjiVgSvg}
 
@@ -13,7 +14,15 @@ ADAPTERS = {"kanjidic2_xml": KanjidicXml, "kanjivg_svg": KanjiVgSvg}
 class DictionaryManager:
     def __init__(self, sources: dict[str, Path] | None = None):
         self.manifests = list_datasets()
-        sources = bundled_sources() if sources is None else sources
+        sources = (
+            {
+                manifest.id: default_source(manifest)
+                for manifest in self.manifests
+                if manifest.default
+            }
+            if sources is None
+            else sources
+        )
         known = {manifest.id for manifest in self.manifests}
         if sources.keys() - known:
             raise ValueError("Unknown dataset selection.")
@@ -29,6 +38,10 @@ class DictionaryManager:
             )
             if is_bundled:
                 verify_bundle(manifest)
+            downloaded = installed(manifest) if not is_bundled else None
+            is_downloaded = downloaded is not None and path.resolve() == bundled_path(
+                downloaded[1]["bundled"]["path"], downloaded[0]
+            )
             compression = {".gz": "gzip", ".zip": "zip"}.get(path.suffix.lower(), "none")
             if compression not in manifest.compression:
                 raise ValueError(f"{manifest.name} does not support {compression} input.")
@@ -38,7 +51,9 @@ class DictionaryManager:
                     raise ValueError(f"Multiple selected providers for {capability}.")
                 self.providers[capability] = provider
             version = (
-                manifest.bundled["version"]
+                downloaded[1]["bundled"]["version"]
+                if is_downloaded
+                else manifest.bundled["version"]
                 if is_bundled
                 else getattr(provider, "version", "local SVG files")
             )
@@ -54,6 +69,11 @@ class DictionaryManager:
                 f"{manifest.name}: {version}{fingerprint}; {path}; source {manifest.source}; "
                 f"{manifest.attribution}; {manifest.license_name}; {manifest.license_url}"
                 + ("; bundled SHA-256 " + manifest.bundled["sha256"] if is_bundled else "")
+                + (
+                    "; downloaded SHA-256 " + downloaded[1]["bundled"]["sha256"]
+                    if is_downloaded
+                    else ""
+                )
             )
 
     def status(self) -> tuple[str, ...]:

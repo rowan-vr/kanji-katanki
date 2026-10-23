@@ -1,0 +1,68 @@
+name: Dataset packs
+
+on:
+  schedule:
+    - cron: '19 4 1 * *'
+  workflow_dispatch:
+    inputs:
+      publish:
+        description: Publish validated packs as a dataset prerelease (catalog promotion is separate)
+        type: boolean
+        default: false
+
+permissions:
+  contents: read
+
+concurrency:
+  group: dataset-packs
+  cancel-in-progress: false
+
+jobs:
+  prepare:
+    runs-on: ubuntu-latest
+    timeout-minutes: 15
+    outputs:
+      tag: ${{ steps.tag.outputs.tag }}
+    steps:
+      - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
+        with:
+          persist-credentials: false
+      - uses: astral-sh/setup-uv@bec219d24cd3e171d82865faccec33120bb574f4 # v10.1.0
+        with:
+          version: '0.13.4'
+          python-version: '3.12'
+          enable-cache: true
+      - run: uv sync --locked
+      - id: tag
+        shell: bash
+        run: echo "tag=datasets-$(date -u +%Y-%m-%d)-${GITHUB_RUN_ID}-${GITHUB_RUN_ATTEMPT}" >> "$GITHUB_OUTPUT"
+      - name: Fetch official sources, validate, and prepare packs
+        env:
+          DATASET_TAG: ${{ steps.tag.outputs.tag }}
+        run: uv run --locked python scripts/dataset_packs.py --refresh --tag "$DATASET_TAG"
+      - name: Preserve candidates and metadata for review
+        uses: actions/upload-artifact@v7
+        with:
+          name: dataset-packs
+          path: dist/datasets/
+          if-no-files-found: error
+          retention-days: 30
+
+  publish:
+    if: ${{ github.event_name == 'workflow_dispatch' && inputs.publish && github.ref == 'refs/heads/main' }}
+    needs: prepare
+    runs-on: ubuntu-latest
+    timeout-minutes: 5
+    permissions:
+      contents: write
+      actions: read
+    steps:
+      - name: Publish exact validated assets without promoting the catalog
+        env:
+          GH_TOKEN: ${{ github.token }}
+          GH_REPO: ${{ github.repository }}
+          DATASET_TAG: ${{ needs.prepare.outputs.tag }}
+        shell: bash
+        run: |
+          gh run download "$GITHUB_RUN_ID" --name dataset-packs --dir packs
+          gh release create "$DATASET_TAG" packs/kanjidic2.zip packs/kanjivg.zip packs/catalog.json --target "$GITHUB_SHA" --prerelease --title "Dictionary packs $DATASET_TAG" --notes "Validated dictionary snapshots. Catalog promotion is reviewed separately; see the workflow artifact for source locks and manifests."

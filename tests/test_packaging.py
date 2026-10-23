@@ -46,3 +46,21 @@ def test_archive_is_installable_and_importable_without_anki(tmp_path):
         ],
         check=True,
     )
+
+
+def test_packaging_excludes_downloaded_user_data(tmp_path, monkeypatch):
+    from scripts import build_addon
+
+    source = tmp_path / "src" / "katanki"
+    source.mkdir(parents=True)
+    (source / "__init__.py").write_text("# package")
+    user_data = source / "user_files" / "dictionaries"
+    user_data.mkdir(parents=True)
+    (user_data / "active.json").write_text('{"private": true}')
+    for name in ("LICENSE", "THIRD_PARTY_NOTICES.md"):
+        (tmp_path / name).write_text("fixture notice")
+    monkeypatch.setattr(build_addon, "ROOT", tmp_path)
+    monkeypatch.setattr(build_addon, "verify_bundled_assets", lambda _: None)
+    with ZipFile(build_addon.build(tmp_path / "addon.ankiaddon")) as archive:
+        assert "__init__.py" in archive.namelist()
+        assert not any("user_files" in name for name in archive.namelist())

@@ -12,15 +12,53 @@ Select decks, a note type, and fields in **Analyze Collection**, then scan offli
 JMdict is deferred until vocabulary-aware features need it. An unofficial JLPT
 source has not been selected. Neither is bundled speculatively.
 
-The current add-on archive is approximately 5 MiB. Generated defaults live under
-`src/katanki/dictionaries/bundled/` and are generated during builds, not committed
-to Git. Only `SOURCES.json` and the dataset manifests track URLs, versions, hashes,
-and bundle metadata. Original downloads are cached under ignored `data/upstream/`.
-The derived XML and ZIP members are stored without inner compression so locked
-hashes do not depend on the host zlib implementation. The final add-on archive
-compresses these assets.
-The first build needs network access for missing inputs; subsequent builds reuse
-verified inputs and generated files. Installed add-ons never download datasets.
+The add-on archive is approximately 5 MiB and includes offline defaults. Dataset
+payloads and copied upstream notices stay out of Git. Versioned packs live as
+GitHub Release assets in this same repository, under `datasets-…` tags.
+
+Two small files serve separate purposes:
+
+- `datasets/bundled-lock.json` pins the exact pack URLs, SHA-256 hashes, sizes and
+  versions used by this code revision. Normal builds never consult changing
+  upstream files or the latest update catalog.
+- `datasets/catalog.json` advertises the latest compatible packs for installed
+  users. The add-on checks the `main` branch copy over HTTPS. Updating this file
+  does not require an add-on release.
+
+Builds restore ignored runtime payloads under
+`src/katanki/dictionaries/bundled/` from those packs. Verified pack downloads are
+cached by hash under ignored `data/packs/`. Original maintainer downloads are
+cached under ignored `data/upstream/`. Canonical XML and inner SVG ZIP members
+remain uncompressed to keep their locked checksums portable; release packs and
+the final add-on archive compress these assets.
+
+## User updates and offline fallback
+
+Settings → Dictionaries offers **Check for dictionary updates**, per-dataset
+**Update dictionary**, and **Use bundled version**. The default source uses a
+verified compatible downloaded update when it is newer than the bundled version;
+otherwise it uses bundled data. Local overrides and Disabled retain their meaning.
+A newer add-on's bundled version supersedes older downloaded data automatically.
+
+Downloads and returning to bundled data apply immediately to future lookups; they
+do not rewrite existing notes, source settings, or review history. These actions
+are independent of the Settings Save/Cancel buttons. **Check daily on startup** is
+opt-in and saved with Settings; checks run in the background at most once daily
+per add-on installation and download only the small catalog. Updates require a
+button press. Last successful check, active version and available version appear
+in Settings. Offline startup never requires a check.
+
+Updates are stored in Anki's preserved `user_files/dictionaries/` directory,
+outside packaged defaults. Packs carry their attribution and license notices,
+visible in Settings. An update is staged, bounded, hash-checked, parsed and
+validated before its active pointer is replaced atomically. Failed downloads or
+activation preserve working data. Damaged installed files fall back to bundled
+defaults. Prior installed packs are retained on disk; returning to bundled data
+only deactivates the downloaded copy. Pack files are data, never executable code.
+
+The catalog and hosting repository are the trust boundary. A pack hash identifies
+its published bytes; it does not independently authenticate the upstream author.
+Use available upstream checksums during preparation and review licensing/provenance.
 
 ## Attribution and licensing
 
@@ -53,60 +91,78 @@ entry or change the collection.
 
 ## Maintainer preparation and regular updates
 
-EDRDG's terms require a procedure for regular dictionary updates. Refresh at least
-monthly and before releases, then publish reviewed updates through add-on releases:
+Prepare reviewed updates at least monthly and before releases. The separate
+**Dataset packs** workflow runs monthly to produce candidate artifacts; manual
+runs can also publish packs as a dataset prerelease. Scheduled runs do not publish
+or promote the public catalog. Publishing runs only from `main`, in a separate
+job with write permission. Dataset prereleases do not trigger the add-on release
+job or replace the latest stable add-on release.
+
+The workflow artifact includes the two packs, candidate `catalog.json`, and a
+`review/` directory containing source locks and manifests. Pack preparation
+round-trips each candidate through the same validator used by installed clients.
+Upstream/format failures affect this maintenance workflow, not normal CI.
+
+To prepare locally:
 
 ```sh
-uv run python scripts/bundle_datasets.py --refresh
+uv run python scripts/dataset_packs.py --refresh --tag datasets-YYYY-MM-DD-unique
+```
+
+This explicit refresh fetches official sources, normalizes defaults, updates the
+source lock/manifests, and writes packs plus review metadata to `dist/datasets/`.
+Choose a new tag every time; never replace a published asset. To change KanjiVG,
+edit the pinned URL and `kanjivg_release` in `bundled/SOURCES.json` first. The raw
+source lock is preparation provenance, not the normal build's download target.
+
+Publish packs before promoting their catalog. For example, for the initial packs
+prepared in this workspace, upload these exact files without regenerating them:
+
+```sh
+gh release create datasets-2026-10-22 \
+  dist/datasets/kanjidic2.zip dist/datasets/kanjivg.zip dist/datasets/catalog.json \
+  --repo rowan-vr/kanji-katanki --prerelease \
+  --title 'Dictionary packs 2026-10-22' \
+  --notes 'Offline defaults and independent dictionary updates; license notices included.'
+```
+
+The initial catalog references that tag. Until those assets are uploaded, a cold
+build cannot fetch them. Already prepared defaults and the local verified pack
+cache work offline. The initial publication is a required bootstrap step.
+
+After checking published assets, review and promote `datasets/catalog.json` to
+advertise updates. For a new bundled baseline, also copy that catalog to
+`datasets/bundled-lock.json` and commit matching source locks/manifests from
+`review/` together. Review notice changes, counts and corpus-test expectations.
+To advertise only compatible runtime updates, change the public catalog without
+changing the older bundled lock or its manifests. Keep old packs available so
+older commits can rebuild and existing compatible clients can download them.
+
+Run the normal build/tests after baseline changes:
+
+```sh
+uv run python scripts/build_addon.py
 uv run pytest
 uv run ruff check .
-uv run python scripts/build_addon.py
+uv run ruff format --check .
 ```
 
-`--refresh` is an explicit maintainer network operation. It downloads the sources
-listed in `bundled/SOURCES.json`, records their hashes, prepares derived defaults,
-and updates each manifest's bundled version, count, checksum, and notice paths.
-It uses HTTPS-only redirects, bounded downloads/XML/ZIP members, and staging before
-replacing prepared defaults. It never opens or updates an Anki collection.
+Normal builds fetch only immutable release pack URLs from the committed build
+lock, verify pack/file hashes, metadata and licenses, and check derived payloads
+against the manifests. They never update locks. `scripts/bundle_datasets.py`
+restores the locked packs without packaging the add-on; `--refresh` remains a
+maintainer-only raw-source preparation operation.
 
-Review and commit the changed source lock, manifests, our notices, and code together.
-Do not commit downloaded datasets, generated payloads, or copied upstream documents.
-Review licensing changes too, and update this document's snapshot/counts and corpus
-tests when inputs change. To change the KanjiVG release, edit its pinned URL and
-`kanjivg_release` in `SOURCES.json` first.
+Use `scripts/build_addon.py --offline` or `scripts/bundle_datasets.py --offline`
+to require existing prepared defaults or verified pack cache. A cold build needs
+GitHub, while installed users already have their offline defaults. Plain unit
+tests never download data; bundle-dependent checks skip until a build prepares it.
 
-A normal build downloads only missing/invalid cached inputs, requires the locked
-source checksums, and never silently refreshes tracked metadata:
+## Later: additional on-demand assets
 
-```sh
-uv run python scripts/build_addon.py
-```
-
-Build with no network access using already prepared data or verified cached inputs:
-
-```sh
-uv run python scripts/build_addon.py --offline
-```
-
-You can also prepare only the data with `uv run python scripts/bundle_datasets.py`
-(or add `--offline` to require cached inputs). Keep the matching cache if you need
-to rebuild old snapshots. A changing upstream URL, including KANJIDIC2's live
-archive, can stop a clean build when its bytes no longer match the source lock.
-Review an explicit `--refresh` in that case; a normal build never accepts new bytes
-just because they are newer. Generated checksums must also match the manifests.
-
-Builds validate payloads and license/documentation copies before packaging. CI and
-release workflows build before running the full tests; they do not use `--refresh`.
-Plain `pytest` on a fresh checkout runs core tests without downloading anything and
-skips data-dependent checks until a build has prepared the defaults.
-
-## Later: on-demand downloads
-
-Dataset packs or individual stroke downloads are deferred to the
-[Phase 5 roadmap](ROADMAP.md#phase-5--optional-enhancements-post-beta). The eventual
-feature needs source-granularity decisions, explicit controls, checked and versioned
-local caching, attribution, retry/cancellation, and offline reuse. It is not part of
-this build-time bundling change.
+Independent updates for the two default dictionaries are implemented. Additional
+providers and per-character downloads remain deferred; review flows must continue
+working without network access.
 
 ## Optional local overrides
 
@@ -143,6 +199,19 @@ To deliberately override the real defaults with format/UI test data, choose:
 These are original synthetic fixtures. Only 景 and 色 have entries; only 景 has a
 diagram, consisting of two lines that are **not** a correct stroke diagram for 景.
 They are test data, not learning material, and are not shipped in the add-on.
+
+## Verification recorded on 2026-10-23
+
+150 unit/packaging tests pass, including failed updates, source precedence,
+corrupt-file fallback, incompatible catalogs, exact locked pack downloads,
+offline rebuilds, and exclusion of persistent user data from packaged add-ons.
+Lint and formatting checks pass. The real Anki/Qt smoke test passes with a
+disposable profile and mocked network responses: update checks and installation
+run asynchronously, active license notices change with the pack, returning to
+bundled data works, offline checks preserve defaults, and Cancel does not save
+automatic-check preferences. Existing generation and collection-preservation
+checks pass too. Initial release packs are prepared locally and hash-checked
+against both catalogs; uploading them to GitHub remains the rollout prerequisite.
 
 ## Verification recorded on 2026-10-22
 

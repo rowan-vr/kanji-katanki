@@ -178,6 +178,100 @@ def exercise_dictionary_settings(mw, selection):
     print(
         "PASS: dictionary attribution, local check, saved choices, disabled sources, and no writes"
     )
+    exercise_dictionary_updates(mw)
+
+
+def exercise_dictionary_updates(mw):
+    """Use synthetic packs to exercise actual asynchronous Qt update controls."""
+    import json
+    from unittest.mock import patch
+
+    from aqt.qt import QEventLoop, QMessageBox, QTimer
+
+    from katanki.dictionaries import updates
+    from katanki.ui.settings import SettingsDialog
+
+    sys.path.insert(0, str(ROOT / "tests"))
+    from dataset_pack_helpers import candidate
+
+    manifest, release, payload = candidate()
+    catalog = json.dumps({"schema_version": 1, "datasets": {manifest.id: release}}).encode()
+
+    def wait(dialog, action, *, update=False):
+        loop = QEventLoop()
+        poll, deadline = QTimer(mw), QTimer(mw)
+        messages = []
+
+        def respond():
+            for popup in dialog.findChildren(QMessageBox):
+                if popup.isVisible() and popup.objectName() == "katanki_dictionary_update_result":
+                    messages.append(popup.text())
+                    button = next(
+                        (
+                            button
+                            for button in popup.buttons()
+                            if update and button.text() == "Update"
+                        ),
+                        popup.button(QMessageBox.StandardButton.Close),
+                    )
+                    button.click()
+                    return
+            if not dialog.busy:
+                loop.quit()
+
+        poll.timeout.connect(respond)
+        deadline.setSingleShot(True)
+        deadline.timeout.connect(loop.quit)
+        action()
+        poll.start(25)
+        deadline.start(10_000)
+        loop.exec()
+        poll.stop()
+        deadline.stop()
+        assert not dialog.busy, "Dictionary operation did not finish"
+        return messages
+
+    with TemporaryDirectory(prefix="katanki-update-smoke-") as directory:
+        with (
+            patch.object(updates, "USER_DATA", Path(directory)),
+            patch.object(
+                updates,
+                "download",
+                side_effect=lambda url, **_: catalog if url == updates.CATALOG_URL else payload,
+            ) as network,
+        ):
+            dialog = SettingsDialog(mw)
+            panel = dialog.dictionary_panel
+            kanji = panel.panels[manifest.id]
+            messages = wait(dialog, panel._check_updates)
+            assert any("Dictionary updates are available" in text for text in messages)
+            assert "Last successful check" in panel.update_status.text()
+            assert "Check complete: updates available for KANJIDIC2." in panel.update_status.text()
+            assert kanji.update_button.isEnabled()
+            messages = wait(dialog, panel._check_updates, update=True)
+            assert any("KANJIDIC2: updated to" in text for text in messages)
+            assert "Downloaded version" in kanji.update_status.text()
+            assert "fixture attribution" in kanji.notice.toPlainText()
+            messages = wait(dialog, panel._check_updates)
+            assert "All dictionaries are up to date." in messages
+            assert "Check complete: no dictionary updates available." in panel.update_status.text()
+            kanji.mode.setCurrentIndex(kanji.mode.findData("local"))
+            assert not kanji.update_button.isEnabled() and not kanji.bundled_button.isEnabled()
+            kanji.mode.setCurrentIndex(kanji.mode.findData("bundled"))
+            kanji.bundled_button.click()
+            assert "Bundled version" in kanji.update_status.text()
+            network.side_effect = OSError("offline")
+            messages = wait(dialog, panel._check_updates)
+            assert any("Update check failed:" in text and "offline" in text for text in messages)
+            assert "Update check failed" in panel.update_status.text()
+            panel.automatic.setChecked(True)
+            dialog.reject()
+            assert not updates.preferences().get("automatic", False), (
+                "Cancel saved update preferences"
+            )
+    print(
+        "PASS: async dictionary checks, validated install, notices, fallback, and offline failure"
+    )
 
 
 def exercise_category_generation(collection, rules):

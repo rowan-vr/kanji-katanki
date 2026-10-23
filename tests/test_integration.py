@@ -14,8 +14,12 @@ import katanki
 
 @pytest.fixture
 def host(monkeypatch):
+    from katanki.dictionaries import updates
+
+    monkeypatch.setattr(updates, "USER_DATA", None)
     aqt = ModuleType("aqt")
     aqt.mw = Mock()
+    aqt.gui_hooks = Mock()
     qt = ModuleType("aqt.qt")
     qt.QAction = Mock()
     qt.QMenu = Mock()
@@ -71,6 +75,9 @@ def test_repeated_registration_does_not_add_a_second_menu(host):
     qt.QAction.return_value.triggered.connect.assert_any_call(integration.refresh_and_generate)
     qt.QAction.return_value.triggered.connect.assert_any_call(integration.settings)
     aqt.mw.form.menuTools.addMenu.assert_not_called()
+    aqt.gui_hooks.profile_did_open.append.assert_called_once_with(
+        integration._check_dictionary_updates
+    )
 
 
 def test_bootstrap_failure_does_not_escape_even_if_warning_fails(host, monkeypatch, caplog):
