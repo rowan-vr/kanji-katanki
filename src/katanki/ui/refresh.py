@@ -12,22 +12,35 @@ from .generation import CreationReviewDialog
 logger = logging.getLogger(f"addon.{__name__}")
 
 
-def open_refresh(mw):
+def open_refresh(mw, *, automatic=False):
     if getattr(mw, "_katanki_refresh_running", False):
         return
     settings = load_settings(mw.col)
     if not settings.sources:
         showWarning("Choose vocabulary sources in Katanki → Settings → Discovery, then refresh.")
         return
+    collection = mw.col
     mw._katanki_refresh_running = True
 
     def failed(error):
         mw._katanki_refresh_running = False
         logger.error("Katanki refresh failed", exc_info=(type(error), error, error.__traceback__))
-        showWarning(f"Katanki could not refresh:\n{error}\n\nReview Katanki → Settings.")
+        if mw.col is collection:
+            showWarning(f"Katanki could not refresh:\n{error}\n\nReview Katanki → Settings.")
 
     def finished(result):
         try:
+            if mw.col is not collection:
+                return
+            if automatic:
+                if not load_settings(collection).refresh.enabled:
+                    return
+                # Never open a creation review over a review session or another dialog.
+                if mw.state != "deckBrowser" or mw.app.activeModalWidget() is not None:
+                    mw._katanki_automatic_refresh.request(
+                        "on_profile_open" if settings.refresh.on_profile_open else "after_sync"
+                    )
+                    return
             report, preview = result.report, result.preview
             if not report.scan.scanned_notes:
                 tooltip(

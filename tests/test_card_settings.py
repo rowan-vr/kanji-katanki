@@ -39,7 +39,7 @@ def test_older_settings_migrate_with_card_defaults_without_modifying_input(versi
     assert saved == original
     assert restored.destination_deck_id == 40
     assert restored.include_primitives is True
-    assert restored.to_dict()["version"] == 5
+    assert restored.to_dict()["version"] == 6
     for category in GENERATION_CATEGORIES:
         assert restored.card_settings(category) == CardSettings()
         assert restored.card_settings(category).auto_refresh is True

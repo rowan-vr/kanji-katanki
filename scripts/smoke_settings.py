@@ -8,11 +8,15 @@ ROOT = Path(__file__).resolve().parents[1]
 
 
 def exercise_settings_dialog(mw, selection):
-    from katanki.config import Settings, SourceRule, load_settings
+    from katanki.config import RefreshSettings, Settings, SourceRule, load_settings
     from katanki.ui.settings import SettingsDialog
 
     original = load_settings(mw.col)
     cancelled = SettingsDialog(mw)
+    cancelled.refresh_dictionary.setChecked(not original.refresh.update_dictionary_data)
+    cancelled.refresh_tags.setChecked(not original.refresh.update_source_tags)
+    cancelled.refresh_examples.setChecked(not original.refresh.update_examples)
+    cancelled.refresh_enabled.setChecked(not original.refresh.enabled)
     cancelled.primitives.setChecked(not original.include_primitives)
     cancelled.card_panels["recognition"].refresh.setChecked(False)
     cancelled.card_panels["recognition"].limit.setValue(0)
@@ -43,6 +47,7 @@ def exercise_settings_dialog(mw, selection):
         "Cards",
         "Dictionaries",
         "Ignored cards",
+        "Refresh",
     ]
     assert [dialog.card_tabs.tabText(i) for i in range(3)] == ["Recognition", "Production", "Parts"]
     for index, panel in enumerate(dialog.card_panels.values()):
@@ -61,6 +66,18 @@ def exercise_settings_dialog(mw, selection):
             panel.furigana.setChecked(index == 1)
             panel.word_status.setCurrentIndex(index % 2)
         panel.refresh.setChecked(index != 1)
+    assert not dialog.refresh_dictionary.isChecked()
+    assert dialog.refresh_dictionary.isEnabled()
+    dialog.refresh_dictionary.setChecked(True)
+    assert not dialog.refresh_tags.isChecked()
+    assert dialog.refresh_examples.isChecked()
+    assert dialog.refresh_tags.isEnabled() and dialog.refresh_examples.isEnabled()
+    dialog.refresh_tags.setChecked(True)
+    dialog.refresh_examples.setChecked(False)
+    assert not dialog.refresh_open.isEnabled()
+    dialog.refresh_enabled.setChecked(True)
+    assert dialog.refresh_open.isEnabled() and dialog.refresh_sync.isEnabled()
+    dialog.refresh_open.setChecked(False)
     dialog._save()
     expected = Settings(
         rules,
@@ -69,9 +86,16 @@ def exercise_settings_dialog(mw, selection):
         tuple(panel.settings() for panel in dialog.generation_panels.values()),
         dialog.dictionary_panel.choices(),
         tuple(panel.settings() for panel in dialog.card_panels.values()),
+        RefreshSettings(True, False, True, True, False, True),
     )
     assert load_settings(mw.col) == expected
     reopened = SettingsDialog(mw)
+    assert reopened.refresh_dictionary.isChecked()
+    assert reopened.refresh_tags.isChecked()
+    assert not reopened.refresh_examples.isChecked()
+    assert reopened.refresh_enabled.isChecked()
+    assert not reopened.refresh_open.isChecked()
+    assert reopened.refresh_sync.isChecked()
     assert reopened.sources.rules() == rules
     assert reopened.deck.currentData() == expected.destination_deck_id
     assert reopened.primitives.isChecked()
@@ -375,7 +399,7 @@ def main():
     from anki.collection import Collection
 
     from katanki.anki.collection import resolve_sources, selected_notes
-    from katanki.config import Settings, SourceRule, load_settings, save_settings
+    from katanki.config import RefreshSettings, Settings, SourceRule, load_settings, save_settings
     from katanki.generation.discovery import scan_notes
 
     with TemporaryDirectory(prefix="katanki-settings-") as directory:
@@ -402,7 +426,9 @@ def main():
             assert scan.scanned_notes == 2
             assert set(scan.candidates) == set("景色時間")
             assert "秘密" not in scan.vocabulary
-            expected = Settings(rules, source, True)
+            expected = Settings(
+                rules, source, True, refresh=RefreshSettings(True, False, True, True, False, True)
+            )
             save_settings(collection, expected)
             exercise_category_generation(collection, rules)
         finally:
