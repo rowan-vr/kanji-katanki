@@ -2,7 +2,7 @@
 
 Offline-first kanji learning for desktop Anki. **Phase 2: preview and approve independent kanji/component cards.**
 
-Open **Tools → Kanji Katanki → Analyze Collection** to select source decks, one
+Open **Katanki → Analyze Collection** to select source decks, one
 note type, and vocabulary fields. The read-only report shows distinct candidate
 ideographs, dictionary-supported entries, readings/meanings, and available stroke
 diagrams using bundled KANJIDIC2 and KanjiVG defaults, offline from first launch.
@@ -105,7 +105,7 @@ refreshing code. `.anki-test/` is ignored by Git and is separate from your norma
 Anki data directory. A separate single-instance key keeps launches separate from
 your normal Anki process. Do not put personal study data in this test profile.
 
-Open **Tools → Kanji Katanki → Analyze Collection**, select decks and fields
+Open **Katanki → Analyze Collection**, select decks and fields
 (Ctrl/Cmd-click for multiple selections). The bundled dictionaries are enabled by
 default; local paths are optional overrides. Deck selections include subdecks. Click **Scan selected sources**, then select a
 character to inspect its details. See [dataset setup and fixtures](docs/DATASETS.md).
@@ -152,9 +152,39 @@ No manual production prompt is required. A missing meaning or matching source
 word makes production unavailable. Identical generated clues within a note type
 are blocked; add distinguishing source vocabulary (or mnemonic names for
 components). Prerequisites generate recognition only. Examples are copied when
-creating notes and remain available after source deletion. Source selections are
-currently made in Analyze Collection; persistent source configuration in add-on
-settings is the next step.
+creating notes and remain available after source deletion. Use **Katanki → Settings… → Discovery** to add multiple vocabulary sources.
+Each source selects a deck or wildcard pattern, a note type, and one or more fields.
+For example:
+
+| Deck or pattern | Note type | Field |
+| --- | --- | --- |
+| `*` (all decks) | Japanese (Yomitan) | Expression |
+| `Japanese::Vocab` | Basic | Front |
+
+Use **Test discovery** to try the current rows before saving. A read-only background
+scan shows matched note counts, unique vocabulary, and kanji candidates in a results
+dialog (up to 1,000 entries per list). It uses unsaved edits without saving settings
+or generating cards. Kanji candidates are extracted characters; dictionary support
+is not checked by this quick test. Empty matches and invalid source rules show
+messages to help correct the configuration.
+
+Use **Add source** / **Remove** to manage rows. `*` matches any text; other
+characters are literal and matching is case-sensitive. Matching decks include their
+subdecks, so `Japanese::*` covers Japanese subdecks. Wildcards pick up new matching
+decks on the next scan. Decks selected from the dropdown retain their IDs across
+renames; typed names/patterns follow names. Overlapping rules merge selected fields
+and count each source note once, even when it has multiple cards.
+
+The **Generation** tab saves the destination deck and component prerequisite
+preference. Settings are
+versioned and stored in the current collection; they survive restarts. Subdecks are
+included at scan time. Analyze Collection starts with the saved sources and still
+allows temporary changes. Generation loads the saved destination and component
+preference. Production remains opt-in per character/component and every write
+requires preview approval. Missing/deleted source references are shown for review;
+unsupported settings versions are preserved and reported rather than reset.
+Version 1 source settings migrate to version 2 rules without losing deck IDs or preferences.
+One-button and automatic refresh remain later Phase 3 work.
 
 Writes are grouped under **Anki Undo**. If a write fails partway through, the error
 reports the created count; undo the operation or preview again to resume safely.
@@ -166,6 +196,7 @@ Run the critical lifecycle harness against a disposable temporary collection:
 ```sh
 /usr/bin/python scripts/smoke_generation.py
 /usr/bin/python scripts/smoke_generation_batch.py
+/usr/bin/python scripts/smoke_settings.py
 ```
 
 For an automated real-host smoke test that opens the dialog and exits:
@@ -177,9 +208,9 @@ For an automated real-host smoke test that opens the dialog and exits:
 The smoke test creates a disposable temporary profile with a separate process
 identity, leaving the persistent development profile alone. It loads the built
 archive through Anki's add-on loader, verifies that repeated registration creates
-only one menu/command, checks the add-on log file, opens a real Qt dialog, and
+only one Katanki menu with Analyze Collection and Settings commands, checks the add-on log file, opens a real Qt dialog, and
 compares complete notes/cards/revlog snapshots before and after scanning. It then
-checks generation cancellation/approval, all four note types, and stroke playback
+checks settings Save/Cancel and saved defaults, generation cancellation/approval, all four note types, and stroke playback
 and numbering in the real webview. The temporary profile is removed on exit. It uses Anki's private
 `_run` test entrypoint, so the helper may need adjustment with future host releases.
 

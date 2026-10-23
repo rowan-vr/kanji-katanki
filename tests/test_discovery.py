@@ -76,3 +76,83 @@ def test_vocabulary_examples_are_deduplicated_from_selected_fields_without_ruby_
     assert extract_vocabulary(text) == {"時間", "間", "真ん中"}
     result = scan_notes([NoteText((text,)), NoteText(("時間",))])
     assert result.vocabulary == tuple(sorted(("時間", "間", "真ん中")))
+
+
+def test_source_patterns_resolve_all_decks_subdecks_and_new_decks():
+    from katanki.anki.collection import resolve_sources
+    from katanki.config import SourceRule
+
+    collection = Mock()
+    decks = [
+        SimpleNamespace(id=i, name=name)
+        for i, name in enumerate(
+            ["Default", "Japanese", "Japanese::Vocab", "Japanese::Vocab::Extra", "Other"], 1
+        )
+    ]
+    collection.decks.all_names_and_ids.return_value = decks
+    collection.models.all.return_value = []
+    rules = (SourceRule("*", 10, ("Expression",)), SourceRule("Japanese::Vocab", 20, ("Front",)))
+    selections = resolve_sources(collection, rules)
+    assert selections == (
+        ScanSelection((1, 2, 3, 4, 5), 10, ("Expression",)),
+        ScanSelection((3, 4), 20, ("Front",)),
+    )
+    decks.append(SimpleNamespace(id=6, name="Japanese::New"))
+    assert resolve_sources(collection, rules)[0].deck_ids == (1, 2, 3, 4, 5, 6)
+    assert resolve_sources(collection, (SourceRule("Japanese::*", 20, ("Front",)),))[
+        0
+    ].deck_ids == (3, 4, 6)
+    with pytest.raises(ValueError, match="No decks match"):
+        resolve_sources(collection, (SourceRule("Absent*", 20, ("Front",)),))
+
+
+def test_explicit_source_ids_survive_deck_rename_and_include_children():
+    from katanki.anki.collection import resolve_sources
+    from katanki.config import SourceRule
+
+    collection = Mock()
+    collection.models.all.return_value = []
+    collection.decks.all_names_and_ids.return_value = [
+        SimpleNamespace(id=1, name="Renamed"),
+        SimpleNamespace(id=2, name="Renamed::Child"),
+    ]
+    assert resolve_sources(collection, (SourceRule("", 10, ("Front",), (1,)),))[0].deck_ids == (
+        1,
+        2,
+    )
+    with pytest.raises(ValueError, match="source deck is missing"):
+        resolve_sources(collection, (SourceRule("", 10, ("Front",), (3,)),))
+
+
+def test_overlapping_rules_count_each_note_once_and_union_selected_fields():
+    collection = Mock()
+    collection.models.get.return_value = {"flds": [{"name": "Front"}, {"name": "Back"}]}
+    collection.decks.all_names_and_ids.return_value = [
+        SimpleNamespace(id=10),
+        SimpleNamespace(id=11),
+    ]
+    collection.find_notes.side_effect = [[1, 2, 2], [2, 3]]
+    collection.get_note.side_effect = lambda nid: {"Front": f"景{nid}", "Back": "色"}
+    notes = list(
+        selected_notes(
+            collection,
+            (ScanSelection((10, 11), 20, ("Front",)), ScanSelection((11,), 20, ("Back",))),
+        )
+    )
+    assert notes == [NoteText(("景1",)), NoteText(("景2", "色")), NoteText(("色",))]
+    assert collection.get_note.call_count == 3
+    assert scan_notes(notes).scanned_notes == 3
+
+
+def test_invalid_later_rule_fails_before_any_search():
+    collection = Mock()
+    collection.models.get.return_value = {"flds": [{"name": "Front"}]}
+    collection.decks.all_names_and_ids.return_value = [SimpleNamespace(id=10)]
+    with pytest.raises(ValueError, match="fields no longer exist"):
+        list(
+            selected_notes(
+                collection,
+                (ScanSelection((10,), 20, ("Front",)), ScanSelection((10,), 20, ("Missing",))),
+            )
+        )
+    collection.find_notes.assert_not_called()

@@ -61,14 +61,14 @@ def test_dialog_failure_is_logged_and_reported(host, caplog):
 def test_repeated_registration_does_not_add_a_second_menu(host):
     integration, aqt, qt, _ = host
     menu = qt.QMenu.return_value
-    aqt.mw.form.menuTools.findChild.side_effect = [None, menu]
+    aqt.mw.menuBar().findChild.side_effect = [None, menu]
     integration.register()
     integration.register()
     qt.QMenu.assert_called_once()
-    aqt.mw.form.menuTools.addMenu.assert_called_once_with(menu)
-    qt.QAction.return_value.triggered.connect.assert_called_once_with(
-        integration.analyze_collection
-    )
+    aqt.mw.menuBar().addMenu.assert_called_once_with(menu)
+    qt.QAction.return_value.triggered.connect.assert_any_call(integration.analyze_collection)
+    qt.QAction.return_value.triggered.connect.assert_any_call(integration.settings)
+    aqt.mw.form.menuTools.addMenu.assert_not_called()
 
 
 def test_bootstrap_failure_does_not_escape_even_if_warning_fails(host, monkeypatch, caplog):
@@ -82,3 +82,21 @@ def test_bootstrap_failure_does_not_escape_even_if_warning_fails(host, monkeypat
         katanki.bootstrap()
     assert "registration failed" in caplog.text
     assert "warning failed" in caplog.text
+
+
+def test_settings_command_opens_dialog_without_collection_writes(host, monkeypatch):
+    integration, aqt, _, utils = host
+    settings_ui = ModuleType("katanki.ui.settings")
+    settings_ui.open_settings = Mock()
+    monkeypatch.setitem(sys.modules, settings_ui.__name__, settings_ui)
+    integration.settings()
+    settings_ui.open_settings.assert_called_once_with(aqt.mw)
+    assert aqt.mw.col.mock_calls == []
+    utils.showWarning.assert_not_called()
+
+
+def test_settings_command_requires_profile(host):
+    integration, aqt, _, utils = host
+    aqt.mw.col = None
+    integration.settings()
+    utils.showWarning.assert_called_once()

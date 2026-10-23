@@ -12,7 +12,9 @@ from .identities import owned_identities
 
 
 def analyze(
-    collection, selection: ScanSelection, sources: dict[str, Path] | None = None
+    collection,
+    selection: ScanSelection | tuple[ScanSelection, ...],
+    sources: dict[str, Path] | None = None,
 ) -> DiscoveryReport:
     scan = scan_notes(selected_notes(collection, selection))
     with DictionaryManager(sources) as manager:
