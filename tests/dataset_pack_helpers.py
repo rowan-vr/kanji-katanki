@@ -2,6 +2,7 @@
 
 import io
 import json
+from datetime import datetime, timedelta
 from hashlib import sha256
 from pathlib import Path
 from zipfile import ZIP_DEFLATED, ZipFile
@@ -12,8 +13,15 @@ from katanki.dictionaries.registry import list_datasets
 FIXTURES = Path(__file__).parent / "fixtures"
 
 
-def candidate(*, version="2026-10-23", dataset_id="kanjidic2", extra=None):
+def next_version(version):
+    current = datetime.strptime(str(packs.revision(version)), "%Y%m%d").date()
+    newer = current + timedelta(days=1)
+    return f"r{newer:%Y%m%d}" if version.startswith("r") else newer.isoformat()
+
+
+def candidate(*, version=None, dataset_id="kanjidic2", extra=None):
     manifest = next(item for item in list_datasets() if item.id == dataset_id)
+    version = version or next_version(manifest.bundled["version"])
     if dataset_id == "kanjidic2":
         payload = (
             (FIXTURES / "kanjidic2.xml")

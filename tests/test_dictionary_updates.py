@@ -7,7 +7,7 @@ from pathlib import Path
 from unittest.mock import Mock
 
 import pytest
-from dataset_pack_helpers import candidate
+from dataset_pack_helpers import candidate, next_version
 
 from katanki.config import DictionaryChoice
 from katanki.dictionaries import packs, updates
@@ -36,7 +36,7 @@ def test_install_update_is_used_offline_with_provenance_and_revert(storage, monk
     with DictionaryManager(selected) as manager:
         assert manager.lookup_kanji("景").meanings == ("fixture scenery",)
         details = "\n".join(manager.source_details())
-        assert "2026-10-23" in details and "downloaded SHA-256" in details
+        assert release["version"] in details and "downloaded SHA-256" in details
     assert updates.available(manifest, {manifest.id: release}) is None
     updates.use_bundled(manifest.id)
     assert updates.default_source(manifest) == bundled_path(manifest.bundled["path"])
@@ -62,7 +62,7 @@ def test_failed_update_preserves_active_pack(storage, monkeypatch, failure):
     updates.install(manifest, release)
     original = (storage / "active.json").read_bytes()
     before = updates.default_source(manifest)
-    _, newer, data = candidate(version="2026-10-24")
+    _, newer, data = candidate(version=next_version(release["version"]))
     if failure == "network":
         network.side_effect = OSError("offline")
     elif failure == "hash":
@@ -97,7 +97,9 @@ def test_corrupt_downloaded_data_falls_back_and_newer_bundles_win(storage, monke
     manifest, release, data = candidate()
     monkeypatch.setattr(updates, "download", Mock(return_value=data))
     updates.install(manifest, release)
-    newer_bundle = replace(manifest, bundled=manifest.bundled | {"version": "2026-10-24"})
+    newer_bundle = replace(
+        manifest, bundled=manifest.bundled | {"version": next_version(release["version"])}
+    )
     assert updates.installed(newer_bundle) is None
     assert updates.default_source(newer_bundle) == bundled_path(manifest.bundled["path"])
     updates.default_source(manifest).write_bytes(b"damaged")
@@ -117,7 +119,7 @@ def test_pack_rejects_unexpected_paths(storage, monkeypatch, path):
 
 
 def test_stroke_pack_validates_and_preserves_licenses(storage, monkeypatch):
-    manifest, release, data = candidate(dataset_id="kanjivg", version="r20261023")
+    manifest, release, data = candidate(dataset_id="kanjivg")
     monkeypatch.setattr(updates, "download", Mock(return_value=data))
     updates.install(manifest, release)
     current = updates.installed(manifest)
@@ -125,7 +127,7 @@ def test_stroke_pack_validates_and_preserves_licenses(storage, monkeypatch):
     assert bundled_path("bundled/NOTICE.txt", current[0]).read_text() == "fixture attribution"
     with DictionaryManager({manifest.id: updates.default_source(manifest)}) as manager:
         assert manager.lookup_strokes("景") is not None
-        assert "r20261023" in manager.source_details()[0]
+        assert release["version"] in manager.source_details()[0]
 
 
 def test_catalog_check_caches_results_throttles_and_survives_outages(storage, monkeypatch):
