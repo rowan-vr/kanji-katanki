@@ -1,0 +1,3 @@
+# These tracked files are compared with canonical text in published dataset packs.
+/src/katanki/dictionaries/bundled/SOURCES.json text eol=lf
+/THIRD_PARTY_NOTICES.md text eol=lf
