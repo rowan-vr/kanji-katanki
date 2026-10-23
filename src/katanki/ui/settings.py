@@ -7,9 +7,11 @@ from aqt.qt import (
     QDialogButtonBox,
     QHBoxLayout,
     QLabel,
+    QMessageBox,
     QPushButton,
     QTabWidget,
     QTextEdit,
+    QTimer,
     QVBoxLayout,
     QWidget,
 )
@@ -33,6 +35,9 @@ class SettingsDialog(QDialog):
         self.busy = False
         self.test_result = None
         settings = load_settings(mw.col)
+        self.original_cards = settings.cards
+        self.cards_changed = False
+        self.collection = mw.col
         self.setWindowTitle("Katanki — Settings")
         self.setObjectName("katanki_settings")
         self.resize(820, 440)
@@ -214,7 +219,42 @@ class SettingsDialog(QDialog):
         except Exception as error:
             showWarning(f"Could not save Katanki settings:\n{error}", parent=self)
             return
+        self.cards_changed = settings.cards != self.original_cards
         self.accept()
+
+    def exec(self):
+        result = super().exec()
+        if (
+            result == QDialog.DialogCode.Accepted
+            and self.cards_changed
+            and self.mw.col is self.collection
+        ):
+            self._offer_refresh()
+        return result
+
+    def _offer_refresh(self):
+        prompt = QMessageBox(self.mw)
+        prompt.setObjectName("katanki_card_settings_refresh")
+        prompt.setWindowTitle("Katanki — Apply card settings")
+        prompt.setIcon(QMessageBox.Icon.Information)
+        prompt.setText("Your card settings have been saved.")
+        prompt.setInformativeText(
+            "Refresh your cards to apply the changed settings. Refresh uses your saved "
+            "update preferences and preserves manual edits. You can also do this later "
+            "from Katanki → Refresh and generate Kanji Cards."
+        )
+        later = prompt.addButton("Do later", QMessageBox.ButtonRole.RejectRole)
+        now = prompt.addButton("Refresh now", QMessageBox.ButtonRole.AcceptRole)
+        prompt.setDefaultButton(later)
+        prompt.setEscapeButton(later)
+        prompt.exec()
+        if prompt.clickedButton() is now:
+            from .refresh import open_refresh
+
+            QTimer.singleShot(
+                0,
+                lambda: open_refresh(self.mw) if self.mw.col is self.collection else None,
+            )
 
 
 class DiscoveryTestResults(QDialog):
