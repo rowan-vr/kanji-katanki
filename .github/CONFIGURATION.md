@@ -1,5 +1,13 @@
 # GitHub configuration
 
+The `CodeQL` workflow analyzes Python with the `security-extended` query suite on
+pushes to `main`, pull requests targeting `main`, Tuesdays at 04:23 UTC, and manual
+dispatch. It analyzes source without building the add-on or downloading datasets.
+Results appear under **Security > Code scanning** and on pull requests. The workflow
+uses the automatic `GITHUB_TOKEN`; no extra secret is required. It starts running
+once the workflow is pushed to GitHub; scheduled runs require it on `main`.
+Keep CodeQL default setup disabled because this workflow uses advanced setup.
+
 CI runs on pushes, pull requests, and manual dispatch. It checks the locked
 Python environment, tests, and add-on packaging on Linux, Windows, and macOS
 with Python 3.12 and 3.14. Ruff runs once on Linux/Python 3.12.
