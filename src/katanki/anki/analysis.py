@@ -4,7 +4,9 @@ from dataclasses import replace
 from pathlib import Path
 
 from ..common.models import DiscoveryReport, ScanSelection
+from ..config import load_settings
 from ..dictionaries.manager import DictionaryManager
+from ..dictionaries.preferences import dictionary_sources
 from ..generation.discovery import scan_notes
 from ..generation.discovery.report import classify_scan
 from .collection import selected_notes
@@ -17,6 +19,8 @@ def analyze(
     sources: dict[str, Path] | None = None,
 ) -> DiscoveryReport:
     scan = scan_notes(selected_notes(collection, selection))
+    if sources is None:
+        sources = dictionary_sources(load_settings(collection).dictionaries)
     with DictionaryManager(sources) as manager:
         report = classify_scan(
             scan,

@@ -30,13 +30,13 @@ class GenerationDialog(QDialog):
         super().__init__(mw)
         self.mw, self.report = mw, report
         self.busy = False
-        settings = load_settings(mw.col)
+        settings = self.settings = load_settings(mw.col)
         self.setWindowTitle("Kanji Katanki — Generate independent cards")
         self.resize(800, 650)
         layout = QVBoxLayout(self)
         description = QLabel(
             "Check characters to generate recognition notes.\n"
-            "Check production to practice writing from kanji meanings and blanked source words.\n"
+            "Saved generation preferences select categories automatically; adjust them here.\n"
             "Existing notes and progress are preserved. No vocabulary lifecycle tracking."
         )
         description.setWordWrap(True)
@@ -51,12 +51,20 @@ class GenerationDialog(QDialog):
             check = QTableWidgetItem()
             check.setFlags(Qt.ItemFlag.ItemIsEnabled | Qt.ItemFlag.ItemIsUserCheckable)
             check.setCheckState(
-                Qt.CheckState.Checked if character in supported else Qt.CheckState.Unchecked
+                Qt.CheckState.Checked
+                if character in supported
+                and settings.generation_settings("recognition").auto_generate
+                else Qt.CheckState.Unchecked
             )
             self.table.setItem(row, 1, check)
             production = QTableWidgetItem()
             production.setFlags(Qt.ItemFlag.ItemIsEnabled | Qt.ItemFlag.ItemIsUserCheckable)
-            production.setCheckState(Qt.CheckState.Unchecked)
+            production.setCheckState(
+                Qt.CheckState.Checked
+                if character in supported
+                and settings.generation_settings("production").auto_generate
+                else Qt.CheckState.Unchecked
+            )
             self.table.setItem(row, 2, production)
         self.table.horizontalHeader().setStretchLastSection(True)
         tabs = QTabWidget()
@@ -79,7 +87,11 @@ class GenerationDialog(QDialog):
             self.component_table.setItem(row, 1, QTableWidgetItem(""))
             check = QTableWidgetItem()
             check.setFlags(Qt.ItemFlag.ItemIsEnabled | Qt.ItemFlag.ItemIsUserCheckable)
-            check.setCheckState(Qt.CheckState.Unchecked)
+            check.setCheckState(
+                Qt.CheckState.Checked
+                if settings.generation_settings("parts").auto_generate
+                else Qt.CheckState.Unchecked
+            )
             self.component_table.setItem(row, 2, check)
             production = QTableWidgetItem()
             production.setFlags(Qt.ItemFlag.ItemIsEnabled | Qt.ItemFlag.ItemIsUserCheckable)
@@ -97,18 +109,18 @@ class GenerationDialog(QDialog):
         component_help.setWordWrap(True)
         layout.addWidget(component_help)
         self.primitives = QCheckBox("Include graphical component recognition prerequisites")
-        self.primitives.setChecked(settings.include_primitives)
+        self.primitives.setChecked(settings.generation_settings("parts").auto_generate)
         layout.addWidget(self.primitives)
         self.deck = QComboBox()
         for deck in mw.col.decks.all_names_and_ids():
             self.deck.addItem(deck.name, deck.id)
         self.deck.insertItem(0, "Choose a destination deck…", None)
         self.deck.setCurrentIndex(0)
-        if settings.destination_deck_id is not None:
-            index = self.deck.findData(settings.destination_deck_id)
+        if settings.generation_settings("recognition").target_deck_id is not None:
+            index = self.deck.findData(settings.generation_settings("recognition").target_deck_id)
             if index >= 0:
                 self.deck.setCurrentIndex(index)
-        layout.addWidget(QLabel("Destination deck for new cards:"))
+        layout.addWidget(QLabel("Fallback deck (for categories without a target deck):"))
         layout.addWidget(self.deck)
         self.status = QLabel(
             "Production examples come from the selected sources. Preview performs no writes."
@@ -165,9 +177,6 @@ class GenerationDialog(QDialog):
                 "Select recognition or production for characters or components.", parent=self
             )
             return
-        if self.deck.currentData() is None:
-            showWarning("Select an existing destination deck.", parent=self)
-            return
         deck_id, deck_name = self.deck.currentData(), self.deck.currentText()
         include_primitives = self.primitives.isChecked()
         self._set_busy(True)
@@ -176,6 +185,8 @@ class GenerationDialog(QDialog):
             op=lambda collection: preview_generation(
                 collection,
                 self.report,
+                generation_settings=self.settings,
+                fallback_deck_id=deck_id,
                 recognition=tuple(recognition),
                 production=tuple(production),
                 include_primitives=include_primitives,
@@ -195,16 +206,24 @@ class GenerationDialog(QDialog):
         dialog.setWindowTitle("Review generation plan")
         dialog.resize(760, 600)
         layout = QVBoxLayout(dialog)
-        layout.addWidget(QLabel(f"Create {count} independent notes in deck: {deck_name}"))
+        layout.addWidget(
+            QLabel(f"Create {count} independent notes with the destinations and tags below.")
+        )
         text = QTextEdit()
         text.setReadOnly(True)
         contents = {content.identity: content for content in preview.contents}
         lines = []
+        options = {item.identity: item for item in preview.creations}
+        decks = {deck.id: deck.name for deck in self.mw.col.decks.all_names_and_ids()}
         for item in preview.plan.items:
             identity = item.unit.identity
             lines.append(
                 f"{item.outcome.upper()}: {identity.key} [{identity.note_type}] — {item.reason}"
             )
+            if identity in options:
+                target = options[identity]
+                lines.append(f"  Deck: {decks.get(target.deck_id, str(target.deck_id))}")
+                lines.append(f"  Tags: {', '.join(target.tags) or 'none'}")
             content = contents.get(identity)
             if content:
                 lines.append(f"  Display/name: {content.display}")

@@ -27,13 +27,30 @@ def exercise_settings_dialog(mw, selection):
     assert dialog.tabs.tabText(0) == "Discovery"
     dialog.deck.setCurrentIndex(dialog.deck.findData(selection.deck_ids[0]))
     dialog.primitives.setChecked(True)
+    assert [dialog.generation_tabs.tabText(i) for i in range(3)] == [
+        "Recognition",
+        "Production",
+        "Parts",
+    ]
+    for category, panel in dialog.generation_panels.items():
+        panel.tags.setText("katanki " + category)
+        panel.copy_tags.setChecked(True)
+        panel.patterns.setText("source::NIJ::*")
     dialog._save()
-    expected = Settings(rules, selection.deck_ids[0], True)
+    expected = Settings(
+        rules,
+        selection.deck_ids[0],
+        True,
+        tuple(panel.settings() for panel in dialog.generation_panels.values()),
+        dialog.dictionary_panel.choices(),
+    )
     assert load_settings(mw.col) == expected
     reopened = SettingsDialog(mw)
     assert reopened.sources.rules() == rules
     assert reopened.deck.currentData() == expected.destination_deck_id
     assert reopened.primitives.isChecked()
+    for category, panel in reopened.generation_panels.items():
+        assert panel.settings() == expected.generation_settings(category)
     reopened.reject()
     discovery = DiscoveryDialog(mw)
     assert discovery.source_selector.rules() == rules
@@ -99,7 +116,144 @@ def exercise_settings_dialog(mw, selection):
     assert load_settings(mw.col) == saved_before, "Testing saved unsaved source settings"
     assert snapshot(mw.col) == notes_before, "Discovery test changed notes/cards/review history"
     dialog._save()
+    exercise_dictionary_settings(mw, selection)
     print("PASS: Settings Save/Cancel, unsaved discovery test, reopening, and source defaults")
+
+
+def exercise_dictionary_settings(mw, selection):
+    from dataclasses import replace
+
+    from aqt.qt import QEventLoop, QTimer
+
+    from katanki.anki.analysis import analyze
+    from katanki.config import DictionaryChoice, load_settings, save_settings
+    from katanki.ui.discovery import DiscoveryDialog
+    from katanki.ui.settings import SettingsDialog
+    from scripts.smoke_discovery import snapshot
+
+    original = load_settings(mw.col)
+    before = snapshot(mw.col)
+    dialog = SettingsDialog(mw)
+    assert dialog.tabs.tabText(2) == "Dictionaries"
+    panels = dialog.dictionary_panel.panels
+    kanji = panels["kanjidic2"]
+    assert "EDRDG" in kanji.about.toPlainText()
+    assert "SHA-256" in kanji.about.toPlainText()
+    assert kanji.notice.toPlainText()
+    kanji.mode.setCurrentIndex(kanji.mode.findData("local"))
+    kanji.path.setText(str(ROOT / "tests/fixtures/kanjidic2.xml"))
+    strokes = panels["kanjivg"]
+    strokes.mode.setCurrentIndex(strokes.mode.findData("disabled"))
+    assert load_settings(mw.col) == original
+    loop = QEventLoop()
+    poll = QTimer(mw)
+    poll.timeout.connect(lambda: loop.quit() if not dialog.busy else None)
+    deadline = QTimer(mw)
+    deadline.setSingleShot(True)
+    deadline.timeout.connect(loop.quit)
+    poll.start(25)
+    deadline.start(10_000)
+    kanji._check()
+    loop.exec()
+    poll.stop()
+    deadline.stop()
+    assert not dialog.busy and kanji.status.text() == "Check passed"
+    assert "SHA-256" in kanji.check_details.toPlainText()
+    assert load_settings(mw.col) == original, "Dictionary check saved settings"
+    dialog._save()
+    expected = dialog.dictionary_panel.choices()
+    reopened = SettingsDialog(mw)
+    assert reopened.dictionary_panel.choices() == expected
+    reopened.reject()
+    discovery = DiscoveryDialog(mw)
+    assert discovery.sources["kanjidic2"].text() == str(ROOT / "tests/fixtures/kanjidic2.xml")
+    assert "kanjivg" in discovery.disabled_datasets
+    discovery.reject()
+    report = analyze(mw.col, selection)
+    assert report.dictionary_loaded and report.entries and not report.strokes
+    save_settings(
+        mw.col,
+        replace(
+            original,
+            dictionaries=(
+                DictionaryChoice("kanjidic2", "disabled"),
+                DictionaryChoice("kanjivg", "disabled"),
+            ),
+        ),
+    )
+    assert not analyze(mw.col, selection).dictionary_loaded
+    save_settings(mw.col, original)
+    assert snapshot(mw.col) == before, "Dictionary settings/checks changed collection data"
+    print(
+        "PASS: dictionary attribution, local check, saved choices, disabled sources, and no writes"
+    )
+
+
+def exercise_category_generation(collection, rules):
+    from dataclasses import replace
+
+    from katanki.anki.analysis import analyze
+    from katanki.anki.collection import resolve_sources
+    from katanki.anki.generation import apply_generation, preview_generation
+    from katanki.config import GenerationSettings, Settings
+
+    decks = [
+        collection.decks.id("Generated::" + name) for name in ("Recognition", "Production", "Parts")
+    ]
+    preferences = Settings(
+        generation=(
+            GenerationSettings(True, decks[0], ("recognition",), True, ("source::NIJ::*",)),
+            GenerationSettings(True, decks[1], ("production",), True),
+            GenerationSettings(True, decks[2], ("parts",), True, ("source::NIJ::*",)),
+        )
+    )
+    fixtures = ROOT / "tests/fixtures"
+    report = analyze(
+        collection,
+        resolve_sources(collection, rules),
+        {"kanjidic2": fixtures / "kanjidic2.xml", "kanjivg": fixtures / "kanjivg"},
+    )
+    choices = dict(
+        recognition=("景",),
+        production=("景",),
+        primitive_recognition=("日",),
+        include_primitives=False,
+        generation_settings=preferences,
+    )
+    preview = preview_generation(collection, report, **choices)
+    assert len(preview.creations) == 3
+    before = collection.note_count()
+    invalid = replace(
+        preview,
+        creations=(replace(preview.creations[0], deck_id=999999999), *preview.creations[1:]),
+    )
+    try:
+        apply_generation(collection, invalid)
+    except ValueError:
+        pass
+    else:
+        raise AssertionError("Missing destination did not reject the whole plan")
+    assert collection.note_count() == before
+    result = apply_generation(collection, preview)
+    assert result.created == 3
+    for options in preview.creations:
+        ids = collection.find_notes(f"did:{options.deck_id}")
+        assert len(ids) == 1
+        assert set(collection.get_note(ids[0]).tags) == set(options.tags)
+        category = (
+            "parts"
+            if options.identity.kind == "primitive"
+            else options.identity.note_type.split("-")[1]
+        )
+        assert category in options.tags
+        assert "source::NIJ::lesson1" in options.tags
+        assert ("unrelated" in options.tags) == (category == "production")
+    assert apply_generation(collection, preview).created == 0
+    assert all(
+        item.outcome == "skip"
+        for item in preview_generation(collection, report, **choices).plan.items
+    )
+    print("PASS: category decks, copied tags, atomic validation, and reruns")
 
 
 def main():
@@ -123,6 +277,7 @@ def main():
             ):
                 note = collection.new_note(model)
                 note["Front"], note["Back"] = front, back
+                note.tags = ["source::NIJ::lesson1", "source::Other::lesson2", "unrelated"]
                 collection.add_note(note, source)
             rules = (
                 SourceRule("*", model_id, ("Front",)),
@@ -135,6 +290,7 @@ def main():
             assert "秘密" not in scan.vocabulary
             expected = Settings(rules, source, True)
             save_settings(collection, expected)
+            exercise_category_generation(collection, rules)
         finally:
             collection.close()
         reopened = Collection(path)

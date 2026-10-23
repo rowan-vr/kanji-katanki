@@ -24,6 +24,7 @@ class ScanSelection:
 @dataclass(frozen=True)
 class NoteText:
     fields: tuple[str, ...]
+    tags: tuple[str, ...] = ()
 
 
 @dataclass(frozen=True)
@@ -31,6 +32,7 @@ class ScanResult:
     scanned_notes: int
     candidates: tuple[str, ...]
     vocabulary: tuple[str, ...] = ()
+    character_tags: tuple[tuple[str, tuple[str, ...]], ...] = ()
 
 
 @dataclass(frozen=True)

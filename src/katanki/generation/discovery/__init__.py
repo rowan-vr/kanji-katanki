@@ -81,10 +81,21 @@ def extract_vocabulary(text: str) -> set[str]:
 def scan_notes(notes: Iterable[NoteText]) -> ScanResult:
     candidates: set[str] = set()
     vocabulary: set[str] = set()
+    tags_by_character = {}
     count = 0
     for note in notes:
         count += 1
         for field in note.fields:
-            candidates.update(extract_candidates(field))
+            characters = extract_candidates(field)
+            candidates.update(characters)
+            for character in characters:
+                tags_by_character.setdefault(character, set()).update(note.tags)
             vocabulary.update(extract_vocabulary(field))
-    return ScanResult(count, tuple(sorted(candidates)), tuple(sorted(vocabulary)))
+    return ScanResult(
+        count,
+        tuple(sorted(candidates)),
+        tuple(sorted(vocabulary)),
+        tuple(
+            (key, tuple(sorted(tags))) for key, tags in sorted(tags_by_character.items()) if tags
+        ),
+    )

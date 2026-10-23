@@ -175,15 +175,43 @@ decks on the next scan. Decks selected from the dropdown retain their IDs across
 renames; typed names/patterns follow names. Overlapping rules merge selected fields
 and count each source note once, even when it has multiple cards.
 
-The **Generation** tab saves the destination deck and component prerequisite
-preference. Settings are
+The **Generation** tab has **Recognition**, **Production**, and **Parts** subtabs.
+Each saves automatic selection, a target deck, default tags, and source-tag copying.
+Enabled categories are selected automatically when opening Generate; creation still
+requires preview approval. Recognition and Production are enabled by default; Parts
+is opt-in. Parts enables graphical component recognition and its prerequisites;
+component production still requires a manual selection and mnemonic name.
+
+Separate default tags and tag filters with spaces. Enable **Copy tags from matching
+source notes** with an empty filter to copy all tags, or enter `source::NIJ::*` to
+copy only tags such as `source::NIJ::lesson1` (excluding `source::NIJ` and unrelated
+tags). Filters match complete tags, are case-sensitive, and support `*` wildcards.
+Multiple filters are alternatives. Default tags apply regardless of copying.
+Tags come from selected source fields containing the generated kanji; parts inherit
+tags from the source vocabulary containing their parent kanji. The generation
+preview lists the target deck and tags for each new note. Missing category targets
+use the fallback deck chosen in Generate. Saved deck IDs survive renames; deleted
+targets must be replaced. Existing generated notes keep their tags and decks. Settings are
 versioned and stored in the current collection; they survive restarts. Subdecks are
 included at scan time. Analyze Collection starts with the saved sources and still
-allows temporary changes. Generation loads the saved destination and component
-preference. Production remains opt-in per character/component and every write
-requires preview approval. Missing/deleted source references are shown for review;
+allows temporary changes. Generation loads these category preferences. Production can be enabled in settings
+or selected per character, and every write requires preview approval. Missing/deleted source references are shown for review;
 unsupported settings versions are preserved and reported rather than reset.
-Version 1 source settings migrate to version 2 rules without losing deck IDs or preferences.
+Version 1–3 settings migrate to version 4 without losing source rules or generation preferences.
+The **Dictionaries** tab manages KANJIDIC2 and KanjiVG independently. Choose the
+bundled offline snapshot, a local override, or Disabled. KANJIDIC2 accepts XML/XML.gz;
+KanjiVG accepts an extracted `kanji/` SVG directory or canonical SVG ZIP. **Check
+dictionary** loads the current selection without saving settings or changing notes.
+Stroke checks verify a sample SVG; remaining strokes load on demand. Bundled checks
+also verify the packaged checksum and required notices.
+
+**About & attribution** shows credits, source/license links, bundled versions,
+entry counts and SHA-256 checksums. **License notices** exposes the bundled upstream
+license/documentation copies, and **Check results** shows detected provenance or
+an actionable error. Settings persist per collection and initialize Analyze
+Collection; disabled datasets remain excluded. Provider downloads and online
+updates are not part of this tab yet.
+
 One-button and automatic refresh remain later Phase 3 work.
 
 Writes are grouped under **Anki Undo**. If a write fails partway through, the error

@@ -4,16 +4,19 @@ All mutations use Anki APIs. Existing notes are never updated, removed or moved.
 A stale preview may skip newly existing notes, but never adds extra creations.
 """
 
-from dataclasses import dataclass
+from dataclasses import dataclass, replace
 
 from ..generation.cards import CSS, normalize_prompt, note_type_spec
+from ..generation.destinations import creation_options
 from ..generation.discovery import visible_text
 from ..generation.planner import NOTE_TYPES
 from ..generation.preview import GenerationPreview, build_preview
 from .identities import MODEL_MARKER, owned_identities
 
 
-def preview_generation(collection, report, **choices):
+def preview_generation(
+    collection, report, *, generation_settings=None, fallback_deck_id=None, **choices
+):
     existing = {}
     for note_type in NOTE_TYPES:
         existing.update(owned_identities(collection, note_type=note_type))
@@ -25,7 +28,16 @@ def preview_generation(collection, report, **choices):
                 f"{identity.key} ({identity.note_type}): duplicate owned notes {note_ids}."
             )
     _validate_prompts(collection, preview)
-    return GenerationPreview(preview.plan, preview.contents, tuple(warnings))
+    preview = replace(preview, warnings=tuple(warnings))
+    if generation_settings is not None:
+        preview = replace(
+            preview,
+            creations=creation_options(preview, report, generation_settings, fallback_deck_id),
+        )
+        for options in preview.creations:
+            if collection.decks.get(options.deck_id, default=False) is None:
+                raise ValueError("A target deck is missing. Review Generation settings.")
+    return preview
 
 
 def _validate_prompts(collection, preview):
@@ -61,15 +73,33 @@ class ApplyResult:
     skipped: int
 
 
-def apply_generation(collection, preview: GenerationPreview, *, deck_id: int) -> ApplyResult:
+def apply_generation(
+    collection, preview: GenerationPreview, *, deck_id: int | None = None
+) -> ApplyResult:
     """Called only after UI approval of this exact immutable preview and deck."""
-    if type(deck_id) is not int or deck_id <= 0 or collection.decks.get(deck_id) is None:
-        raise ValueError("The destination deck no longer exists. Preview again.")
+    options = {item.identity: item for item in preview.creations}
     _validate_prompts(collection, preview)
     contents = {content.identity: content for content in preview.contents}
     candidates = [item.unit.identity for item in preview.plan.items if item.outcome == "create"]
     if any(identity not in contents for identity in candidates):
         raise ValueError("The approved preview is missing card content.")
+    if preview.creations and (
+        len(options) != len(preview.creations) or set(options) != set(candidates)
+    ):
+        raise ValueError("The approved preview is missing or duplicates generation destinations.")
+    for identity in candidates:
+        target = options[identity].deck_id if options else deck_id
+        if (
+            type(target) is not int
+            or target <= 0
+            or collection.decks.get(target, default=False) is None
+        ):
+            raise ValueError("A destination deck no longer exists. Preview again.")
+        if options and any(
+            not isinstance(tag, str) or not tag or any(c.isspace() for c in tag)
+            for tag in options[identity].tags
+        ):
+            raise ValueError("The approved preview contains invalid tags.")
     existing = {}
     models = {}
     for note_type in sorted({identity.note_type for identity in candidates}):
@@ -120,7 +150,9 @@ def apply_generation(collection, preview: GenerationPreview, *, deck_id: int) ->
             note = collection.new_note(models[identity.note_type])
             for field, value in fields_by_identity[identity].items():
                 note[field] = value
-            collection.add_note(note, deck_id)
+            if options:
+                note.tags = list(options[identity].tags)
+            collection.add_note(note, options[identity].deck_id if options else deck_id)
             created += 1
             collection.merge_undo_entries(undo)
     except Exception as error:

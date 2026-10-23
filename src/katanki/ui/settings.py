@@ -2,8 +2,6 @@
 
 from aqt.operations import QueryOp
 from aqt.qt import (
-    QCheckBox,
-    QComboBox,
     QDialog,
     QDialogButtonBox,
     QHBoxLayout,
@@ -17,8 +15,11 @@ from aqt.qt import (
 from aqt.utils import showWarning
 
 from ..anki.collection import resolve_sources, selected_notes
-from ..config import Settings, load_settings, save_settings
+from ..config import GENERATION_CATEGORIES, Settings, load_settings, save_settings
+from ..dictionaries.preferences import dictionary_sources
 from ..generation.discovery import scan_notes
+from .dictionaries import DictionarySettingsPanel
+from .generation_settings import GenerationSettingsPanel
 from .sources import SourceSelector
 
 
@@ -58,37 +59,18 @@ class SettingsDialog(QDialog):
         self.test_status.setWordWrap(True)
         test_row.addWidget(self.test_status, 1)
         discovery_layout.addLayout(test_row)
-        warning = None
-        generation = QWidget()
-        self.tabs.addTab(generation, "Generation")
-        generation_layout = QVBoxLayout(generation)
-        self.deck = QComboBox()
-        self.deck.addItem("Choose a destination each time", None)
-        for deck in mw.col.decks.all_names_and_ids():
-            self.deck.addItem(deck.name, deck.id)
-        if settings.destination_deck_id is not None:
-            index = self.deck.findData(settings.destination_deck_id)
-            if index < 0:
-                self.deck.addItem("Saved destination is missing — choose a deck", -1)
-                index = self.deck.count() - 1
-                warning = "The saved destination deck was deleted. Choose a destination."
-            self.deck.setCurrentIndex(index)
-        generation_layout.addWidget(QLabel("Default destination for new cards:"))
-        generation_layout.addWidget(self.deck)
-        self.primitives = QCheckBox("Include graphical component recognition prerequisites")
-        self.primitives.setChecked(settings.include_primitives)
-        generation_layout.addWidget(self.primitives)
-        note = QLabel(
-            "Production stays opt-in for each character/component. "
-            "Saving settings does not generate cards or approve a preview."
-        )
-        note.setWordWrap(True)
-        generation_layout.addWidget(note)
-        generation_layout.addStretch()
-        self.status = QLabel(warning or "")
-        self.status.setWordWrap(True)
-        self.status.setVisible(bool(warning))
-        layout.addWidget(self.status)
+        self.generation_tabs = QTabWidget()
+        self.tabs.addTab(self.generation_tabs, "Generation")
+        self.generation_panels = {}
+        for category in GENERATION_CATEGORIES:
+            panel = GenerationSettingsPanel(mw, category, settings.generation_settings(category))
+            self.generation_panels[category] = panel
+            self.generation_tabs.addTab(panel, category.title())
+        # Retain the existing controls for integration harnesses and legacy defaults.
+        self.deck = self.generation_panels["recognition"].deck
+        self.primitives = self.generation_panels["parts"].automatic
+        self.dictionary_panel = DictionarySettingsPanel(self, settings.dictionaries)
+        self.tabs.addTab(self.dictionary_panel, "Dictionaries")
         self.buttons = QDialogButtonBox(
             QDialogButtonBox.StandardButton.Save | QDialogButtonBox.StandardButton.Cancel
         )
@@ -101,6 +83,7 @@ class SettingsDialog(QDialog):
         self.sources.setEnabled(not busy)
         self.test_button.setEnabled(not busy)
         self.buttons.setEnabled(not busy)
+        self.dictionary_panel.setEnabled(not busy)
 
     def _test_discovery(self):
         if self.busy:
@@ -142,9 +125,23 @@ class SettingsDialog(QDialog):
     def _save(self):
         try:
             settings = Settings(
-                self.sources.rules(), self.deck.currentData(), self.primitives.isChecked()
+                self.sources.rules(),
+                self.deck.currentData(),
+                self.primitives.isChecked(),
+                tuple(
+                    self.generation_panels[category].settings()
+                    for category in GENERATION_CATEGORIES
+                ),
+                self.dictionary_panel.choices(),
             )
+            dictionary_sources(settings.dictionaries)
             self.sources.selection()
+            for category in GENERATION_CATEGORIES:
+                deck_id = settings.generation_settings(category).target_deck_id
+                if deck_id is not None and self.mw.col.decks.get(deck_id, default=False) is None:
+                    raise ValueError(
+                        f"The {category} target deck is missing. Choose its replacement."
+                    )
             save_settings(self.mw.col, settings)
         except Exception as error:
             showWarning(f"Could not save Katanki settings:\n{error}", parent=self)
