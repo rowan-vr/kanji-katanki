@@ -1,16 +1,14 @@
 # Kanji Katanki
 
-Offline-first kanji learning for desktop Anki. **Phase 2: preview and approve independent kanji/component cards.**
+Offline-first kanji learning for desktop Anki. **Phase 3: saved settings and refresh.**
 
-Open **Katanki → Analyze Collection** to select source decks, one
-note type, and vocabulary fields. The read-only report shows distinct candidate
-ideographs, dictionary-supported entries, readings/meanings, and available stroke
-diagrams using bundled KANJIDIC2 and KanjiVG defaults, offline from first launch.
-Scanning is read-only. Choose **Generate cards…** after scanning to select
-recognition notes and opt into production per character or component. Kanji
-production shows its meaning and matching source words with the target blanked out. Review the
-detailed plan before approving writes. Existing notes, edits and progress are
-preserved. See [the implementation specification](docs/SPECIFICATION.md).
+Configure vocabulary sources, generation categories, decks/tags, and dictionaries
+under **Katanki → Settings…**. Then choose **Katanki → Refresh and generate Kanji Cards**
+to scan saved sources. Refresh runs without approval and skips existing cards.
+Only new eligible cards open a single creation review, with category tabs, green
+selected tiles, and an inline front/back preview. Approve creation with **Create … cards**.
+Existing notes, edits, and progress are preserved.
+See [the implementation specification](docs/SPECIFICATION.md).
 Track completed milestones and remaining work in [the roadmap](docs/ROADMAP.md).
 
 Inspired by [Migaku Kanji GOD](https://github.com/migaku-official/Migaku-Kanji-Addon).
@@ -105,40 +103,35 @@ refreshing code. `.anki-test/` is ignored by Git and is separate from your norma
 Anki data directory. A separate single-instance key keeps launches separate from
 your normal Anki process. Do not put personal study data in this test profile.
 
-Open **Katanki → Analyze Collection**, select decks and fields
-(Ctrl/Cmd-click for multiple selections). The bundled dictionaries are enabled by
-default; local paths are optional overrides. Deck selections include subdecks. Click **Scan selected sources**, then select a
-character to inspect its details. See [dataset setup and fixtures](docs/DATASETS.md).
-
-If bundled dictionaries are disabled and no local KANJIDIC2 is supplied, candidates
-remain unclassified; a missing entry does not mean
-an invalid character. Existing/missing recognition counts are also
-not assessed without a dictionary. With a dictionary, they count supported kanji
-within the Katanki recognition note type and report damaged ownership metadata. Production is independent. Each scan uses
-one note type; scan other note types separately. Source choices are not persisted yet.
+Use **Katanki → Settings… → Discovery → Test discovery** to inspect vocabulary
+and kanji candidates without saving settings or generating cards.
+See [dataset setup and fixtures](docs/DATASETS.md) for dictionary preparation.
 
 ### Generate and test cards
 
-In the isolated development profile, scan vocabulary containing `景色`, then:
+1. Configure sources in Settings, for example the expression field of vocabulary
+   notes containing `景色`. Select generation categories and their target decks/tags.
+2. Click **Katanki → Refresh and generate Kanji Cards**. Refresh scans saved sources
+   in the background, checks existing cards, and excludes disabled categories and
+   saved ignores. If nothing new is eligible, it finishes with a brief status message.
+3. New cards appear in one creation review, grouped into **Recognition**, **Production**,
+   and **Parts** tabs only where cards can be created. All eligible cards start green.
+   Left-click a tile to preview its front/back and view deck/tag details inline.
+4. Right-click a tile to toggle between create (green) and ignore (gray). Ignoring a
+   missing prerequisite also blocks its dependants. Ignoring is per character and
+   card type, so ignoring Production does not disable Recognition.
+5. Ignore choices save immediately, including when you cancel creation. Restore
+   them in **Settings → Ignored cards** to make them eligible on the next refresh.
+6. Select any missing target decks in the category tabs, then click **Create … cards**
+   to approve only the enabled creations. Cancel creates no cards. No deletion is
+   performed by refresh. Existing notes and review progress remain untouched.
+7. Review the generated cards. Backs include readings/meanings, components, offline
+   stroke diagrams, playback, stroke numbers, and dataset attribution. Refresh again
+   to verify that existing cards and saved ignores do not prompt for creation.
 
-1. Click **Generate cards…**. Recognition is checked for supported kanji.
-2. To practice writing only `景`, check **Production** beside `景`; leave it
-   unchecked beside `色`. The front shows its meaning and `__色`, copied from
-   the source word `景色`. Recognition and production use
-   separate note types, each with one card and native Anki scheduling.
-3. Optionally select graphical component prerequisites or use the components tab
-   to choose individual recognition/production notes. Give unencoded shapes a
-   mnemonic name; component production uses that name as its clue. Names and
-   examples apply to new notes only.
-4. Select an existing destination deck and click **Preview generation…**. Check
-   create/skip/unavailable outcomes and the displayed content. Cancel performs no
-   writes. Only **Approve and create … notes** writes to the collection.
-5. Review the generated cards. Backs include readings/meanings, components,
-   offline stroke diagrams, playback, stroke numbers and dataset attribution.
-   Missing diagrams have a text fallback. Names are graphical/mnemonic labels,
-   not dictionary-radical classifications.
-6. Generate again: existing same-type characters/components are skipped. Delete
-   the source `景色` note and rescan: generated notes and progress remain intact.
+Missing or invalid settings point back to Settings. Empty sources, kana-only fields,
+and disabled dictionaries produce explanatory messages. Repeated clicks during an
+active refresh do not launch duplicate scans or generation windows.
 
 Kanji production fronts are generated automatically: the kanji's dictionary
 meanings plus every distinct matching word from the selected vocabulary fields.
@@ -177,10 +170,9 @@ and count each source note once, even when it has multiple cards.
 
 The **Generation** tab has **Recognition**, **Production**, and **Parts** subtabs.
 Each saves automatic selection, a target deck, default tags, and source-tag copying.
-Enabled categories are selected automatically when opening Generate; creation still
-requires preview approval. Recognition and Production are enabled by default; Parts
+Only enabled categories participate in refresh; new cards require creation approval. Recognition and Production are enabled by default; Parts
 is opt-in. Parts enables graphical component recognition and its prerequisites;
-component production still requires a manual selection and mnemonic name.
+parts without a usable name remain unavailable.
 
 Separate default tags and tag filters with spaces. Enable **Copy tags from matching
 source notes** with an empty filter to copy all tags, or enter `source::NIJ::*` to
@@ -189,13 +181,11 @@ tags). Filters match complete tags, are case-sensitive, and support `*` wildcard
 Multiple filters are alternatives. Default tags apply regardless of copying.
 Tags come from selected source fields containing the generated kanji; parts inherit
 tags from the source vocabulary containing their parent kanji. The generation
-preview lists the target deck and tags for each new note. Missing category targets
-use the fallback deck chosen in Generate. Saved deck IDs survive renames; deleted
+review shows the target deck and tags for each selected tile. Missing category targets
+can be selected in the same review window. Saved deck IDs survive renames; deleted
 targets must be replaced. Existing generated notes keep their tags and decks. Settings are
 versioned and stored in the current collection; they survive restarts. Subdecks are
-included at scan time. Analyze Collection starts with the saved sources and still
-allows temporary changes. Generation loads these category preferences. Production can be enabled in settings
-or selected per character, and every write requires preview approval. Missing/deleted source references are shown for review;
+included at scan time. Refresh uses the saved source rules and generation preferences. Production can be enabled in settings, and creation requires approval. Missing/deleted source references are shown for review;
 unsupported settings versions are preserved and reported rather than reset.
 Version 1–3 settings migrate to version 4 without losing source rules or generation preferences.
 The **Dictionaries** tab manages KANJIDIC2 and KanjiVG independently. Choose the
@@ -208,14 +198,13 @@ also verify the packaged checksum and required notices.
 **About & attribution** shows credits, source/license links, bundled versions,
 entry counts and SHA-256 checksums. **License notices** exposes the bundled upstream
 license/documentation copies, and **Check results** shows detected provenance or
-an actionable error. Settings persist per collection and initialize Analyze
-Collection; disabled datasets remain excluded. Provider downloads and online
+an actionable error. Settings persist per collection and are used by refresh; disabled datasets remain excluded. Provider downloads and online
 updates are not part of this tab yet.
 
-One-button and automatic refresh remain later Phase 3 work.
+The menu refresh workflow is implemented; automatic background triggers remain later Phase 3 work.
 
 Writes are grouped under **Anki Undo**. If a write fails partway through, the error
-reports the created count; undo the operation or preview again to resume safely.
+reports the created count; undo the operation or refresh again to resume safely.
 Existing notes are never updated automatically, including after changing source vocabulary
 or mnemonic names. Recognition counts refresh on your next scan.
 
@@ -236,7 +225,7 @@ For an automated real-host smoke test that opens the dialog and exits:
 The smoke test creates a disposable temporary profile with a separate process
 identity, leaving the persistent development profile alone. It loads the built
 archive through Anki's add-on loader, verifies that repeated registration creates
-only one Katanki menu with Analyze Collection and Settings commands, checks the add-on log file, opens a real Qt dialog, and
+only one Katanki menu with Refresh and Settings commands, checks the add-on log file, opens a real Qt dialog, and
 compares complete notes/cards/revlog snapshots before and after scanning. It then
 checks settings Save/Cancel and saved defaults, generation cancellation/approval, all four note types, and stroke playback
 and numbering in the real webview. The temporary profile is removed on exit. It uses Anki's private

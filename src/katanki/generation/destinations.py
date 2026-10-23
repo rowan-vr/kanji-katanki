@@ -10,7 +10,7 @@ from .planner import Identity
 @dataclass(frozen=True)
 class CreationOptions:
     identity: Identity
-    deck_id: int
+    deck_id: int | None
     tags: tuple[str, ...] = ()
 
 
@@ -32,7 +32,7 @@ def generated_tags(settings: GenerationSettings, source_tags: tuple[str, ...]) -
     return tuple(unique.values())
 
 
-def creation_options(preview, report, settings, fallback_deck_id):
+def creation_options(preview, report, settings, fallback_deck_id, *, allow_missing_decks=False):
     tags_by_key = {key: set(tags) for key, tags in report.scan.character_tags}
     part_tags = {}
     for visual in report.strokes:
@@ -55,7 +55,7 @@ def creation_options(preview, report, settings, fallback_deck_id):
         category = "parts" if identity.kind == "primitive" else identity.note_type.split("-")[1]
         preferences = settings.generation_settings(category)
         deck_id = preferences.target_deck_id or fallback_deck_id
-        if deck_id is None:
+        if deck_id is None and not allow_missing_decks:
             raise ValueError(f"Choose a target deck for {category} in Settings or a fallback deck.")
         source_tags = (part_tags if identity.kind == "primitive" else tags_by_key).get(
             identity.key, ()

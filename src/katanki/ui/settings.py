@@ -20,6 +20,7 @@ from ..dictionaries.preferences import dictionary_sources
 from ..generation.discovery import scan_notes
 from .dictionaries import DictionarySettingsPanel
 from .generation_settings import GenerationSettingsPanel
+from .ignored import IgnoredCardsPanel
 from .sources import SourceSelector
 
 
@@ -71,6 +72,8 @@ class SettingsDialog(QDialog):
         self.primitives = self.generation_panels["parts"].automatic
         self.dictionary_panel = DictionarySettingsPanel(self, settings.dictionaries)
         self.tabs.addTab(self.dictionary_panel, "Dictionaries")
+        self.ignored_panel = IgnoredCardsPanel(mw)
+        self.tabs.addTab(self.ignored_panel, "Ignored cards")
         self.buttons = QDialogButtonBox(
             QDialogButtonBox.StandardButton.Save | QDialogButtonBox.StandardButton.Cancel
         )
@@ -84,6 +87,7 @@ class SettingsDialog(QDialog):
         self.test_button.setEnabled(not busy)
         self.buttons.setEnabled(not busy)
         self.dictionary_panel.setEnabled(not busy)
+        self.ignored_panel.setEnabled(not busy)
 
     def _test_discovery(self):
         if self.busy:

@@ -20,9 +20,9 @@ def host(monkeypatch):
     qt.QAction = Mock()
     qt.QMenu = Mock()
     utils = ModuleType("aqt.utils")
-    discovery = ModuleType("katanki.ui.discovery")
-    discovery.open_discovery = Mock()
-    utils.open_discovery = discovery.open_discovery
+    discovery = ModuleType("katanki.ui.refresh")
+    discovery.open_refresh = Mock()
+    utils.open_refresh = discovery.open_refresh
     utils.showWarning = Mock()
     for module in (aqt, qt, utils, discovery):
         monkeypatch.setitem(sys.modules, module.__name__, module)
@@ -33,10 +33,10 @@ def host(monkeypatch):
     return integration, aqt, qt, utils
 
 
-def test_command_delegates_to_discovery_dialog(host):
+def test_command_delegates_to_refresh(host):
     integration, aqt, _, utils = host
-    integration.analyze_collection()
-    utils.open_discovery.assert_called_once_with(aqt.mw)
+    integration.refresh_and_generate()
+    utils.open_refresh.assert_called_once_with(aqt.mw)
     assert aqt.mw.col.mock_calls == []
     utils.showWarning.assert_not_called()
 
@@ -44,16 +44,16 @@ def test_command_delegates_to_discovery_dialog(host):
 def test_command_without_profile_shows_warning(host):
     integration, aqt, _, utils = host
     aqt.mw.col = None
-    integration.analyze_collection()
-    utils.open_discovery.assert_not_called()
+    integration.refresh_and_generate()
+    utils.open_refresh.assert_not_called()
     utils.showWarning.assert_called_once()
 
 
 def test_dialog_failure_is_logged_and_reported(host, caplog):
     integration, _, _, utils = host
-    utils.open_discovery.side_effect = RuntimeError("dialog failed")
+    utils.open_refresh.side_effect = RuntimeError("dialog failed")
     with caplog.at_level(logging.ERROR):
-        integration.analyze_collection()
+        integration.refresh_and_generate()
     assert "dialog failed" in caplog.text
     utils.showWarning.assert_called_once()
 
@@ -65,8 +65,10 @@ def test_repeated_registration_does_not_add_a_second_menu(host):
     integration.register()
     integration.register()
     qt.QMenu.assert_called_once()
+    qt.QAction.assert_any_call("Refresh and generate Kanji Cards", menu)
+    assert all(call.args[0] != "Analyze Collection" for call in qt.QAction.call_args_list)
     aqt.mw.menuBar().addMenu.assert_called_once_with(menu)
-    qt.QAction.return_value.triggered.connect.assert_any_call(integration.analyze_collection)
+    qt.QAction.return_value.triggered.connect.assert_any_call(integration.refresh_and_generate)
     qt.QAction.return_value.triggered.connect.assert_any_call(integration.settings)
     aqt.mw.form.menuTools.addMenu.assert_not_called()
 
