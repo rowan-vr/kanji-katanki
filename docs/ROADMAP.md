@@ -3,7 +3,8 @@
 Progress tracker based on [the implementation specification](SPECIFICATION.md).
 The specification defines requirements; this file tracks delivery and verification.
 
-Last reviewed: **2026-10-23**. Current milestone: **Phase 3 — saved settings and refresh**.
+Last reviewed: **2026-10-23**. Phase 3 is complete. Current milestone:
+**Phase 4 — statistics and modern interface**.
 Phase 1 ownership-count integration is delivered. Production uses kanji meanings
 and blanked examples copied from selected source vocabulary. Minimum
 supported versions remain an open decision; the verified local baseline is Linux
@@ -316,8 +317,9 @@ using the user's saved configuration.
   collection persistence (including nondefault refresh choices) and idempotent
   category generation pass. The packaged Qt-offscreen smoke was attempted but
   timed out in `QApplication.__init__`, before add-on loading; the new Refresh
-  UI Save/Cancel/reopen assertions are added but host execution remains pending.
-  Human visual review and Windows/macOS remain pending.
+  UI Save/Cancel/reopen assertions were added. Subsequent human acceptance confirms
+  automatic refresh and visual behavior pass (2026-10-23). Cross-platform release
+  verification remains in Phase 5; this acceptance does not claim Windows/macOS coverage.
 - [x] Define how refresh updates vocabulary examples on existing cards while
   preserving user edits, note/card identities, scheduling, and review history;
   require explicit opt-in for updates as established in Phase 2.
@@ -357,8 +359,8 @@ using the user's saved configuration.
   Delivered in `050da6b`, with Windows UTF-8 cache handling corrected in `6fa5bf5`.
   Evidence: `ui/refresh.py`, `ui/refresh_feedback.py`, `ui/manual.py`,
   `tests/test_refresh.py`, `tests/test_manual.py`, `tests/test_suggestion_cache.py`,
-  and `tests/test_jitendex_dictionary.py`. Human visual/host verification remains
-  part of the final acceptance checks below.
+  and `tests/test_jitendex_dictionary.py`. Human visual acceptance passed,
+  reported 2026-10-23.
 - [x] Verify saved settings survive restarts.
   Human acceptance check passed, reported 2026-10-23.
 - [x] Improve the refresh replacement/migration review dialog and repeat visual
@@ -370,11 +372,11 @@ using the user's saved configuration.
   list, side-by-side current/proposed values, readable example text and field labels,
   and note IDs in tooltips. Qt-offscreen checks pass card selection, readable values,
   Cancel and approval. Human visual acceptance passed, reported 2026-10-23.
-- [ ] Verify repeated refreshes create no duplicates and manual/automatic refresh
+- [x] Verify repeated refreshes create no duplicates and manual/automatic refresh
   preserve existing note/card identities, scheduling and review history.
-  Human acceptance checks remain pending; other host/UI checks also remain pending.
-  Existing unit and real-Anki smoke evidence below covers individual paths;
-  complete the combined manual/automatic acceptance pass before closing Phase 3.
+  Human acceptance checks passed, reported 2026-10-23.
+- [x] Verify automatic refresh and complete human visual acceptance.
+  Both checks passed, reported 2026-10-23. Phase 3 acceptance is complete.
 
 Verification, 2026-10-23: 131 unit tests pass; lint and formatting pass.
 `scripts/smoke_settings.py` confirms persistence after closing/reopening a real
@@ -386,8 +388,9 @@ tabbed Settings Save/Cancel and reopening, Add/Remove source rows, saved
 discovery/generation defaults, exact
 notes/cards/revlog preservation during settings/scans, generation Cancel/approval,
 and stroke controls on Linux Anki 26.09.3 / Python 3.14.8. Human acceptance has
-confirmed restart persistence and the revised replacement/migration dialog;
-the remaining checks are pending as listed above.
+confirmed restart persistence, duplicate-free repeated refreshes, preservation of
+existing note/card identities and review progress, automatic refresh, and visual
+behavior including the revised replacement/migration dialog (2026-10-23).
 
 Acceptance: after configuring sources and preferences once, pressing refresh runs
 all configured steps without repeating setup. Automatic refresh uses the same
