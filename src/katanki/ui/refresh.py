@@ -42,7 +42,7 @@ def open_refresh(mw, *, automatic=False):
                     )
                     return
             report, preview = result.report, result.preview
-            summary = f"Examples updated on {updated} notes. " if updated else ""
+            summary = f"Existing-card updates on {updated} notes. " if updated else ""
             if not report.scan.scanned_notes:
                 tooltip(
                     f"Refresh complete. {summary}No vocabulary notes matched your saved sources.",
@@ -113,7 +113,7 @@ def open_refresh(mw, *, automatic=False):
                 if mw.col is collection:
                     if outcome.conflicts:
                         report_conflicts(outcome.conflicts)
-                    tooltip(f"Updated examples on {outcome.updated} notes.", parent=mw)
+                    tooltip(f"Updated existing cards on {outcome.updated} notes.", parent=mw)
                 present(result, outcome.updated)
 
             CollectionOp(
@@ -124,12 +124,12 @@ def open_refresh(mw, *, automatic=False):
             failed(error)
 
     def report_conflicts(conflicts):
-        message = "Example refresh preserved notes with conflicts:\n" + "\n".join(conflicts)
+        message = "Existing-card refresh preserved notes with conflicts:\n" + "\n".join(conflicts)
         logger.warning(message)
         if mw.col is collection:
             if automatic:
                 tooltip(
-                    f"Example refresh: {len(conflicts)} conflicts; notes preserved. "
+                    f"Existing-card refresh: {len(conflicts)} conflicts; notes preserved. "
                     "Run Refresh manually to review.",
                     parent=mw,
                 )
