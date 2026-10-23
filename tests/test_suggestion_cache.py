@@ -59,18 +59,18 @@ def test_invalid_cache_is_rebuilt(cache, damage):
     source, convert = cache
     adapter.JitendexYomitan(source).lookup("景")
     path = suggestion_cache.location(source)
-    data = json.loads(path.read_text())
+    data = json.loads(path.read_text(encoding="utf-8"))
     if damage == "shape":
         data["index"] = {"景": [[42, "invalid"]]}
     elif damage == "version":
         data["format"] = -1
     elif damage == "fingerprint":
         data["source_sha256"] = "outdated"
-    path.write_text("broken" if damage == "json" else json.dumps(data))
+    path.write_text("broken" if damage == "json" else json.dumps(data), encoding="utf-8")
     adapter._suggestion_cache.clear()
     assert adapter.JitendexYomitan(source).lookup("景") == ("景観",)
     assert convert.call_count == 2
-    assert json.loads(path.read_text())["format"] == suggestion_cache.FORMAT
+    assert json.loads(path.read_text(encoding="utf-8"))["format"] == suggestion_cache.FORMAT
 
 
 def test_unwritable_cache_does_not_block_lookup_or_leave_temporary_files(cache, monkeypatch):
