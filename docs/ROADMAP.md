@@ -330,18 +330,47 @@ using the user's saved configuration.
   of new-card creation. Both refresh gates are respected. Generated-value baselines
   protect manual edits; legacy notes require explicit before/after migration review.
   Automatic refresh skips unapproved migrations. UserExamples, IDs, scheduling,
-  history, tags and decks are preserved. Source removal clears recognition/Parts
+  history and decks are preserved; existing tags are retained when adding source tags.
+  Source removal clears recognition/Parts
   examples without deleting notes; empty/ambiguous production updates are withheld.
   Stale notes, source scans, settings and new clue collisions are rechecked before
-  writes. Tag/dictionary-content updates remain pending. Save/Cancel/reopen assertions
-  cover the settings in `scripts/smoke_settings.py`.
+  writes. Source-tag updates add configured tags without removing existing tags and
+  reject stale tag snapshots. Dictionary-content updates refresh meanings, readings,
+  components, strokes and attribution independently of example updates; unavailable
+  stroke data does not erase an existing diagram. Combined updates retain a valid
+  generated-value baseline. Delivered in `a6a0461`; regression coverage in
+  `tests/test_example_refresh.py` checks independent update choices, retained user
+  examples/tags, stale-tag rejection and idempotent reruns. Save/Cancel/reopen
+  assertions cover the settings in `scripts/smoke_settings.py`.
   Verification, 2026-10-23: 238 unit tests, lint/format checks, offline build,
   `scripts/smoke_example_refresh.py` (real Anki updates/Undo), and the packaged Qt
   Refresh-button update/rendering smoke pass on Linux Anki 26.09.3 / Python 3.14.8.
-- [ ] Show progress, results, and actionable errors; make empty or invalid source
+- [x] Show progress, results, and actionable errors; make empty or invalid source
   settings easy to correct.
-- [ ] Verify saved settings survive restarts, repeated refreshes create no
-  duplicates, and manual/automatic refresh preserve existing review progress.
+  Refresh runs with background progress and reports updates, ready/existing cards,
+  unavailable cards and no-op results. Empty, unmatched or invalid sources open
+  persistent feedback with **Edit sources…**; saving corrected settings retries
+  Refresh. Dictionary failures identify the settings to check. Automatic runs
+  report source issues without opening a source editor. Manual creation reports
+  lookup progress and actionable results. Persistent Jitendex indexes avoid repeated
+  full-dictionary conversion; progress describes cache loading/indexing.
+  Delivered in `050da6b`, with Windows UTF-8 cache handling corrected in `6fa5bf5`.
+  Evidence: `ui/refresh.py`, `ui/refresh_feedback.py`, `ui/manual.py`,
+  `tests/test_refresh.py`, `tests/test_manual.py`, `tests/test_suggestion_cache.py`,
+  and `tests/test_jitendex_dictionary.py`. Human visual/host verification remains
+  part of the final acceptance checks below.
+- [x] Verify saved settings survive restarts.
+  Human acceptance check passed, reported 2026-10-23.
+- [ ] Improve the refresh replacement/migration review dialog and repeat visual
+  acceptance. Human review failed, reported 2026-10-23: the dialog presents a dense
+  text dump with raw example HTML, internal field names and note IDs, making
+  before/after replacements difficult to compare. Present readable card/field
+  changes with clear before/after grouping while retaining explicit approval.
+- [ ] Verify repeated refreshes create no duplicates and manual/automatic refresh
+  preserve existing note/card identities, scheduling and review history.
+  Human acceptance checks remain pending; other host/UI checks also remain pending.
+  Existing unit and real-Anki smoke evidence below covers individual paths;
+  complete the combined manual/automatic acceptance pass before closing Phase 3.
 
 Verification, 2026-10-23: 131 unit tests pass; lint and formatting pass.
 `scripts/smoke_settings.py` confirms persistence after closing/reopening a real
@@ -352,7 +381,9 @@ The packaged Qt-offscreen smoke passes top-level menu registration,
 tabbed Settings Save/Cancel and reopening, Add/Remove source rows, saved
 discovery/generation defaults, exact
 notes/cards/revlog preservation during settings/scans, generation Cancel/approval,
-and stroke controls on Linux Anki 26.09.3 / Python 3.14.8. Human visual review is pending.
+and stroke controls on Linux Anki 26.09.3 / Python 3.14.8. Human acceptance has
+confirmed restart persistence; replacement/migration dialog visual review failed,
+and the remaining checks are pending as listed above.
 
 Acceptance: after configuring sources and preferences once, pressing refresh runs
 all configured steps without repeating setup. Automatic refresh uses the same
