@@ -20,6 +20,7 @@ from aqt.qt import (
 from aqt.utils import showInfo, showWarning
 
 from ..anki.generation import apply_generation, preview_generation
+from ..config import load_settings
 
 logger = logging.getLogger(f"addon.{__name__}")
 
@@ -29,6 +30,7 @@ class GenerationDialog(QDialog):
         super().__init__(mw)
         self.mw, self.report = mw, report
         self.busy = False
+        settings = load_settings(mw.col)
         self.setWindowTitle("Kanji Katanki — Generate independent cards")
         self.resize(800, 650)
         layout = QVBoxLayout(self)
@@ -95,11 +97,17 @@ class GenerationDialog(QDialog):
         component_help.setWordWrap(True)
         layout.addWidget(component_help)
         self.primitives = QCheckBox("Include graphical component recognition prerequisites")
-        self.primitives.setChecked(False)
+        self.primitives.setChecked(settings.include_primitives)
         layout.addWidget(self.primitives)
         self.deck = QComboBox()
         for deck in mw.col.decks.all_names_and_ids():
             self.deck.addItem(deck.name, deck.id)
+        self.deck.insertItem(0, "Choose a destination deck…", None)
+        self.deck.setCurrentIndex(0)
+        if settings.destination_deck_id is not None:
+            index = self.deck.findData(settings.destination_deck_id)
+            if index >= 0:
+                self.deck.setCurrentIndex(index)
         layout.addWidget(QLabel("Destination deck for new cards:"))
         layout.addWidget(self.deck)
         self.status = QLabel(

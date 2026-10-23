@@ -182,6 +182,12 @@ def exercise_generation_dialog(mw, report):
     messages = []
     before = mw.col.note_count()
     dialog = generation.GenerationDialog(mw, report)
+    from katanki.config import load_settings
+
+    settings = load_settings(mw.col)
+    assert dialog.primitives.isChecked() == settings.include_primitives
+    assert dialog.deck.currentData() == settings.destination_deck_id
+    dialog.deck.setCurrentIndex(1)
     for row, character in enumerate(report.scan.candidates):
         if character == "景":
             dialog.table.item(row, 2).setCheckState(Qt.CheckState.Checked)

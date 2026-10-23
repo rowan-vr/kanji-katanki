@@ -55,13 +55,13 @@ def smoke(base: Path) -> None:
             mw = aqt.mw
             assert mw is not None and mw.col is not None
             assert Path(mw.pm.base) == base
-            menu = mw.form.menuTools.findChild(QMenu, "katanki_menu")
+            menu = mw.menuBar().findChild(QMenu, "katanki_menu")
             assert menu is not None, "Kanji Katanki menu was not registered"
             from katanki.anki.integration import register
 
             register()
-            assert mw.form.menuTools.findChildren(QMenu, "katanki_menu") == [menu]
-            assert len(menu.actions()) == 1, "Repeated registration duplicated the command"
+            assert mw.menuBar().findChildren(QMenu, "katanki_menu") == [menu]
+            assert len(menu.actions()) == 3, "Repeated registration duplicated the command"
             log = base / "logs" / "addons" / "katanki" / "katanki.log"
             assert "Registered Kanji Katanki menu" in log.read_text(encoding="utf-8")
             from scripts.smoke_discovery import exercise_dialog

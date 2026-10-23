@@ -5,16 +5,13 @@ from pathlib import Path
 
 from aqt.operations import QueryOp
 from aqt.qt import (
-    QAbstractItemView,
     QCheckBox,
-    QComboBox,
     QDialog,
     QFileDialog,
     QHBoxLayout,
     QLabel,
     QLineEdit,
     QListWidget,
-    QListWidgetItem,
     QPixmap,
     QPushButton,
     Qt,
@@ -24,9 +21,9 @@ from aqt.qt import (
 from aqt.utils import showText, showWarning
 
 from ..anki.analysis import analyze
-from ..anki.collection import scan_sources
-from ..common.models import ScanSelection
+from ..config import load_settings
 from ..dictionaries.registry import bundled_path, bundled_sources, list_datasets
+from .sources import SourceSelector
 
 logger = logging.getLogger(f"addon.{__name__}")
 
@@ -40,42 +37,19 @@ class DiscoveryDialog(QDialog):
         self.mw = mw
         self.report = None
         self.busy = False
-        self.note_types = []
         self.sources = {}
         layout = QVBoxLayout(self)
         description = QLabel(
-            "Select decks, one note type, and its vocabulary fields. Scans are read-only.\n"
+            "Choose deck patterns, note types, and fields. Scans are read-only.\n"
             "Deck selections include subdecks; notes with multiple cards are counted once."
         )
         description.setWordWrap(True)
         layout.addWidget(description)
         row = QHBoxLayout()
         layout.addLayout(row)
-        self.decks = QListWidget()
-        self.decks.setSelectionMode(QAbstractItemView.SelectionMode.ExtendedSelection)
-        self.decks.setMaximumHeight(110)
-        row.addWidget(self.decks)
-        fields_column = QVBoxLayout()
-        row.addLayout(fields_column)
-        self.types = QComboBox()
-        fields_column.addWidget(self.types)
-        self.fields = QListWidget()
-        self.fields.setMaximumHeight(85)
-        self.fields.setSelectionMode(QAbstractItemView.SelectionMode.ExtendedSelection)
-        fields_column.addWidget(self.fields)
-        self.decks.setAccessibleName("Target decks (multiple selection)")
-        self.types.setAccessibleName("Target note type")
-        self.fields.setAccessibleName("Fields to scan (multiple selection)")
-        decks, self.note_types = scan_sources(mw.col)
-        self.deck_names = dict(decks)
-        for deck_id, name in decks:
-            item = QListWidgetItem(name)
-            item.setData(Qt.ItemDataRole.UserRole, deck_id)
-            self.decks.addItem(item)
-        for _, name, _ in self.note_types:
-            self.types.addItem(name)
-        self.types.currentIndexChanged.connect(self._fields_changed)
-        self._fields_changed()
+        self.source_selector = SourceSelector(mw)
+        row.addWidget(self.source_selector)
+        self.source_selector.restore(load_settings(mw.col).sources)
         defaults_row = QHBoxLayout()
         layout.addLayout(defaults_row)
         self.use_bundled = QCheckBox("Use bundled default dictionaries (offline)")
@@ -152,12 +126,6 @@ class DiscoveryDialog(QDialog):
             notice, parent=self, title="Kanji Katanki — Sources and licenses", plain_text_edit=True
         )
 
-    def _fields_changed(self, index=0):
-        self.fields.clear()
-        if self.types.currentIndex() >= 0:
-            for name in self.note_types[self.types.currentIndex()][2]:
-                self.fields.addItem(name)
-
     def _browse(self, target, directory):
         if directory:
             path = QFileDialog.getExistingDirectory(self, "Select KanjiVG kanji directory")
@@ -170,24 +138,7 @@ class DiscoveryDialog(QDialog):
 
     def _scan(self):
         try:
-            if self.types.currentIndex() < 0:
-                raise ValueError("There are no note types to scan.")
-            selected = {item.data(Qt.ItemDataRole.UserRole) for item in self.decks.selectedItems()}
-            names = [self.deck_names[deck_id] for deck_id in selected]
-            # Expand subdecks explicitly, while the read adapter uses exact IDs.
-            deck_ids = tuple(
-                sorted(
-                    deck_id
-                    for deck_id, name in self.deck_names.items()
-                    if deck_id in selected
-                    or any(name.startswith(parent + "::") for parent in names)
-                )
-            )
-            selection = ScanSelection(
-                deck_ids,
-                self.note_types[self.types.currentIndex()][0],
-                tuple(item.text() for item in self.fields.selectedItems()),
-            )
+            selection = self.source_selector.selection()
             paths = bundled_sources() if self.use_bundled.isChecked() else {}
             paths.update(
                 {

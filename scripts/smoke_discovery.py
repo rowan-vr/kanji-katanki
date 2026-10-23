@@ -33,7 +33,7 @@ def snapshot(collection):
 
 
 def exercise_dialog(mw, action):
-    from aqt.qt import Qt, QTimer
+    from aqt.qt import QTimer
 
     from katanki.anki.analysis import analyze
     from katanki.common.models import ScanSelection
@@ -42,6 +42,10 @@ def exercise_dialog(mw, action):
     parent, child, model_id = seed_collection(mw.col)
     before = snapshot(mw.col)
     selection = ScanSelection((parent, child), model_id, ("Front",))
+    from scripts.smoke_settings import exercise_settings_dialog
+
+    exercise_settings_dialog(mw, ScanSelection((parent,), model_id, ("Front",)))
+    assert snapshot(mw.col) == before, "Settings changed notes/cards/review history"
     sources = {"kanjidic2": FIXTURES / "kanjidic2.xml", "kanjivg": FIXTURES / "kanjivg"}
     first = analyze(mw.col, selection, sources)
     second = analyze(mw.col, selection, sources)
@@ -70,7 +74,11 @@ def exercise_dialog(mw, action):
     def drive():
         nonlocal started, completed, phase
         dialog = next(
-            (widget for widget in mw.app.topLevelWidgets() if isinstance(widget, DiscoveryDialog)),
+            (
+                widget
+                for widget in mw.app.topLevelWidgets()
+                if isinstance(widget, DiscoveryDialog) and widget.isVisible()
+            ),
             None,
         )
         if dialog is None:
@@ -78,19 +86,9 @@ def exercise_dialog(mw, action):
         try:
             if not started:
                 started = True
-                for index in range(dialog.decks.count()):
-                    item = dialog.decks.item(index)
-                    item.setSelected(item.data(Qt.ItemDataRole.UserRole) == parent)
-                dialog.types.setCurrentIndex(
-                    next(
-                        index
-                        for index, model in enumerate(dialog.note_types)
-                        if model[0] == model_id
-                    )
-                )
-                for index in range(dialog.fields.count()):
-                    item = dialog.fields.item(index)
-                    item.setSelected(item.text() == "Front")
+                from katanki.config import SourceRule
+
+                dialog.source_selector.restore((SourceRule("", model_id, ("Front",), (parent,)),))
                 for dataset_id, path in sources.items():
                     dialog.sources[dataset_id].setText(str(path))
                 dialog._scan()

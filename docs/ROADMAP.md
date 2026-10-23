@@ -3,7 +3,7 @@
 Progress tracker based on [the implementation specification](SPECIFICATION.md).
 The specification defines requirements; this file tracks delivery and verification.
 
-Last reviewed: **2026-10-22**. Current milestone: **Phase 2 — generation implemented and verified locally**.
+Last reviewed: **2026-10-23**. Current milestone: **Phase 3 — settings foundation**.
 Phase 1 ownership-count integration is delivered. Production uses kanji meanings
 and blanked examples copied from selected source vocabulary. Minimum
 supported versions remain an open decision; the verified local baseline is Linux
@@ -29,7 +29,7 @@ below distinguishes automated tests, real-host checks, and remaining decisions.
 ## Phase 0 — Bootstrap
 
 Deliverable: install in an isolated Anki profile and open
-**Tools → Kanji Katanki → Analyze Collection**.
+**Katanki → Analyze Collection**.
 
 - [x] Set up the uv project, pytest, ruff, and reproducible lockfile.
   Evidence: `pyproject.toml`, `uv.lock`.
@@ -206,10 +206,26 @@ tracking or direct collection-database writes.
 Deliverable: once Phase 2 generation works, make everyday use a single refresh
 using the user's saved configuration.
 
-- [ ] Configure vocabulary sources (decks, note types, and fields) in the add-on
+- [x] Configure vocabulary sources (decks, note types, and fields) in the add-on
   settings and persist them across Anki restarts.
+  Discovery settings support multiple deck/pattern → note type → field rules.
+  `*` covers all decks; matching decks include subdecks. Overlapping rules union
+  selected fields and count each note once. Explicit deck choices retain IDs.
+  Evidence: `config/__init__.py`, `ui/settings.py`, `tests/test_settings.py`, and
+  `scripts/smoke_settings.py` (real collection close/reopen, 2026-10-23).
+  Settings and Analyze Collection are now under the top-level **Katanki** menu.
+  The source editor uses compact labeled rows and a checkbox popup for fields;
+  multi-field summaries keep longer note types from making the editor taller.
+  **Test discovery** scans unsaved source rows in the background and shows note,
+  vocabulary, and kanji candidate counts and lists without saving or generating.
+  Real-host smoke verifies exact settings and notes/cards/revlog preservation.
 - [ ] Save generation preferences and provide recommended defaults with versioned
   configuration and safe migrations.
+  The Generation tab saves destination deck and component recognition prerequisites;
+  production remains per-character opt-in. Missing settings use safe defaults;
+  malformed/future versions fail without overwriting data. Version 1 source settings
+  migrate to version 2 rules while preserving IDs and preferences. Automatic refresh
+  and write/update approvals remain undefined.
 - [ ] Provide one refresh button that loads the configured sources and preferences,
   scans vocabulary, plans generation, and applies the configured workflow.
 - [ ] Add automatic refresh with configurable triggers and clear enabled/disabled
@@ -221,6 +237,15 @@ using the user's saved configuration.
   settings easy to correct.
 - [ ] Verify saved settings survive restarts, repeated refreshes create no
   duplicates, and manual/automatic refresh preserve existing review progress.
+
+Verification, 2026-10-23: 99 unit tests pass; lint and formatting pass.
+`scripts/smoke_settings.py` confirms persistence after closing/reopening a real
+Anki collection, mixed note types/fields, and overlapping wildcard deduplication.
+The packaged Qt-offscreen smoke passes top-level menu registration,
+tabbed Settings Save/Cancel and reopening, Add/Remove source rows, saved
+discovery/generation defaults, exact
+notes/cards/revlog preservation during settings/scans, generation Cancel/approval,
+and stroke controls on Linux Anki 26.09.3 / Python 3.14.8. Human visual review is pending.
 
 Acceptance: after configuring sources and preferences once, pressing refresh runs
 all configured steps without repeating setup. Automatic refresh uses the same
