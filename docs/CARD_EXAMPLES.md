@@ -6,7 +6,7 @@ suggestions in `VocabExamples` and protect `UserExamples`. Recognition and Parts
 show examples on the back. Production uses a generated `Prompt` snapshot rebuilt
 on Refresh, merging user examples first, deduplicating, limiting, and masking all
 target occurrences. Settings control default words, visibility and limits.
-Furigana, seen/new filtering and live production-front rendering after an editor
+Seen/new filtering and live production-front rendering after an editor
 change remain pending; refresh applies user-example edits to production clues.
 Exact previous stock templates are upgraded during creation or example refresh;
 managed-field refresh also upgrades legacy notes without a replacement review.
@@ -145,7 +145,8 @@ examples, tags, structured ruby markup, images, and metadata. Common-word filter
 only affects automatic suggestions; it does not discard the full dictionary.
 The complete add-on remains under the 50 MB packaging budget.
 
-Readings are retained as whole-word readings; furigana positions are not inferred.
+Dictionary readings are retained as whole-word readings. Review rendering uses
+kana to align readings to kanji groups; ambiguous splits keep a grouped reading.
 The in-memory index omits definitions, sentences, audio, and positional data; these omissions
 do not apply to the original archive. The derivative remains CC BY-SA 4.0. Both
 the full export and index include attribution and license texts offline, including
@@ -240,3 +241,16 @@ duplicates, masking, ambiguity after limiting, Parts examples, and preview parit
 For updates, cover source additions/removals, seen-state changes, disabled refresh,
 manual edits, migration, stale previews, repeated refresh, and Undo. Check that
 note/card IDs, scheduling, and review history remain unchanged.
+
+### Furigana (Phase 4)
+
+Recognition and Production have independent front/back furigana switches in Card
+settings. Production defaults to both sides enabled; Recognition defaults to back
+only. Existing saved back-side choices are preserved. Creation and Refresh store
+Jitendex readings with managed examples; run Refresh to apply settings to existing
+cards. Review works offline. Readings appear below kanji groups, using kana to align mixed words such as
+`食べる` (`た` under `食`). Compounds without reliable internal boundaries retain
+a grouped reading; ambiguous alignments fall back to the whole word. Masked
+production clues preserve these boundaries without revealing the target kanji.
+Chips with readings have extra bottom padding.
+Words without a dictionary reading remain plain text. Parts do not show furigana.

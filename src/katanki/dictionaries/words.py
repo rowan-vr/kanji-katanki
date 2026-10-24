@@ -16,6 +16,12 @@ class WordSuggestions:
             for character in set(word):
                 self.by_character.setdefault(character, []).append((word, reading))
 
+    def readings(self, character):
+        result = {}
+        for word, reading in self.by_character.get(character, ()):
+            result.setdefault(word, reading)
+        return result
+
     def lookup(self, character):
         """Rank by upstream priority, then length/spelling; keep one reading per word."""
         return tuple(dict.fromkeys(word for word, _ in self.by_character.get(character, ())))

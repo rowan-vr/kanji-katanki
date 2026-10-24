@@ -41,13 +41,15 @@ def test_older_settings_migrate_with_card_defaults_without_modifying_input(versi
     assert restored.include_primitives is True
     assert restored.to_dict()["version"] == 7
     for category in GENERATION_CATEGORIES:
-        assert restored.card_settings(category) == CardSettings()
+        assert restored.card_settings(category) == CardSettings(
+            front_furigana=category == "production"
+        )
         assert restored.card_settings(category).auto_refresh is True
 
 
 def test_missing_category_and_fields_receive_defaults():
     restored = from_dict({"version": 5, "cards": {"production": {"furigana": True}}})
-    assert restored.card_settings("production") == CardSettings(furigana=True)
+    assert restored.card_settings("production") == CardSettings(furigana=True, front_furigana=True)
     assert restored.card_settings("recognition") == CardSettings()
     assert restored.card_settings("parts") == CardSettings()
 
@@ -62,7 +64,14 @@ def test_missing_category_and_fields_receive_defaults():
         {"parts": {"example_source": []}},
         *(
             {"recognition": {field: value}}
-            for field in ("show_examples", "furigana", "auto_refresh", "include_new", "show_name")
+            for field in (
+                "show_examples",
+                "furigana",
+                "front_furigana",
+                "auto_refresh",
+                "include_new",
+                "show_name",
+            )
             for value in ("false", 0, None)
         ),
     ],

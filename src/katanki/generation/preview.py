@@ -113,12 +113,17 @@ def build_preview(
                 reason = "Component prerequisites cannot be assessed without stroke data."
             else:
                 parents = tuple(add_component(parent) for parent in visual.prerequisites)
-        options = card_settings.get(mode, CardSettings())
+        options = card_settings.get(mode, CardSettings(front_furigana=mode == "production"))
         discovered = tuple(sorted({word for word in report.scan.vocabulary if key in word}))
         defaults = (
             word_suggestions.lookup(key)
             if "discovered_and_default" in (options.front_source, options.example_source)
             else ()
+        )
+        example_readings = (
+            getattr(word_suggestions, "readings", lambda key: {})(key)
+            if options.front_furigana or options.furigana
+            else {}
         )
         examples = tuple(dict.fromkeys((*discovered, *defaults)))
         front_examples = (
@@ -153,7 +158,11 @@ def build_preview(
                 visual.svg if visual else b"",
                 prompt,
                 report.attribution
-                + ((getattr(word_suggestions, "attribution", ATTRIBUTION),) if defaults else ()),
+                + (
+                    (getattr(word_suggestions, "attribution", ATTRIBUTION),)
+                    if defaults or example_readings
+                    else ()
+                ),
                 examples,
                 options.example_limit,
                 options.show_examples,
@@ -165,6 +174,9 @@ def build_preview(
                 ),
                 front_examples,
                 back_examples,
+                tuple(example_readings.items()),
+                options.front_furigana,
+                options.furigana,
             )
             if visual is None:
                 warnings.append(f"{key}: stroke diagram unavailable.")

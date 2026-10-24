@@ -206,5 +206,11 @@ class JitendexYomitan:
             str(self.source.resolve()), stat.st_size, stat.st_mtime_ns, self.progress
         ).lookup(character)
 
+    def readings(self, character):
+        stat = self.source.stat()
+        return _suggestions(
+            str(self.source.resolve()), stat.st_size, stat.st_mtime_ns, self.progress
+        ).readings(character)
+
     def lookup_words(self, character):
         return self.lookup(character)
