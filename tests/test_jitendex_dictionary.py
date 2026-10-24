@@ -190,6 +190,12 @@ def test_refresh_uses_local_jitendex_selection(tmp_path, monkeypatch):
     class Existing(dict):
         id = 1
 
+        def note_type(self):
+            from katanki.generation.cards import CSS, note_type_spec
+
+            spec = note_type_spec("kanji-recognition")
+            return {"css": CSS, "tmpls": [{"qfmt": spec.front, "afmt": spec.back}]}
+
     note = Existing(
         CardContent(identity, "景", examples=("景色",), discovered_examples=("景色",)).fields()
     )

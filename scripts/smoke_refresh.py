@@ -177,7 +177,7 @@ def exercise_refresh(mw, action):
         identity_notes = owned_identities(mw.col, note_type="kanji-recognition")
         time_id = identity_notes[Identity("kanji-recognition", "時")][0]
         assert "時々" in mw.col.get_note(time_id)["VocabExamples"]
-        assert any("Examples updated on" in message for message in messages)
+        assert any("Existing-card updates on" in message for message in messages)
         mw.col.undo()
         assert snapshot(mw.col) == before_updates, "Example refresh Undo changed prior data"
         run("noop")
@@ -186,6 +186,8 @@ def exercise_refresh(mw, action):
         fixtures = Path(__file__).resolve().parents[1] / "tests/fixtures"
         parts_settings = replace(
             settings,
+            # Tiny parts fixtures do not cover existing kanji dictionary data.
+            refresh=replace(settings.refresh, update_dictionary_data=False),
             generation=(
                 GenerationSettings(False),
                 GenerationSettings(False),

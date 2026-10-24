@@ -8,7 +8,7 @@ import pytest
 from katanki.anki.ignored import IGNORED_KEY, load_ignored, save_ignored
 from katanki.common.models import DiscoveryReport, KanjiEntry, ScanResult
 from katanki.config import GenerationSettings, Settings
-from katanki.generation.cards import CardContent
+from katanki.generation.cards import CardContent, note_type_spec
 from katanki.generation.destinations import CreationOptions
 from katanki.generation.planner import GenerationPlan, Identity, LearningUnit, PlanItem
 from katanki.generation.preview import GenerationPreview
@@ -84,7 +84,10 @@ def test_preview_escapes_source_content_and_renders_front_and_back_without_notes
     content = CardContent(identity, "景", meanings=("<unsafe>",), prompt="scenery\n__色")
     front, back = render_card_preview(content)
     assert "scenery<br>__色" in front
-    assert front in back
+    assert front not in back
+    assert "production-meaning" in front
+    assert "Write the missing kanji" not in front
+    assert "{{FrontSide}}" not in note_type_spec(identity.note_type).back
     assert "&lt;unsafe&gt;" in back and "<unsafe>" not in back
     assert "Stroke data unavailable" in back
     assert "{{" not in front and "{{" not in back

@@ -14,13 +14,51 @@ MAX_EXPANDED = 1024 * 1024 * 1024
 MAX_BANK = 32 * 1024 * 1024
 
 
-def nodes(value):
+def nodes(value, *, skip=()):
     if isinstance(value, list):
         for item in value:
-            yield from nodes(item)
+            yield from nodes(item, skip=skip)
     elif isinstance(value, dict):
+        if value.get("data", {}).get("content") in skip:
+            return
         yield value
-        yield from nodes(value.get("content"))
+        yield from nodes(value.get("content"), skip=skip)
+
+
+EXCLUDED_SENSE_CODES = {"uk", "arch", "obs", "rare"}
+
+
+def _excluded(values):
+    return any(node.get("data", {}).get("code") in EXCLUDED_SENSE_CODES for node in values)
+
+
+def has_current_sense(definitions):
+    """An archaic secondary meaning must not discard a modern common word."""
+    groups = [
+        node
+        for node in nodes(definitions, skip=("extra-info",))
+        if node.get("data", {}).get("content") == "sense-group"
+    ]
+    if not groups:
+        # Plain/custom Yomitan definitions retain the previous conservative policy.
+        return not _excluded(nodes(definitions, skip=("extra-info",)))
+    if _excluded(nodes(definitions, skip=("sense-group", "extra-info"))):
+        return False
+    for group in groups:
+        # Group-level usage tags apply to every sense in this group.
+        if _excluded(nodes(group, skip=("sense", "extra-info"))):
+            continue
+        senses = [
+            node
+            for node in nodes(group, skip=("extra-info",))
+            if node.get("data", {}).get("content") == "sense"
+        ]
+        if not senses:
+            if not _excluded(nodes(group, skip=("extra-info",))):
+                return True
+        elif any(not _excluded(nodes(sense, skip=("extra-info",))) for sense in senses):
+            return True
+    return False
 
 
 def eligible(row):
@@ -31,10 +69,7 @@ def eligible(row):
         return False
     if not extract_candidates(word):
         return False
-    return not any(
-        node.get("data", {}).get("code") in {"uk", "arch", "obs", "rare"}
-        for node in nodes(definitions)
-    )
+    return has_current_sense(definitions)
 
 
 def _open(path):

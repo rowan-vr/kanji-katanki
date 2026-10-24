@@ -62,7 +62,10 @@ def exercise_settings_dialog(mw, selection):
             assert panel.examples.text() == "Show example kanji containing the part on the back"
             panel.name.setChecked(False)
         else:
-            assert panel.source.itemText(0) == "Your vocabulary words only"
+            assert panel.source.itemText(0) == "Words from my selected Anki fields"
+            panel.front_source.setCurrentIndex((index + 1) % 2)
+            assert not panel.furigana.isEnabled()
+            assert not panel.word_status.isEnabled()
             panel.furigana.setChecked(index == 1)
             panel.word_status.setCurrentIndex(index % 2)
         panel.refresh.setChecked(index != 1)

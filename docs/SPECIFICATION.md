@@ -159,7 +159,20 @@ A manifest might have `id`, `category`, `format`, `source`, `capabilities`, `lic
   [card example design](CARD_EXAMPLES.md): separate Katanki-managed `VocabExamples`
   and user-owned `UserExamples`, user examples first, deduplication, stable ordering,
   and a per-category display limit of 5 by default (0 means show all). Store all
-  eligible examples; the limit controls rendering only. Production masks the target
+  eligible examples. Configure front and back sources independently: selected Anki
+  words only, or Anki words plus Jitendex dictionary words. Preserve legacy shared
+  choices during settings migration. Store side eligibility on the note so exported
+  cards work independently. Back-only dictionary words must not enter front clue
+  generation, refresh, or ambiguity checks. Visibility and limits control front clues only. Backs show all
+  configured stored examples sorted known → relearning → learning → new → no card,
+  using blue, rose double-border, amber dashed-border, plain-outline, and gray chips
+  respectively. Show the total unique count; long lists may display 12 chips plus
+  an expandable remainder, without discarding words. Save statuses from configured
+  source cards during creation/refresh;
+  learned means at least one matching card has graduated into Anki review. These
+  snapshots must work independently of source decks and the add-on. Use distinct
+  front/back layouts without instruction prompts or repeated front content.
+  Production masks the target
   in both fields at rendering time. Parts uses example kanji containing the part,
   on the back, rather than vocabulary words. Keep meanings and examples separate
   from the production prompt representation. Remaining example display work,

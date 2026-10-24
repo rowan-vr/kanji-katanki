@@ -1,8 +1,37 @@
-"""Per-category card display preferences for the settings dialog."""
+"""Per-category example choices with separate question and answer sources."""
 
 from dataclasses import replace
 
-from aqt.qt import QCheckBox, QComboBox, QFormLayout, QLabel, QSpinBox, QVBoxLayout, QWidget
+from aqt.qt import (
+    QCheckBox,
+    QComboBox,
+    QFormLayout,
+    QFrame,
+    QGroupBox,
+    QLabel,
+    QScrollArea,
+    QSpinBox,
+    QVBoxLayout,
+    QWidget,
+)
+
+
+def _hint(text):
+    label = QLabel(text)
+    label.setWordWrap(True)
+    return label
+
+
+def _word_sources(value):
+    choices = QComboBox()
+    choices.addItem("Words from my selected Anki fields", "discovered")
+    choices.addItem("My Anki words + Jitendex dictionary words", "discovered_and_default")
+    choices.setCurrentIndex(choices.findData(value))
+    choices.setToolTip(
+        "My Anki words come from the decks, note types and fields selected under Discovery. "
+        "Jitendex adds matching common words even when you have no Anki card for them."
+    )
+    return choices
 
 
 class CardSettingsPanel(QWidget):
@@ -11,83 +40,115 @@ class CardSettingsPanel(QWidget):
         self.category = category
         self.saved_settings = settings
         parts = category == "parts"
-        layout = QVBoxLayout(self)
+        outer = QVBoxLayout(self)
+        outer.setContentsMargins(0, 0, 0, 0)
+        scroll = QScrollArea()
+        scroll.setWidgetResizable(True)
+        scroll.setFrameShape(QFrame.Shape.NoFrame)
+        outer.addWidget(scroll)
+        content = QWidget()
+        scroll.setWidget(content)
+        layout = QVBoxLayout(content)
         layout.setContentsMargins(16, 16, 16, 16)
-        layout.setSpacing(12)
-        description = QLabel(
-            "Choose how parts cards display names and example kanji."
-            if parts
-            else f"Choose how {category} cards display example words."
+        layout.setSpacing(14)
+        layout.addWidget(
+            _hint(
+                "Choose the examples used on the question and answer sides of these cards."
+                if not parts
+                else "Choose how graphical parts and their example kanji are displayed."
+            )
         )
-        description.setWordWrap(True)
-        layout.addWidget(description)
-        form = QFormLayout()
-        form.setVerticalSpacing(12)
+
+        front = QGroupBox("Question — front of card")
+        front_form = QFormLayout(front)
         if parts:
-            self.name = QCheckBox("Show the part's name on the front")
+            self.name = QCheckBox("Show the part's name")
             self.name.setChecked(settings.show_name)
-            form.addRow("Name", self.name)
+            front_form.addRow(self.name)
         self.examples = QCheckBox(
             "Show example kanji containing the part on the back"
             if parts
-            else "Show example words on the front"
+            else "Show example words with the kanji"
+            if category == "recognition"
+            else "Show masked word clues"
         )
         self.examples.setChecked(settings.show_examples)
-        form.addRow("Examples", self.examples)
+        if not parts:
+            front_form.addRow(self.examples)
+            self.front_source = _word_sources(settings.front_source)
+            front_form.addRow("Examples on the front", self.front_source)
         self.limit = QSpinBox()
         self.limit.setRange(0, 2_147_483_647)
-        self.limit.setSpecialValueText("Show all")
+        self.limit.setSpecialValueText("All matching examples")
         self.limit.setValue(settings.example_limit)
         self.limit.setToolTip(
-            "Maximum examples displayed, including user examples. "
-            "0 shows all. All eligible examples remain stored on the card."
+            "Limits question-side examples, including your UserExamples. "
+            "The answer side keeps its full selected list."
         )
-        form.addRow("Example limit", self.limit)
-        self.source = QComboBox()
-        if parts:
-            self.source.addItem("Kanji from your vocabulary only", "discovered")
-            self.source.addItem(
-                "Kanji from your vocabulary + other kanji", "discovered_and_default"
-            )
-        else:
-            self.source.addItem("Your vocabulary words only", "discovered")
-            self.source.addItem(
-                "Your vocabulary words + default examples", "discovered_and_default"
-            )
-            self.source.setToolTip(
-                "Default example words come from the selected Jitendex dictionary."
-            )
-        self.source.setCurrentIndex(self.source.findData(settings.example_source))
-        form.addRow("Kanji sources" if parts else "Word sources", self.source)
         if not parts:
-            self.furigana = QCheckBox("Show furigana on example words")
+            front_form.addRow("Maximum front examples", self.limit)
+        layout.addWidget(front)
+
+        back = QGroupBox("Answer — back of card")
+        back_form = QFormLayout(back)
+        if parts:
+            back_form.addRow(self.examples)
+            self.source = QComboBox()
+            self.source.addItem("Kanji found in my selected Anki fields", "discovered")
+            self.source.addItem(
+                "My selected kanji + other dictionary kanji", "discovered_and_default"
+            )
+            self.source.setCurrentIndex(self.source.findData(settings.example_source))
+            back_form.addRow("Example kanji on the back", self.source)
+            self.limit.hide()  # Preserve the saved legacy value; backs are not capped.
+        else:
+            self.back_source = _word_sources(settings.example_source)
+            self.source = self.back_source
+            back_form.addRow("Examples on the back", self.back_source)
+        back_form.addRow(
+            _hint(
+                "All matching examples are available on the back. "
+                "Long lists have a Show more control."
+            )
+        )
+        layout.addWidget(back)
+
+        options = QFormLayout()
+        if not parts:
+            self.furigana = QCheckBox("Show readings above example words")
             self.furigana.setChecked(settings.furigana)
-            form.addRow("Readings", self.furigana)
+            self.furigana.setEnabled(False)
+            self.furigana.setToolTip("Not available yet. Example words currently use plain text.")
+            options.addRow("Furigana", self.furigana)
             self.word_status = QComboBox()
-            self.word_status.addItem("Seen and new words", True)
-            self.word_status.addItem("Seen words only", False)
+            self.word_status.addItem("All matching Anki words, including unreviewed cards", True)
+            self.word_status.addItem("Only words with an Anki card I have reviewed", False)
             self.word_status.setCurrentIndex(self.word_status.findData(settings.include_new))
-            self.word_status.setToolTip("Seen words have at least one source card reviewed before.")
-            form.addRow("Vocabulary", self.word_status)
-        self.refresh = QCheckBox(
-            "Automatically refresh example kanji"
-            if parts
-            else "Automatically refresh example words"
-        )
+            self.word_status.setEnabled(False)
+            self.word_status.setToolTip(
+                "Not available yet. All matching Anki words are currently included. "
+                "Chip colors on the back still show each word's saved review state."
+            )
+            options.addRow("Filter my Anki words by reviews", self.word_status)
+        self.refresh = QCheckBox("Update examples on existing cards during Refresh")
         self.refresh.setChecked(settings.auto_refresh)
-        form.addRow("Refresh", self.refresh)
-        layout.addLayout(form)
-        sources_hint = QLabel(
-            "Your vocabulary words come from the sources selected under Discovery."
+        self.refresh.setToolTip(
+            "Uses the choices above during manual and automatic Refresh. "
+            "Also requires Update example words in the Refresh tab."
         )
-        sources_hint.setWordWrap(True)
-        layout.addWidget(sources_hint)
-        hint = QLabel(
-            "These preferences are saved per category. "
-            "Example visibility and limits also apply to production clues."
+        options.addRow(self.refresh)
+        layout.addLayout(options)
+        layout.addWidget(
+            _hint(
+                "My Anki words means the Japanese text in the fields selected under Discovery. "
+                "Other fields are not searched. Dictionary words come from the Jitendex selected "
+                "under Dictionaries. Examples entered in UserExamples are included on both sides, "
+                "subject to the front visibility and limit."
+                if not parts
+                else "Example kanji are characters containing this graphical part, "
+                "rather than vocabulary words."
+            )
         )
-        hint.setWordWrap(True)
-        layout.addWidget(hint)
         layout.addStretch()
 
     def settings(self):
@@ -100,6 +161,13 @@ class CardSettingsPanel(QWidget):
         if self.category == "parts":
             changes["show_name"] = self.name.isChecked()
         else:
+            selected = self.front_source.currentData()
+            changes["front_example_source"] = (
+                None
+                if self.saved_settings.front_example_source is None
+                and selected == changes["example_source"]
+                else selected
+            )
             changes["furigana"] = self.furigana.isChecked()
             changes["include_new"] = self.word_status.currentData()
         return replace(self.saved_settings, **changes)

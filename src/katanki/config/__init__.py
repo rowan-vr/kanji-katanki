@@ -5,7 +5,7 @@ from dataclasses import asdict, dataclass
 from ..common.models import ScanSelection
 
 CONFIG_KEY = "katanki_settings"
-VERSION = 6
+VERSION = 7
 
 
 @dataclass(frozen=True)
@@ -59,6 +59,13 @@ class CardSettings:
     include_new: bool = True
     show_name: bool = True
     example_limit: int = 5
+    # The existing source setting controls the back. None retains the legacy
+    # shared front/back choice; an explicit front choice is independent.
+    front_example_source: str | None = None
+
+    @property
+    def front_source(self):
+        return self.front_example_source or self.example_source
 
     def __post_init__(self):
         if any(
@@ -76,6 +83,11 @@ class CardSettings:
             raise ValueError("Example limit must be a nonnegative whole number (0 means all).")
         if self.example_source not in ("discovered", "discovered_and_default"):
             raise ValueError("Choose discovered words or discovered and default words.")
+        if self.front_example_source is not None and self.front_example_source not in (
+            "discovered",
+            "discovered_and_default",
+        ):
+            raise ValueError("Choose Anki words or Anki and dictionary words for the front.")
 
 
 @dataclass(frozen=True)
@@ -196,7 +208,7 @@ def from_dict(data) -> Settings:
         return Settings()
     if not isinstance(data, dict) or type(data.get("version")) is not int:
         raise ValueError("Invalid Katanki settings format. Saved settings were preserved.")
-    if data["version"] not in (1, 2, 3, 4, 5, VERSION):
+    if data["version"] not in (1, 2, 3, 4, 5, 6, VERSION):
         raise ValueError("Unsupported Katanki settings version. Saved settings were preserved.")
     if data["version"] == 1:
         legacy = data.get("source")
@@ -288,6 +300,7 @@ def from_dict(data) -> Settings:
                     entry.get("include_new", True),
                     entry.get("show_name", True),
                     entry.get("example_limit", 5),
+                    entry.get("front_example_source"),
                 )
             )
         cards = tuple(parsed)

@@ -5,7 +5,7 @@ import unicodedata
 from collections.abc import Iterable
 from html.parser import HTMLParser
 
-from ...common.models import NoteText, ScanResult
+from ...common.models import WORD_STATUS_ORDER, NoteText, ScanResult
 
 
 class _VisibleText(HTMLParser):
@@ -82,6 +82,7 @@ def scan_notes(notes: Iterable[NoteText]) -> ScanResult:
     candidates: set[str] = set()
     vocabulary: set[str] = set()
     tags_by_character = {}
+    statuses = {}
     count = 0
     for note in notes:
         count += 1
@@ -90,7 +91,12 @@ def scan_notes(notes: Iterable[NoteText]) -> ScanResult:
             candidates.update(characters)
             for character in characters:
                 tags_by_character.setdefault(character, set()).update(note.tags)
-            vocabulary.update(extract_vocabulary(field))
+            words = extract_vocabulary(field)
+            vocabulary.update(words)
+            for word in words:
+                status = note.word_status
+                if WORD_STATUS_ORDER.get(status, 4) < WORD_STATUS_ORDER.get(statuses.get(word), 4):
+                    statuses[word] = status
     return ScanResult(
         count,
         tuple(sorted(candidates)),
@@ -98,4 +104,5 @@ def scan_notes(notes: Iterable[NoteText]) -> ScanResult:
         tuple(
             (key, tuple(sorted(tags))) for key, tags in sorted(tags_by_character.items()) if tags
         ),
+        tuple(sorted(statuses.items())),
     )

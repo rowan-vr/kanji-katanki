@@ -74,21 +74,74 @@ def main():
             assert not prepare_refresh(col, settings).examples.updates
             disabled = replace(settings, refresh=replace(settings.refresh, update_examples=False))
             assert not prepare_refresh(col, disabled).examples.updates
-            # Manual edits to managed fields are preserved and reported.
+            # Managed edits and missing tracking are replaced without a review.
             edited = col.get_note(production.id)
             edited["VocabExamples"] = "My managed edit"
             col.update_note(edited)
-            assert any(
-                "manually edited" in c for c in prepare_refresh(col, settings).examples.conflicts
-            )
-            # Legacy notes are not adopted silently, even if their current examples match.
             legacy = next(col.get_note(nid) for nid in generated if nid != production.id)
             legacy[STATE_FIELD] = ""
             col.update_note(legacy)
             plan = prepare_refresh(col, settings).examples
-            assert any(update.migration for update in plan.updates)
-            assert apply_example_refresh(col, plan).updated == 0
-            assert apply_example_refresh(col, plan, migrate=True).updated == 1
+            assert not plan.conflicts and all(not update.migration for update in plan.updates)
+            assert apply_example_refresh(col, plan).updated == 2
+            # Editor-damaged tracking is replaced automatically with Undo support.
+            damaged = col.get_note(production.id)
+            damaged[STATE_FIELD] = (
+                '{"version": 1, "fields": {"VocabExamples": '
+                '"<div data-source="\\&quot;vocabulary\\&quot;">景色</div>"}}'
+            )
+            col.update_note(damaged)
+            damaged_snapshot = {
+                table: col.db.all(f"select * from {table} order by id")
+                for table in ("notes", "cards", "revlog")
+            }
+            repair = prepare_refresh(col, settings).examples
+            assert len(repair.updates) == 1
+            assert not repair.updates[0].migration
+            assert apply_example_refresh(col, repair).updated == 1
+            repaired = col.get_note(production.id)
+            assert repaired["UserExamples"] == damaged["UserExamples"]
+            assert repaired.tags == damaged.tags
+            for table in ("cards", "revlog"):
+                assert col.db.all(f"select * from {table} order by id") == damaged_snapshot[table]
+            col.undo()
+            for table, expected in damaged_snapshot.items():
+                assert col.db.all(f"select * from {table} order by id") == expected
+            assert apply_example_refresh(col, repair, migrate=True).updated == 1
+            assert not prepare_refresh(col, settings).examples.updates
+            # Attribute-quote damage is also replaced automatically.
+            import json
+
+            automatic = col.get_note(production.id)
+            raw = json.dumps(json.loads(automatic[STATE_FIELD]), ensure_ascii=False)
+            for name, values in (
+                ("data-source", ("vocabulary", "default", "components")),
+                ("data-status", ("learned", "relearning", "learning", "new", "exists", "missing")),
+            ):
+                for value in values:
+                    raw = raw.replace(
+                        name + r"=\"" + value + r"\"", name + r'="\&quot;' + value + r'\&quot;"'
+                    )
+            automatic[STATE_FIELD] = raw
+            col.update_note(automatic)
+            automatic_before = dict(col.get_note(automatic.id).items())
+            scheduling = {
+                table: col.db.all(f"select * from {table} order by id")
+                for table in ("cards", "revlog")
+            }
+            automatic_plan = prepare_refresh(col, settings).examples
+            assert len(automatic_plan.updates) == 1
+            assert not automatic_plan.updates[0].migration
+            assert apply_example_refresh(col, automatic_plan).updated == 1
+            assert {k: v for k, v in col.get_note(automatic.id).items() if k != STATE_FIELD} == {
+                k: v for k, v in automatic_before.items() if k != STATE_FIELD
+            }
+            for table, expected in scheduling.items():
+                assert col.db.all(f"select * from {table} order by id") == expected
+            col.undo()
+            assert dict(col.get_note(automatic.id).items()) == automatic_before
+            assert apply_example_refresh(col, automatic_plan).updated == 1
+            assert not prepare_refresh(col, settings).examples.updates
             # All sources can disappear. Generated notes/cards survive and recognition clears.
             col.remove_notes([source.id])
             plan = prepare_refresh(col, settings).examples

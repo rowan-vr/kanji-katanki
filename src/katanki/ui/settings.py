@@ -49,7 +49,9 @@ class SettingsDialog(QDialog):
         discovery_layout = QVBoxLayout(discovery)
         discovery_layout.setContentsMargins(16, 16, 16, 16)
         discovery_layout.setSpacing(14)
-        description = QLabel("Choose where Katanki finds your vocabulary.")
+        description = QLabel(
+            "Choose the Anki decks, note types and fields containing your Japanese words."
+        )
         description.setWordWrap(True)
         discovery_layout.addWidget(description)
         self.sources = SourceSelector(mw)
@@ -106,7 +108,7 @@ class SettingsDialog(QDialog):
         refresh_layout.addWidget(self.refresh_dictionary)
         update_hint = QLabel(
             "Example updates respect each category's refresh setting under Cards. "
-            "Manual edits are preserved; older notes require a migration review. "
+            "Refresh overwrites Katanki-managed fields; UserExamples is kept. "
             "Tag and dictionary-content updates remain planned."
         )
         update_hint.setWordWrap(True)
@@ -240,7 +242,8 @@ class SettingsDialog(QDialog):
         prompt.setText("Your card settings have been saved.")
         prompt.setInformativeText(
             "Refresh your cards to apply the changed settings. Refresh uses your saved "
-            "update preferences and preserves manual edits. You can also do this later "
+            "update preferences and overwrites Katanki-managed fields. UserExamples is kept. "
+            "You can also do this later "
             "from Katanki → Refresh and generate Kanji Cards."
         )
         later = prompt.addButton("Do later", QMessageBox.ButtonRole.RejectRole)

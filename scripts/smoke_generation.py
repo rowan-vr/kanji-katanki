@@ -19,6 +19,8 @@ def main():
     from katanki.anki.analysis import analyze
     from katanki.anki.generation import apply_generation, preview_generation
     from katanki.common.models import ScanSelection
+    from katanki.generation.examples import STATE_FIELD, decode_state, managed_fields
+    from katanki.generation.planner import Identity
 
     fixtures = ROOT / "tests/fixtures"
     sources = {"kanjidic2": fixtures / "kanjidic2.xml", "kanjivg": fixtures / "kanjivg"}
@@ -90,6 +92,10 @@ def main():
             )
             # Preserve user edits as well as actual scheduled state and review history.
             note = collection.get_note(card.nid)
+            identity = Identity(note.note_type()["katanki_note_type"], note["Character"])
+            managed = managed_fields(dict(note.items()), identity)
+            assert decode_state(note[STATE_FIELD], managed) == managed
+            assert "<" not in note[STATE_FIELD]
             note["Meanings"] = "My edited meaning"
             collection.update_note(note)
             assert collection.db.scalar("select count(*) from revlog") == 1

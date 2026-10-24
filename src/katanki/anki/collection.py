@@ -3,7 +3,7 @@
 import re
 from collections.abc import Iterator
 
-from ..common.models import NoteText, ScanSelection
+from ..common.models import WORD_STATUS_ORDER, NoteText, ScanSelection
 from ..config import SourceRule
 
 
@@ -77,4 +77,14 @@ def selected_notes(
             fields_by_note.setdefault(note_id, {}).update(dict.fromkeys(source.fields))
     for note_id, fields in sorted(fields_by_note.items()):
         note = collection.get_note(note_id)
-        yield NoteText(tuple(note[field] for field in fields), tuple(getattr(note, "tags", ())))
+        # Card type remains meaningful for suspended/buried cards too; queue is
+        # temporary. Review = graduated, relearning = currently learning again.
+        cards = note.cards() if hasattr(note, "cards") else ()
+        statuses = [
+            {0: "new", 1: "learning", 2: "learned", 3: "relearning"}.get(card.type, "exists")
+            for card in cards
+        ]
+        status = min(statuses, key=WORD_STATUS_ORDER.__getitem__, default="missing")
+        yield NoteText(
+            tuple(note[field] for field in fields), tuple(getattr(note, "tags", ())), status
+        )

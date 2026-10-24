@@ -4,7 +4,6 @@ All mutations use Anki APIs. Existing notes are never updated, removed or moved.
 A stale preview may skip newly existing notes, but never adds extra creations.
 """
 
-import re
 from dataclasses import dataclass, replace
 
 from ..dictionaries.words import selected_words
@@ -14,6 +13,7 @@ from ..generation.discovery import visible_text
 from ..generation.examples import STATE_FIELD
 from ..generation.preview import GenerationPreview, build_preview
 from ..generation.review import exclude_ignored
+from ..generation.template_updates import upgrade_stock_layout
 from .identities import MODEL_MARKER, owned_identities
 
 
@@ -184,21 +184,10 @@ def apply_generation(
     created = 0
     try:
         # Add example storage through Anki APIs under the same Undo entry. Keep
-        # customized templates intact. Upgrade only our exact previous back template.
+        # customized templates/styles intact. Upgrade only exact stock layouts.
         for note_type, model in models.items():
-            changed = False
             spec = note_type_spec(note_type)
-            legacy_back = re.sub(
-                r'<div class="katanki-examples".*?</script>\n',
-                "",
-                spec.back,
-                count=1,
-                flags=re.DOTALL,
-            )
-            template = model["tmpls"][0]
-            if template["qfmt"] == spec.front and template["afmt"] == legacy_back:
-                template["afmt"] = spec.back
-                changed = True
+            changed = upgrade_stock_layout(model, note_type)
             for name in spec.fields:
                 if name not in {field["name"] for field in model["flds"]}:
                     collection.models.add_field(model, collection.models.new_field(name))

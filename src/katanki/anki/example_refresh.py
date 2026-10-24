@@ -1,7 +1,6 @@
 """Refresh owned-note examples, dictionary content and tags without changing scheduling."""
 
-import json
-import re
+from copy import deepcopy
 from dataclasses import dataclass, replace
 from html import escape
 
@@ -10,9 +9,16 @@ from ..dictionaries.preferences import dictionary_sources
 from ..dictionaries.words import ATTRIBUTION, WordSuggestions, selected_words
 from ..generation.cards import CardContent, normalize_prompt, note_type_spec
 from ..generation.destinations import creation_options
-from ..generation.examples import STATE_FIELD, encode_state, lines, managed_fields
+from ..generation.examples import (
+    STATE_FIELD,
+    encode_state,
+    lines,
+    managed_fields,
+    words_for_side,
+)
 from ..generation.planner import NOTE_TYPES, Identity
 from ..generation.preview import build_preview
+from ..generation.template_updates import upgrade_stock_layout
 from .identities import owned_identities
 
 
@@ -25,6 +31,7 @@ class ExampleUpdate:
     migration: bool = False
     tags_before: tuple[str, ...] | None = None
     tags_after: tuple[str, ...] | None = None
+    migration_reason: str = ""
 
 
 @dataclass(frozen=True)
@@ -154,9 +161,9 @@ def plan_example_refresh(collection, report, settings):
             options = settings.card_settings("production")
             words = lines(note["UserExamples"]) if "UserExamples" in note else ()
             examples = (
-                content.examples
+                (content.front_examples if content.front_examples is not None else content.examples)
                 if settings.refresh.update_examples
-                else lines(note["VocabExamples"])
+                else words_for_side(note["VocabExamples"], "front")
                 if "VocabExamples" in note
                 else ()
             )
@@ -169,29 +176,17 @@ def plan_example_refresh(collection, report, settings):
                 if settings.refresh.update_dictionary_data
                 else " ".join(lines(note["Meanings"]))
             )
-            if not shown or not meaning:
+            if not meaning or (options.show_examples and not shown):
                 conflicts.append(f"{label}: empty production clues; current clues preserved.")
                 continue
-            prompt = "\n".join((meaning, "", *(word.replace(identity.key, "__") for word in shown)))
+            prompt = (
+                "\n".join((meaning, "", *(word.replace(identity.key, "__") for word in shown)))
+                if shown
+                else meaning
+            )
             desired["Prompt"] = "<br>".join(escape(line) for line in prompt.split("\n"))
-        current = {name: note[name] if name in note else "" for name in desired}
-        state = None
-        if (
-            (settings.refresh.update_examples or settings.refresh.update_dictionary_data)
-            and STATE_FIELD in note
-            and note[STATE_FIELD]
-        ):
-            try:
-                recorded = json.loads(note[STATE_FIELD])
-                if recorded["version"] != 1 or set(recorded["fields"]) != set(desired):
-                    raise ValueError("Unsupported example state")
-                state = recorded["fields"]
-            except (ValueError, KeyError, TypeError):
-                conflicts.append(f"{label}: invalid generated-value record; examples preserved.")
-                continue
-        if state is not None and current != state:
-            conflicts.append(f"{label}: manually edited managed examples; edits preserved.")
-            continue
+        # These fields belong to Katanki. Refresh regenerates them even when
+        # Anki's HTML editor or a manual edit changed the recorded values.
         after = dict(desired) if settings.refresh.update_examples else {}
         if settings.refresh.update_dictionary_data:
             fields = content.fields()
@@ -208,7 +203,7 @@ def plan_example_refresh(collection, report, settings):
             desired["Attribution"] = after["Attribution"]
             if identity.note_type == "kanji-production":
                 after["Prompt"] = desired["Prompt"]
-        if settings.refresh.update_examples or (state is not None and after):
+        if settings.refresh.update_examples or settings.refresh.update_dictionary_data:
             after[STATE_FIELD] = encode_state(desired)
         tags_before = tags_after = None
         if settings.refresh.update_source_tags:
@@ -217,10 +212,14 @@ def plan_example_refresh(collection, report, settings):
             for tag in tag_options.get(identity, ()):
                 tags.setdefault(tag.casefold(), tag)
             tags_after = tuple(tags.values())
-        if all(name in note and note[name] == value for name, value in after.items()) and (
-            tags_before == tags_after
+        if (
+            all(name in note and note[name] == value for name, value in after.items())
+            and tags_before == tags_after
         ):
-            continue
+            if not settings.refresh.update_examples or not upgrade_stock_layout(
+                deepcopy(note.note_type()), identity.note_type
+            ):
+                continue
         if identity.note_type == "kanji-production":
             key = normalize_prompt(" ".join(lines(desired["Prompt"])))
             proposed.setdefault(key, []).append(note.id)
@@ -230,7 +229,6 @@ def plan_example_refresh(collection, report, settings):
                 identity,
                 tuple(note.items()),
                 tuple(after.items()),
-                migration=state is None and settings.refresh.update_examples,
                 tags_before=tags_before,
                 tags_after=tags_after,
             )
@@ -255,7 +253,11 @@ def apply_example_refresh(collection, plan, *, migrate=False):
     updates, conflicts = [], list(plan.conflicts)
     for update in plan.updates:
         if update.migration and not migrate:
-            conflicts.append(f"{update.identity.key}: legacy examples need migration review.")
+            conflicts.append(
+                f"{update.identity.key} ({update.identity.note_type}): "
+                "example change tracking needs replacement review; "
+                "run manual Refresh to review a repair. Current fields preserved."
+            )
             continue
         note = collection.get_note(update.note_id)
         if tuple(note.items()) != update.before or (
@@ -309,20 +311,7 @@ def apply_example_refresh(collection, plan, *, migrate=False):
         for update in updates:
             note = collection.get_note(update.note_id)
             model = note.note_type()
-            changed = False
-            spec = note_type_spec(update.identity.note_type)
-            legacy_back = re.sub(
-                r'<div class="katanki-examples".*?</script>\n',
-                "",
-                spec.back,
-                count=1,
-                flags=re.DOTALL,
-            )
-            if len(model["tmpls"]) == 1:
-                template = model["tmpls"][0]
-                if template["qfmt"] == spec.front and template["afmt"] == legacy_back:
-                    template["afmt"] = spec.back
-                    changed = True
+            changed = upgrade_stock_layout(model, update.identity.note_type)
             for name in (*dict(update.after), "UserExamples"):
                 if name not in {field["name"] for field in model["flds"]}:
                     collection.models.add_field(model, collection.models.new_field(name))

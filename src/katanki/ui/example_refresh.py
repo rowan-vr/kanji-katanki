@@ -1,4 +1,4 @@
-"""Explicit before/after review for legacy notes without generated-value baselines."""
+"""Review replacements when generated-value baselines are missing or damaged."""
 
 from aqt.qt import (
     QDialog,
@@ -66,8 +66,8 @@ def review_migration(mw, updates):
     layout.addWidget(heading)
     layout.addWidget(
         _label(
-            "These cards were created before change tracking was added. Compare the current "
-            "and proposed values before allowing future example refreshes. Your own examples, "
+            "These cards have missing or unreadable change-tracking records. Compare the "
+            "current and proposed values before restoring example refreshes. Your own examples, "
             "review progress, tags and decks are kept. Cancel keeps these cards unchanged."
         )
     )
@@ -92,11 +92,20 @@ def review_migration(mw, updates):
         update = updates[index]
         panel = QWidget()
         changes = QVBoxLayout(panel)
+        if getattr(update, "migration_reason", "") == "damaged":
+            changes.addWidget(
+                _label(
+                    "The saved change-tracking record cannot be read. Approving these "
+                    "replacements rebuilds it; Cancel preserves the current card."
+                )
+            )
         before = dict(update.before)
+        changed_fields = False
         for field, value in update.after:
             previous = before.get(field, "")
             if field == STATE_FIELD or previous == value:
                 continue
+            changed_fields = True
             group = QGroupBox(FIELD_LABELS.get(field, field))
             grid = QGridLayout(group)
             grid.setColumnStretch(0, 1)
@@ -113,6 +122,10 @@ def review_migration(mw, updates):
                 text.setAlignment(Qt.AlignmentFlag.AlignTop | Qt.AlignmentFlag.AlignLeft)
                 grid.addWidget(text, 1, column)
             changes.addWidget(group)
+        if not changed_fields:
+            changes.addWidget(
+                _label("Displayed field values are unchanged. Approval restores change tracking.")
+            )
         changes.addStretch()
         old = scroll.takeWidget()
         if old is not None:

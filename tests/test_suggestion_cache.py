@@ -83,3 +83,17 @@ def test_unwritable_cache_does_not_block_lookup_or_leave_temporary_files(cache, 
     monkeypatch.setattr(type(path), "replace", fail)
     assert adapter.JitendexYomitan(source).lookup("景") == ("景観",)
     assert list(path.parent.iterdir()) == []
+
+
+def test_old_entry_wide_filter_cache_is_rebuilt_for_sense_aware_suggestions(cache):
+    source, convert = cache
+    adapter.JitendexYomitan(source).lookup("景")
+    path = suggestion_cache.location(source)
+    data = json.loads(path.read_text(encoding="utf-8"))
+    data["format"] = 1  # Previous eligibility policy, with a valid dictionary fingerprint.
+    data["index"] = {}  # A word omitted by the old entry-wide filter.
+    path.write_text(json.dumps(data), encoding="utf-8")
+    adapter._suggestion_cache.clear()
+    assert adapter.JitendexYomitan(source).lookup("景") == ("景観",)
+    assert convert.call_count == 2
+    assert json.loads(path.read_text(encoding="utf-8"))["format"] == 2
