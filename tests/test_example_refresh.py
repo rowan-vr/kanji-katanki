@@ -106,15 +106,20 @@ def test_source_change_updates_managed_fields_and_keeps_user_examples(setup):
     assert not refresh.plan_example_refresh(collection, report(), Settings()).updates
 
 
-def test_manual_edits_and_invalid_baselines_are_preserved(setup):
+@pytest.mark.parametrize("baseline", (None, "damaged"))
+def test_managed_edits_are_overwritten_and_user_examples_preserved(setup, baseline):
     collection, notes = setup
     note = add(notes)
     note["VocabExamples"] = "My managed edit"
+    note["UserExamples"] = "My custom example"
+    if baseline is not None:
+        note[STATE_FIELD] = baseline
     plan = refresh.plan_example_refresh(collection, report(), Settings())
-    assert not plan.updates and "manually edited" in plan.conflicts[0]
-    note[STATE_FIELD] = "damaged"
-    plan = refresh.plan_example_refresh(collection, report(), Settings())
-    assert not plan.updates and "invalid" in plan.conflicts[0]
+    assert not plan.conflicts and not plan.updates[0].migration
+    assert refresh.apply_example_refresh(collection, plan).updated == 1
+    assert "時計" in notes[1]["VocabExamples"]
+    assert notes[1]["UserExamples"] == "My custom example"
+    assert not refresh.plan_example_refresh(collection, report(), Settings()).updates
 
 
 def test_both_refresh_switches_are_respected(setup):
@@ -127,13 +132,12 @@ def test_both_refresh_switches_are_respected(setup):
         assert not refresh.plan_example_refresh(collection, report(), settings).updates
 
 
-def test_legacy_migration_requires_explicit_opt_in(setup):
+def test_legacy_tracking_is_replaced_without_review(setup):
     collection, notes = setup
     add(notes, legacy=True)
     plan = refresh.plan_example_refresh(collection, report(), Settings())
-    assert plan.updates[0].migration
-    assert refresh.apply_example_refresh(collection, plan).updated == 0
-    assert refresh.apply_example_refresh(collection, plan, migrate=True).updated == 1
+    assert not plan.updates[0].migration
+    assert refresh.apply_example_refresh(collection, plan).updated == 1
     assert STATE_FIELD in notes[1]
 
 
@@ -279,3 +283,271 @@ def test_combined_dictionary_and_example_refresh_keeps_valid_baseline(setup):
     assert notes[1]["Readings"] == ""
     assert "時計" in notes[1]["VocabExamples"]
     assert not refresh.plan_example_refresh(collection, report(), settings).updates
+
+
+def test_review_stage_changes_refresh_only_saved_status_and_preserve_user_edits(setup):
+    collection, notes = setup
+    note = add(notes)
+    note["UserExamples"] = "<div>My own example</div>"
+    discovery = replace(
+        report(("時間",)),
+        scan=ScanResult(1, ("時",), ("時間",), vocabulary_statuses=(("時間", "learned"),)),
+    )
+    plan = refresh.plan_example_refresh(collection, discovery, Settings())
+    assert len(plan.updates) == 1
+    assert 'data-status="learned"' in dict(plan.updates[0].after)["VocabExamples"]
+    assert refresh.apply_example_refresh(collection, plan).updated == 1
+    assert notes[1]["UserExamples"] == "<div>My own example</div>"
+    assert not refresh.plan_example_refresh(collection, discovery, Settings()).updates
+    # A subsequent source removal clears its saved status without removing cards.
+    plan = refresh.plan_example_refresh(collection, report(()), Settings())
+    assert dict(plan.updates[0].after)["VocabExamples"] == ""
+    assert len(notes) == 1
+
+
+def test_stock_layout_upgrade_is_planned_even_when_example_values_are_unchanged(setup, monkeypatch):
+    from katanki.generation import legacy_cards
+
+    collection, notes = setup
+    add(notes)
+    original = Note.note_type
+
+    def old_type(self):
+        model = original(self)
+        model["tmpls"] = [
+            {"qfmt": legacy_cards.front(self.identity.note_type), "afmt": legacy_cards.BACK}
+        ]
+        model["css"] = legacy_cards.STYLES[0]
+        return model
+
+    monkeypatch.setattr(Note, "note_type", old_type)
+    plan = refresh.plan_example_refresh(collection, report(("時間",)), Settings())
+    assert len(plan.updates) == 1
+    assert not plan.updates[0].migration
+    # Planning never persists templates or notes.
+    collection.models.update_dict.assert_not_called()
+    assert refresh.apply_example_refresh(collection, plan).updated == 1
+    updated = collection.models.update_dict.call_args.args[0]
+    assert updated["tmpls"][0]["afmt"] == note_type_spec("kanji-recognition").back
+
+
+@pytest.mark.parametrize("mode", ("recognition", "production"))
+def test_refresh_keeps_all_words_even_when_front_limit_is_one(setup, mode):
+    from katanki.generation.examples import lines
+
+    collection, notes = setup
+    add(notes, mode=mode)
+    words = (
+        "時間",
+        "時計",
+        "時代",
+        "時期",
+        "時刻",
+        "時差",
+        "時速",
+        "時給",
+        "当時",
+        "同時",
+        "一時",
+        "時々",
+        "何時",
+        "時点",
+        "定時",
+        "臨時",
+    )
+    options = CardSettings(example_limit=1)
+    settings = Settings(cards=(options, options, options))
+    discovery = replace(
+        report(words),
+        scan=ScanResult(
+            len(words),
+            ("時",),
+            words,
+            vocabulary_statuses=(
+                ("時間", "learned"),
+                ("時計", "relearning"),
+                ("時代", "learning"),
+                ("定時", "new"),
+            ),
+        ),
+    )
+    plan = refresh.plan_example_refresh(collection, discovery, settings)
+    assert len(plan.updates) == 1
+    after = dict(plan.updates[0].after)
+    assert set(lines(after["VocabExamples"])) == set(words)
+    for stage in ("learned", "relearning", "learning", "new"):
+        assert f'data-status="{stage}"' in after["VocabExamples"]
+    if mode == "production":
+        assert len(lines(after["Prompt"])) == 2  # Meaning plus one front clue only.
+    assert refresh.apply_example_refresh(collection, plan).updated == 1
+    assert set(lines(notes[1]["VocabExamples"])) == set(words)
+    assert not refresh.plan_example_refresh(collection, discovery, settings).updates
+
+
+@pytest.mark.parametrize("mode", ("recognition", "production"))
+def test_damaged_baseline_repairs_tracking_without_review_and_is_idempotent(setup, mode):
+    import json
+
+    collection, notes = setup
+    note = add(notes, mode=mode)
+    note["UserExamples"] = "<div>時々</div>"
+    note[STATE_FIELD] = (
+        '{"version": 1, "fields": {"VocabExamples": "<div data-source="x">時間</div>"}}'
+    )
+    before = dict(note)
+    plan = refresh.plan_example_refresh(collection, report(), Settings())
+    assert len(plan.updates) == 1 and not plan.updates[0].migration
+    assert refresh.apply_example_refresh(collection, plan).updated == 1
+    assert notes[1]["UserExamples"] == before["UserExamples"]
+    assert json.loads(notes[1][STATE_FIELD])["version"] == 1
+    assert "<" not in notes[1][STATE_FIELD]
+    assert not refresh.plan_example_refresh(collection, report(), Settings()).updates
+
+
+def test_valid_legacy_baseline_is_encoded_safely_without_manual_adoption(setup):
+    import json
+
+    collection, notes = setup
+    note = add(notes)
+    # Reproduce the valid raw-JSON format from older add-ons.
+    note[STATE_FIELD] = json.dumps(json.loads(note[STATE_FIELD]), ensure_ascii=False)
+    before = dict(note)
+    plan = refresh.plan_example_refresh(collection, report(("時間",)), Settings())
+    assert len(plan.updates) == 1 and not plan.updates[0].migration
+    assert refresh.apply_example_refresh(collection, plan).updated == 1
+    assert notes[1]["VocabExamples"] == before["VocabExamples"]
+    assert not refresh.plan_example_refresh(collection, report(("時間",)), Settings()).updates
+
+
+def test_damaged_baseline_does_not_block_dictionary_refresh(setup):
+    collection, notes = setup
+    note = add(notes)
+    note[STATE_FIELD] = "damaged"
+    settings = Settings(refresh=RefreshSettings(update_examples=False, update_dictionary_data=True))
+    plan = refresh.plan_example_refresh(collection, report(), settings)
+    assert not plan.conflicts
+    assert refresh.apply_example_refresh(collection, plan).updated == 1
+    assert not refresh.plan_example_refresh(collection, report(), settings).updates
+
+
+def test_tracking_version_does_not_block_managed_field_replacement(setup):
+    import json
+
+    collection, notes = setup
+    note = add(notes)
+    saved = json.loads(note[STATE_FIELD])
+    saved["version"] = 2
+    note[STATE_FIELD] = json.dumps(saved)
+    plan = refresh.plan_example_refresh(collection, report(), Settings())
+    assert not plan.conflicts
+    assert refresh.apply_example_refresh(collection, plan).updated == 1
+
+
+@pytest.mark.parametrize("mode", ("recognition", "production"))
+def test_known_editor_damage_auto_repairs_metadata_only_and_is_idempotent(setup, mode):
+    import json
+
+    from test_examples_state import editor_damaged_state
+
+    collection, notes = setup
+    note = add(notes, mode=mode)
+    recorded = json.loads(note[STATE_FIELD])["fields"]
+    note[STATE_FIELD] = editor_damaged_state(recorded)
+    before = dict(note)
+    plan = refresh.plan_example_refresh(collection, report(("時間",)), Settings())
+    assert len(plan.updates) == 1 and not plan.updates[0].migration
+    assert not plan.conflicts
+    assert refresh.apply_example_refresh(collection, plan).updated == 1
+    assert {k: v for k, v in notes[1].items() if k != STATE_FIELD} == {
+        k: v for k, v in before.items() if k != STATE_FIELD
+    }
+    assert not refresh.plan_example_refresh(collection, report(("時間",)), Settings()).updates
+
+
+def test_editor_damage_and_managed_edits_are_replaced(setup):
+    import json
+
+    from test_examples_state import editor_damaged_state
+
+    collection, notes = setup
+    note = add(notes)
+    note[STATE_FIELD] = editor_damaged_state(json.loads(note[STATE_FIELD])["fields"])
+    note["VocabExamples"] = "My own managed-field changes"
+    plan = refresh.plan_example_refresh(collection, report(), Settings())
+    assert not plan.conflicts
+    assert refresh.apply_example_refresh(collection, plan).updated == 1
+    assert "時計" in notes[1]["VocabExamples"]
+
+
+def test_refresh_uses_anki_only_front_and_dictionary_back_without_leaking_clues(setup, monkeypatch):
+    from katanki.generation.examples import lines, words_for_side
+
+    collection, notes = setup
+    note = add(notes, mode="production")
+    note["UserExamples"] = "<div>時々</div>"
+    monkeypatch.setattr(
+        refresh,
+        "selected_words",
+        lambda choices: SimpleNamespace(
+            lookup=lambda key: ("時代", "時計"),
+            attribution="Synthetic dictionary",
+        ),
+    )
+    options = CardSettings(
+        example_source="discovered_and_default", front_example_source="discovered"
+    )
+    settings = Settings(cards=(options, options, CardSettings()))
+    plan = refresh.plan_example_refresh(collection, report(("時間",)), settings)
+    assert len(plan.updates) == 1 and not plan.updates[0].migration
+    after = dict(plan.updates[0].after)
+    assert lines(after["Prompt"]) == ("time", "__々", "__間")
+    assert words_for_side(after["VocabExamples"], "front") == ("時間",)
+    assert words_for_side(after["VocabExamples"], "back") == ("時間", "時代", "時計")
+    assert refresh.apply_example_refresh(collection, plan).updated == 1
+    assert notes[1]["UserExamples"] == "<div>時々</div>"
+    assert not refresh.plan_example_refresh(collection, report(("時間",)), settings).updates
+
+
+def test_dictionary_data_only_refresh_retains_saved_front_side_selection(setup):
+    from katanki.generation.examples import encode_state, lines, managed_fields
+
+    collection, notes = setup
+    note = add(notes, mode="production")
+    note["VocabExamples"] = (
+        '<div data-front="true" data-back="true" data-source="vocabulary">時間</div>'
+        '<div data-front="false" data-back="true" data-source="default">時計</div>'
+    )
+    note[STATE_FIELD] = encode_state(managed_fields(note, note.identity))
+    settings = Settings(refresh=RefreshSettings(update_examples=False, update_dictionary_data=True))
+    plan = refresh.plan_example_refresh(collection, report(("時間",)), settings)
+    assert all("__計" not in dict(update.after).get("Prompt", "") for update in plan.updates)
+    if plan.updates:
+        assert lines(dict(plan.updates[0].after)["Prompt"]) == ("time", "__間")
+
+
+def test_hiding_front_examples_keeps_dictionary_words_on_back(setup, monkeypatch):
+    from katanki.generation.examples import words_for_side
+
+    collection, notes = setup
+    add(notes, mode="production")
+    monkeypatch.setattr(
+        refresh,
+        "selected_words",
+        lambda choices: SimpleNamespace(
+            lookup=lambda key: ("時代",), attribution="Synthetic dictionary"
+        ),
+    )
+    options = CardSettings(
+        show_examples=False,
+        example_source="discovered_and_default",
+        front_example_source="discovered",
+    )
+    settings = Settings(cards=(options, options, CardSettings()))
+    plan = refresh.plan_example_refresh(collection, report(("時間",)), settings)
+    assert len(plan.updates) == 1 and not plan.conflicts
+    fields = dict(plan.updates[0].after)
+    assert fields["Prompt"] == "time"
+    assert fields["ExampleLimit"] == "-1"
+    assert words_for_side(fields["VocabExamples"], "back") == ("時間", "時代")
+    assert refresh.apply_example_refresh(collection, plan).updated == 1
+    assert not refresh.plan_example_refresh(collection, report(("時間",)), settings).updates

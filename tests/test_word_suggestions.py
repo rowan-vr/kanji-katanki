@@ -136,7 +136,8 @@ def test_priority_then_shorter_words_and_stable_deduplication():
 def test_real_pack_is_offline_and_has_known_words():
     assert "時間" in bundled_words().lookup("時")
     assert "景色" in bundled_words().lookup("景")
-    assert len(json.loads(convert(PACK)[0])["words"]) == 17126
+    assert "大丈夫" in bundled_words().lookup("丈")
+    assert len(json.loads(convert(PACK)[0])["words"]) == 17616
 
 
 def test_production_ambiguity_is_checked_after_limiting():
@@ -198,3 +199,91 @@ def test_preparation_preserves_full_export_and_its_attribution(tmp_path):
     assert write_jitendex(source, target, notices) == ("test", 2)
     assert target.read_bytes() == source.read_bytes()
     assert "Original attribution" in (notices / "Jitendex-Attribution.txt").read_text()
+
+
+def _sense(code=None, *, example_code=None):
+    content = []
+    if code:
+        content.append({"tag": "span", "data": {"code": code, "content": "misc-info"}})
+    content.append(
+        {
+            "tag": "ul",
+            "data": {"content": "glossary"},
+            "content": [{"tag": "li", "content": "Synthetic meaning"}],
+        }
+    )
+    if example_code:
+        content.append(
+            {
+                "tag": "div",
+                "data": {"content": "extra-info"},
+                "content": {"tag": "span", "data": {"code": example_code}},
+            }
+        )
+    return {"tag": "div", "data": {"content": "sense"}, "content": content}
+
+
+def _group(*senses, code=None):
+    content = list(senses)
+    if code:
+        content.insert(0, {"tag": "span", "data": {"code": code, "content": "misc-info"}})
+    return {"tag": "li", "data": {"content": "sense-group"}, "content": content}
+
+
+@pytest.mark.parametrize(
+    ("groups", "expected"),
+    [
+        ([_group(_sense()), _group(_sense(), code="arch")], True),
+        ([_group(_sense("arch"), _sense())], True),
+        ([_group(_sense("arch")), _group(_sense("obs"))], False),
+        ([_group(_sense(), code="uk")], False),
+        ([_group(_sense(example_code="arch"))], True),
+    ],
+)
+def test_sense_usage_tags_do_not_discard_unrelated_modern_meanings(groups, expected):
+    from katanki.dictionaries.adapters.jitendex_yomitan import eligible
+
+    entry = row("大丈夫", "だいじょうぶ")
+    entry[5] = [
+        {
+            "type": "structured-content",
+            "content": {
+                "tag": "ul",
+                "data": {"content": "sense-groups"},
+                "content": groups,
+            },
+        }
+    ]
+    assert eligible(entry) == expected
+    # Actual rare spelling forms stay excluded even when their senses are modern.
+    entry[2] = "★ rarely used form"
+    assert not eligible(entry)
+
+
+def test_modern_sense_retained_through_conversion_and_default_word_generation(tmp_path):
+    entry = row("大丈夫", "だいじょうぶ")
+    entry[5] = [
+        {
+            "type": "structured-content",
+            "content": {
+                "tag": "ul",
+                "data": {"content": "sense-groups"},
+                "content": [_group(_sense()), _group(_sense(), code="arch")],
+            },
+        }
+    ]
+    path = tmp_path / "mixed-senses.zip"
+    with ZipFile(path, "w") as archive:
+        archive.writestr(
+            "index.json",
+            json.dumps(
+                {
+                    "format": 3,
+                    "revision": "test",
+                    "title": "Synthetic mixed senses",
+                }
+            ),
+        )
+        archive.writestr("term_bank_1.json", json.dumps([entry], ensure_ascii=False))
+    payload, _ = convert(path)
+    assert WordSuggestions(json.loads(payload)["words"]).lookup("丈") == ("大丈夫",)

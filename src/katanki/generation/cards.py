@@ -4,6 +4,9 @@ import unicodedata
 from dataclasses import dataclass
 from html import escape
 
+from ..common.models import WORD_STATUS_ORDER
+from .card_layout import BACK, PARTS_FRONT, PRODUCTION_FRONT, RECOGNITION_FRONT, WORD_LEGEND
+from .card_layout import CSS as CSS
 from .examples import STATE_FIELD, encode_state, managed_fields
 from .planner import NOTE_TYPES, Identity
 
@@ -17,93 +20,22 @@ class NoteTypeSpec:
     back: str
 
 
-BACK = r"""{{FrontSide}}<hr id=answer>
-<div class="character">{{Display}}</div>
-<div>{{Meanings}}</div><div>{{Readings}}</div>
-<div>Graphical components: {{Components}}</div>
-<div class="katanki-examples" data-limit="{{ExampleLimit}}">
-<div class="user-examples" hidden>{{UserExamples}}</div>
-<div class="managed-examples" hidden>{{VocabExamples}}</div>
-<div class="example-output"></div>
-</div>
-<script>
-(function() {
-  var root = document.currentScript.previousElementSibling;
-  var output = root.querySelector('.example-output'), seen = new Set();
-  var limit = Number(root.dataset.limit), count = 0;
-  if (limit < 0) return;
-  ['.user-examples', '.managed-examples'].forEach(function(selector) {
-    var source = root.querySelector(selector);
-    // Managed examples have one div per word. User examples accept one per line.
-    var words = selector === '.managed-examples'
-      ? Array.from(source.children).map(function(n) { return n.textContent; })
-      : source.innerHTML.replace(/<br\s*\/?\s*>|<\/(?:div|p)>/gi, '\n').split('\n')
-        .map(function(s) {
-          var node = document.createElement('div'); node.innerHTML = s;
-          return node.textContent;
-        });
-    words.forEach(function(word) {
-      word = word.trim();
-      if (!word || seen.has(word) || (limit && count >= limit)) return;
-      seen.add(word); count++;
-      var line = document.createElement('div'); line.textContent = word;
-      output.appendChild(line);
-    });
-  });
-})();
-</script>
-<div class="strokes">{{Strokes}}</div>
-<button type="button" onclick="katankiPlay(this)">Play strokes</button>
-<button type="button" onclick="katankiNumbers(this)">Stroke numbers</button>
-<div class="attribution">{{Attribution}}</div>
-<script>
-function katankiNumbers(button) {
-  var svg = button.parentNode.querySelector('.strokes svg');
-  if (!svg) return;
-  var old = svg.querySelectorAll('.katanki-number');
-  if (old.length) { old.forEach(function(n) { n.remove(); }); return; }
-  svg.querySelectorAll('path').forEach(function(p, i) {
-    var point = p.getPointAtLength(0);
-    var text = document.createElementNS('http://www.w3.org/2000/svg', 'text');
-    text.setAttribute('class', 'katanki-number');
-    text.setAttribute('x', point.x); text.setAttribute('y', point.y);
-    text.setAttribute('fill', '#b03030'); text.setAttribute('font-size', '7');
-    text.textContent = i + 1; svg.appendChild(text);
-  });
-}
-function katankiPlay(button) {
-  var svg = button.parentNode.querySelector('.strokes svg');
-  if (!svg) return;
-  svg.querySelectorAll('path').forEach(function(p, i) {
-    if (p.katankiAnimation) p.katankiAnimation.cancel();
-    var length = p.getTotalLength();
-    p.katankiAnimation = p.animate([
-      {strokeDasharray: length, strokeDashoffset: length},
-      {strokeDasharray: length, strokeDashoffset: 0}
-    ], {duration: 450, delay: i * 500, fill: 'both'});
-  });
-}
-</script>"""
-CSS = """.card {font-family: sans-serif; text-align: center; font-size: 22px;}
-.character {font-size: 72px;}
-.strokes {background: white; color: #202020; display: inline-block; margin: 1em;}
-.attribution {font-size: 12px; margin-top: 1em;}
-button {margin: .3em; padding: .4em;}"""
-
-
 def note_type_spec(key: str) -> NoteTypeSpec:
     if key not in NOTE_TYPES:
         raise ValueError("Unknown Katanki note type.")
     kind, mode = key.split("-")
     field = "Character" if kind == "kanji" else "Component"
-    front = '<div class="character">{{Display}}</div>'
-    if kind == "primitive":
-        front = (
-            '<div>Identify this graphical component:</div><div class="strokes">{{Strokes}}</div>'
-        )
+    front = PARTS_FRONT if kind == "primitive" else RECOGNITION_FRONT
     if mode == "production":
-        action = "Write the missing kanji:" if kind == "kanji" else "Write the component:"
-        front = f"<div>{action}</div>" + "<div>{{Prompt}}</div>"
+        front = PRODUCTION_FRONT
+    label = ("Kanji" if kind == "kanji" else "Parts") + " · " + mode.title()
+    front = front.replace("{{CardLabel}}", label)
+    back = (
+        BACK.replace("{{CardLabel}}", label)
+        .replace("{{WordsLabel}}", "Words" if kind == "kanji" else "Related kanji")
+        .replace("{{CardKind}}", kind)
+        .replace("{{WordLegend}}", WORD_LEGEND if kind == "kanji" else "")
+    )
     return NoteTypeSpec(
         key,
         "Kanji Katanki — " + kind.title() + " " + mode.title(),
@@ -122,7 +54,7 @@ def note_type_spec(key: str) -> NoteTypeSpec:
             STATE_FIELD,
         ),
         front,
-        BACK,
+        back,
     )
 
 
@@ -140,16 +72,26 @@ class CardContent:
     example_limit: int = 5
     show_examples: bool = True
     discovered_examples: tuple[str, ...] = ()
+    example_statuses: tuple[tuple[str, str], ...] = ()
+    front_examples: tuple[str, ...] | None = None
+    back_examples: tuple[str, ...] | None = None
 
     def fields(self) -> dict[str, str]:
         spec = note_type_spec(self.identity.note_type)
+        statuses = dict(self.example_statuses)
+        front = set(self.front_examples) if self.front_examples is not None else set(self.examples)
+        back = set(self.back_examples) if self.back_examples is not None else set(self.examples)
         values = {
             spec.fields[0]: self.identity.key,
             "Display": escape(self.display),
             "UserExamples": "",
             "ExampleLimit": str(self.example_limit if self.show_examples else -1),
             "VocabExamples": "".join(
-                '<div data-source="'
+                '<div data-front="'
+                + ("true" if word in front else "false")
+                + '" data-back="'
+                + ("true" if word in back else "false")
+                + '" data-source="'
                 + (
                     "components"
                     if self.identity.kind == "primitive"
@@ -157,6 +99,8 @@ class CardContent:
                     if word in self.discovered_examples
                     else "default"
                 )
+                + '" data-status="'
+                + (statuses.get(word) if statuses.get(word) in WORD_STATUS_ORDER else "missing")
                 + '">'
                 + escape(word)
                 + "</div>"
@@ -167,7 +111,7 @@ class CardContent:
             "Readings": escape(", ".join(self.readings)),
             "Components": escape(", ".join(self.components) or "none listed"),
             "Strokes": self.svg.decode("utf-8") if self.svg else "Stroke data unavailable",
-            "Attribution": "<br>".join(escape(line) for line in self.attribution),
+            "Attribution": "<br>".join(dict.fromkeys(escape(line) for line in self.attribution)),
         }
         values[STATE_FIELD] = encode_state(managed_fields(values, self.identity))
         return values

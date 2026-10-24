@@ -413,7 +413,7 @@ Anki progress. Covers FR-03, FR-05 and the detail-view portion of FR-04.
   alignment, seen/new vocabulary filtering, live production
   clues after editing `UserExamples`, and remaining display controls and preview
   parity. Preserve the delivered managed/protected fields, all-example storage,
-  per-category limits (default 5; 0 = all), user-first stable deduplication,
+  per-category front limits (default 5; 0 = all), user-first stable deduplication,
   production masking and visible-clue ambiguity checks, Parts back examples, and
   protected existing-note refresh. Complete the remaining example acceptance
   coverage as part of this work. Resolve source-dependent filtering at creation
@@ -421,6 +421,46 @@ Anki progress. Covers FR-03, FR-05 and the detail-view portion of FR-04.
   Verify front/back rendering, examples, masking, furigana, and stroke controls
   on desktop and mobile, plus an exported deck imported into a clean profile
   without the add-on or source decks, offline.
+  Implemented 2026-10-24: distinct front/back layouts without instruction prompts
+  or repeated front content, responsive type/spacing, inline strokes, touch-sized
+  controls, and night mode (`generation/card_layout.py`). Backs show all configured
+  words sorted known → relearning → learning → new → no card, with distinct blue,
+  rose double-border, amber dashed-border, plain-outline, and gray chips. Long lists
+  show 12 chips with an expandable remainder and a full word count; creation and
+  refresh preserve the entire configured list independently of front limits.
+  Statuses are portable snapshots updated
+  at creation/refresh. Exact old stock layouts upgrade during creation/refresh;
+  custom templates/styles are preserved. `scripts/smoke_card_layout.py` verifies
+  clean export/import without source vocabulary, standalone offline rendering,
+  word states/order/styles, expansion of all 16 test words despite a front limit
+  of one, masking and stroke controls at 360/900 px in light/dark themes.
+  Change-tracking records now escape embedded HTML to survive the Anki editor;
+  recognized old attribute-quote damage is recovered automatically and compared
+  against current fields before updates. Manual edits remain protected; unknown
+  damage still uses replacement review. Qt reproduces the old corruption and
+  verifies recovery; real-Anki checks cover first review, automatic/approved repair,
+  preservation, idempotency, and Undo.
+  The earliest polished stock template is also recognized for upgrades; it must
+  not label new/learning/relearning source words as missing. Jitendex now keeps
+  modern common senses even when another sense is archaic (including `大丈夫`),
+  producing 17,616 eligible forms from the pinned export. Prior suggestion caches
+  rebuild automatically. Per-category vocabulary-only settings remain respected.
+  Front/back example sources are independent in settings version 7. Question and
+  Answer groups explain selected Anki fields versus Jitendex additions. Word flags
+  keep back-only dictionary examples out of front clues and ambiguity checks;
+  Recognition fronts now render their selected word examples. Existing shared
+  choices migrate unchanged, with no new note fields or baseline adoption needed.
+  Refresh now overwrites Katanki-managed fields, including edits and damaged or
+  missing tracking, without replacement review. `UserExamples` remains untouched;
+  enabled update options still control which fields are regenerated.
+  Pending furigana/reviewed-only controls are visibly unavailable rather than
+  implying that saved preferences affect current rendering. Standalone Qt checks
+  cover UI save/reopen, real-Anki settings persistence, and offline exported cards
+  with Anki-only fronts and dictionary-expanded backs.
+  Verification: 377 unit tests, lint/format checks, real-Anki generation/example
+  refresh lifecycle checks, and the offline packaged build pass (2026-10-24).
+  Native AnkiMobile/AnkiDroid checks, furigana, seen/new filtering, and live
+  production clues after editing `UserExamples` remain pending.
 - [ ] Allow automatic card creation from selected statistics/classification lists
   (for example JLPT levels), reusing configured generation, duplicate checks,
   ignores, and creation review.

@@ -44,6 +44,7 @@ def build_preview(
     word_suggestions = word_suggestions or bundled_words()
     entries = {entry.character: entry for entry in report.entries}
     strokes = {entry.character: entry for entry in report.strokes}
+    vocabulary_statuses = dict(report.scan.vocabulary_statuses)
     components = {}
     for visual in sorted(report.strokes, key=lambda entry: entry.character):
         for component in visual.component_entries:
@@ -116,11 +117,17 @@ def build_preview(
         discovered = tuple(sorted({word for word in report.scan.vocabulary if key in word}))
         defaults = (
             word_suggestions.lookup(key)
-            if options.example_source == "discovered_and_default"
+            if "discovered_and_default" in (options.front_source, options.example_source)
             else ()
         )
         examples = tuple(dict.fromkeys((*discovered, *defaults)))
-        shown = examples[: options.example_limit] if options.example_limit else examples
+        front_examples = (
+            examples if options.front_source == "discovered_and_default" else discovered
+        )
+        back_examples = (
+            examples if options.example_source == "discovered_and_default" else discovered
+        )
+        shown = front_examples[: options.example_limit] if options.example_limit else front_examples
         if not options.show_examples:
             shown = ()
         prompt = ""
@@ -151,6 +158,13 @@ def build_preview(
                 options.example_limit,
                 options.show_examples,
                 discovered,
+                tuple(
+                    (word, vocabulary_statuses[word])
+                    for word in examples
+                    if word in vocabulary_statuses
+                ),
+                front_examples,
+                back_examples,
             )
             if visual is None:
                 warnings.append(f"{key}: stroke diagram unavailable.")

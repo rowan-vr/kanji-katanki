@@ -156,3 +156,63 @@ def test_invalid_later_rule_fails_before_any_search():
             )
         )
     collection.find_notes.assert_not_called()
+
+
+@pytest.mark.parametrize(
+    ("types", "expected"),
+    [
+        ((), "missing"),
+        ((0,), "new"),
+        ((1,), "learning"),
+        ((2,), "learned"),
+        ((3,), "relearning"),
+        ((0, 2), "learned"),
+    ],
+)
+def test_adapter_reads_card_stage_without_changing_scheduling(types, expected):
+    class SourceNote(dict):
+        tags = []
+
+        def cards(self):
+            return [SimpleNamespace(type=value, queue=-1) for value in types]
+
+    collection = Mock()
+    collection.models.get.return_value = {"flds": [{"name": "Expression"}]}
+    collection.decks.all_names_and_ids.return_value = [SimpleNamespace(id=10)]
+    collection.find_notes.return_value = [1]
+    collection.get_note.return_value = SourceNote(Expression="景色")
+    notes = list(selected_notes(collection, ScanSelection((10,), 20, ("Expression",))))
+    assert notes == [NoteText(("景色",), word_status=expected)]
+    collection.update_card.assert_not_called()
+    collection.update_note.assert_not_called()
+
+
+@pytest.mark.parametrize(
+    ("types", "expected"),
+    [((0, 1), "learning"), ((0, 3, 1), "relearning"), ((3, 2, 1), "learned")],
+)
+def test_duplicate_source_cards_use_requested_study_order(types, expected):
+    class SourceNote(dict):
+        def cards(self):
+            return [SimpleNamespace(type=value) for value in types]
+
+    collection = Mock()
+    collection.models.get.return_value = {"flds": [{"name": "Expression"}]}
+    collection.decks.all_names_and_ids.return_value = [SimpleNamespace(id=10)]
+    collection.find_notes.return_value = [1]
+    collection.get_note.return_value = SourceNote(Expression="景色")
+    scan = scan_notes(selected_notes(collection, ScanSelection((10,), 20, ("Expression",))))
+    assert scan.vocabulary_statuses == (("景色", expected),)
+
+
+def test_duplicate_words_across_notes_keep_the_strongest_study_stage():
+    scan = scan_notes(
+        [
+            NoteText(("時計",), word_status="new"),
+            NoteText(("時計",), word_status="learning"),
+            NoteText(("時計",), word_status="relearning"),
+            NoteText(("時間",), word_status="relearning"),
+            NoteText(("時間",), word_status="learned"),
+        ]
+    )
+    assert dict(scan.vocabulary_statuses) == {"時計": "relearning", "時間": "learned"}

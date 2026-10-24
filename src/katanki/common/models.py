@@ -3,6 +3,16 @@
 from dataclasses import dataclass
 from typing import Protocol
 
+# Smaller values take precedence when several cards/notes match the same word.
+WORD_STATUS_ORDER = {
+    "learned": 0,
+    "relearning": 1,
+    "learning": 2,
+    "new": 3,
+    "exists": 3,
+    "missing": 4,
+}
+
 
 @dataclass(frozen=True)
 class ScanSelection:
@@ -25,6 +35,8 @@ class ScanSelection:
 class NoteText:
     fields: tuple[str, ...]
     tags: tuple[str, ...] = ()
+    # Read-only snapshot; no source IDs or live card links are retained.
+    word_status: str = "missing"
 
 
 @dataclass(frozen=True)
@@ -33,6 +45,7 @@ class ScanResult:
     candidates: tuple[str, ...]
     vocabulary: tuple[str, ...] = ()
     character_tags: tuple[tuple[str, tuple[str, ...]], ...] = ()
+    vocabulary_statuses: tuple[tuple[str, str], ...] = ()
 
 
 @dataclass(frozen=True)

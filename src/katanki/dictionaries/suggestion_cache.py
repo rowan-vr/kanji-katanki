@@ -10,7 +10,7 @@ from . import updates
 from .words import WordSuggestions
 
 # Bump when word eligibility, ordering, or the stored lookup structure changes.
-FORMAT = 1
+FORMAT = 2
 MAX_CACHE = 128 * 1024 * 1024
 logger = logging.getLogger(__name__)
 

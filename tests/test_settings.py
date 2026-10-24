@@ -36,7 +36,7 @@ def test_saved_settings_survive_json_storage_and_reloading():
     save_settings(collection, settings)
     assert load_settings(collection) == settings
     assert set(stored) == {CONFIG_KEY}
-    assert stored[CONFIG_KEY]["version"] == 6
+    assert stored[CONFIG_KEY]["version"] == 7
 
 
 @pytest.mark.parametrize(
@@ -46,7 +46,7 @@ def test_saved_settings_survive_json_storage_and_reloading():
         {},
         {"version": True},
         {"version": 0},
-        {"version": 7},
+        {"version": 8},
         {"version": 2, "sources": {}},
         {"version": 2, "sources": [{"deck_pattern": "*", "note_type_id": 1, "fields": []}]},
         {"version": 1, "source": []},
@@ -83,7 +83,7 @@ def test_version_one_migration_preserves_ids_preferences_and_original_data():
     original = json.dumps(data)
     settings = from_dict(data)
     assert settings == Settings((SourceRule("", 30, ("Expression",), (10, 20)),), 40, True)
-    assert settings.to_dict()["version"] == 6
+    assert settings.to_dict()["version"] == 7
     assert json.dumps(data) == original
 
 

@@ -4,8 +4,8 @@ Offline-first kanji learning for desktop Anki. **Phase 3: saved settings and ref
 
 Configure vocabulary sources, generation categories, decks/tags, and dictionaries
 under **Katanki → Settings…**. Then choose **Katanki → Refresh and generate Kanji Cards**
-to scan saved sources. Refresh updates managed examples when enabled, preserving
-manual edits and review progress. Older notes require a before/after migration review.
+to scan saved sources. Refresh overwrites managed examples when enabled, preserving
+`UserExamples` and review progress.
 Only new eligible cards open a single creation review, with category tabs, green
 selected tiles, and an inline front/back preview. Approve creation with **Create … cards**.
 Generated notes are never deleted when source vocabulary disappears.
@@ -198,24 +198,46 @@ targets must be replaced. Existing generated notes keep their tags and decks. Se
 versioned and stored in the current collection; they survive restarts. Subdecks are
 included at scan time. Refresh uses the saved source rules and generation preferences. Production can be enabled in settings, and creation requires approval. Missing/deleted source references are shown for review;
 unsupported settings versions are preserved and reported rather than reset.
-Version 1–5 settings migrate to version 6 without losing source rules or generation preferences.
+Version 1–6 settings migrate to version 7 without losing source rules or generation
+preferences. Existing shared example choices are preserved on both sides.
 The **Cards** tab, between Generation and Dictionaries, has **Recognition**,
-**Production**, and **Parts** subtabs. Recognition and Production save whether to
-show front examples, use your vocabulary words alone or also default examples,
-show furigana, automatically refresh examples (on by default), and include new
-words or only seen words. Your vocabulary words come from the sources selected
-under Discovery. Defaults show examples from your vocabulary, include new words,
-and hide furigana. “Seen” means at least one source card has been reviewed.
+**Production**, and **Parts** subtabs. Recognition and Production have separate
+**Question — front of card** and **Answer — back of card** groups. Each offers:
+
+- **Words from my selected Anki fields:** Japanese words found in the decks,
+  note types, and fields chosen under Discovery. Other fields are not searched.
+- **My Anki words + Jitendex dictionary words:** adds matching common dictionary
+  words, including words for which you have no Anki card.
+
+For your own words on the question and dictionary additions on the answer, choose
+the first option under **Examples on the front** and the second under
+**Examples on the back**. Front visibility and the front limit do not change the
+answer's selected list. Recognition fronts show unmasked words; Production fronts
+use masked clues. Dictionary words selected only for the back never distinguish
+production questions during ambiguity checks. `UserExamples` are included on both
+sides, subject to front visibility and the front limit.
+Furigana and reviewed-only filtering are not available yet; those controls are
+disabled with explanatory tooltips, preserving existing preferences. All matching
+Anki words are currently eligible, with their saved review states shown on the back.
 Parts instead saves whether to show the part's name on the front, show example
 kanji containing it on the back, use kanji from your vocabulary alone or also
 other kanji, and automatically refresh example kanji (on by default).
-Each category also saves an example display limit: 5 by default, with 0 meaning
+Each category also saves a front-example limit: 5 by default, with 0 meaning
 show all. The limit includes user examples; all eligible examples remain stored.
-Example visibility, sources, limits, and refresh settings now apply to card examples.
-Choose **Discovered and default words** to add Jitendex suggestions after your source
-vocabulary. The complete pinned Jitendex export lives at `bundled/jitendex.zip`
-with the other datasets; an in-memory index ranks common words. Recognition/Parts show examples on the back; Production shows
-masked clues. Furigana, seen-only filtering, and the additional Parts/name controls
+Backs show every configured stored example, regardless of the front limit or
+front-example visibility. Long backs show 12 chips and a **Show N more words**
+disclosure for the rest, with the full word count displayed. Words sort by
+known → relearning → learning → new → no card. Chips use blue for known words,
+rose double borders for relearning, amber dashed borders for learning, plain
+outlines for new, and gray for no matching configured source card.
+Statuses are saved at creation/refresh and travel
+with exported cards; the next enabled refresh updates them. Cards can be studied
+offline without the add-on or source decks. Exact old stock layouts upgrade on
+creation/refresh; customized templates and styles are preserved.
+Choose **My Anki words + Jitendex dictionary words** for either side to add
+Jitendex suggestions after your Anki words. The complete pinned Jitendex export lives at `bundled/jitendex.zip`
+with the other datasets; an in-memory index ranks common words. Parts show
+containing kanji on the back; Production fronts show masked clues. Furigana, seen-only filtering, and the additional Parts/name controls
 are planned for Phase 4 alongside the interface improvements, together with live
 production clues after user edits. Production UserExamples edits currently take
 effect when you run Refresh.
@@ -226,9 +248,10 @@ default) for both manual and automatic refresh. Dictionary data refers to card
 content from the selected dictionaries; pack downloads stay under Dictionaries.
 These controls are independent of the automatic-refresh switch. Example updates
 respect both **Update example words** and each category's automatic-example-refresh
-setting under Cards. Refresh records generated values and preserves manual edits to
-managed fields, reporting conflicts. `UserExamples` is never overwritten. Older
-notes without a baseline need explicit migration approval during manual Refresh.
+setting under Cards. Refresh overwrites Katanki-managed fields according to the enabled
+update options, including manual edits and older or damaged tracking records.
+Keep custom examples in `UserExamples`, which is never overwritten. No baseline
+repair or migration approval is required. Tracking is regenerated with HTML-safe JSON.
 Updates support Anki Undo and preserve note/card IDs, scheduling, history, tags and
 decks. Empty/ambiguous production updates keep their previous clues. Tag and
 dictionary-content updates remain planned; those two checkboxes save preferences only.
@@ -238,9 +261,9 @@ triggers for opening a profile and completing sync. Runs wait for the deck list,
 active dialogs, and other refreshes to finish; repeated triggers are combined.
 They use the same saved sources, dictionaries, generation choices, and creation
 review as manual refresh. New cards require approval. Eligible existing notes have
-managed examples refreshed; legacy migrations and manual edits are left intact.
+managed examples regenerated, including legacy notes and managed-field edits.
 Missing source settings are skipped automatically; use manual Refresh for setup
-and migration guidance.
+guidance.
 
 The **Dictionaries** tab manages KANJIDIC2, KanjiVG, and Jitendex independently.
 All three use the same published release packs, build lock and update catalog. Choose the

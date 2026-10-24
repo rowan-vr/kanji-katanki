@@ -102,11 +102,13 @@ class DictionaryPanel(QWidget):
         if manifest.format == "jitendex_yomitan":
             metadata += (
                 "<p>Default word suggestions prefer common contemporary forms, ordered by "
-                "dictionary priority, then shorter words and spelling. Rare, obsolete and "
-                "kana-preferred entries are excluded from suggestions. Your source vocabulary "
+                "dictionary priority, then shorter words and spelling. Rare/obsolete forms "
+                "and entries without a modern, non-kana-preferred meaning are excluded. "
+                "An archaic secondary meaning does not exclude a modern common word. "
+                "Your source vocabulary "
                 "comes first. The full dictionary remains available offline.</p>"
                 "<p>Local overrides must be Jitendex-compatible Yomitan ZIP files. "
-                "Use Cards → Discovered and default words to include dictionary examples.</p>"
+                "In Cards, choose My Anki words + Jitendex dictionary words for either side.</p>"
             )
         if bundle:
             metadata += (

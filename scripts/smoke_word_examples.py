@@ -16,6 +16,7 @@ def main():
     from katanki.anki.identities import MODEL_MARKER
     from katanki.common.models import DiscoveryReport, KanjiEntry, ScanResult
     from katanki.config import CardSettings, Settings
+    from katanki.generation import legacy_cards
     from katanki.generation.cards import note_type_spec
 
     for customized in (False, True):
@@ -36,12 +37,12 @@ def main():
                 legacy_back = re.sub(
                     r'<div class="katanki-examples".*?</script>\n',
                     "",
-                    spec.back,
+                    legacy_cards.BACK,
                     count=1,
                     flags=re.DOTALL,
                 )
                 template = collection.models.new_template("Recognition")
-                template["qfmt"] = spec.front
+                template["qfmt"] = legacy_cards.front(spec.key)
                 template["afmt"] = "Custom {{Display}}" if customized else legacy_back
                 collection.models.add_template(model, template)
                 added = collection.models.add_dict(model)
@@ -106,10 +107,10 @@ def exercise_example_rendering(mw):
     from katanki.generation.review import render_card_preview
 
     for limit, visible, expected in (
-        (1, True, ["景色"]),
-        (2, True, ["景色", "景観"]),
+        (1, True, ["景色", "景観", "風景"]),
+        (2, True, ["景色", "景観", "風景"]),
         (0, True, ["景色", "景観", "風景"]),
-        (5, False, []),
+        (5, False, ["景色", "景観", "風景"]),
     ):
         content = CardContent(
             Identity("kanji-recognition", "景"),
@@ -153,5 +154,85 @@ def exercise_example_rendering(mw):
     print("PASS: example rendering, user ordering, duplicate removal, limits and visibility")
 
 
+def exercise_early_stock_upgrade():
+    """The first installed polished template must not mislabel new source words."""
+    from anki.collection import Collection
+
+    from katanki.anki.example_refresh import apply_example_refresh, plan_example_refresh
+    from katanki.anki.identities import MODEL_MARKER
+    from katanki.common.models import DiscoveryReport, KanjiEntry, ScanResult
+    from katanki.config import DictionaryChoice, Settings
+    from katanki.generation import legacy_layout_v1 as previous
+    from katanki.generation.cards import CSS, CardContent, note_type_spec
+    from katanki.generation.planner import Identity
+
+    with TemporaryDirectory(prefix="katanki-early-layout-") as temporary:
+        col = Collection(str(Path(temporary) / "collection.anki2"))
+        try:
+            spec = note_type_spec("kanji-recognition")
+            model = col.models.new(spec.name)
+            model[MODEL_MARKER] = spec.key
+            model["css"] = previous.EARLY_CSS
+            for name in spec.fields:
+                col.models.add_field(model, col.models.new_field(name))
+            template = col.models.new_template("Recognition")
+            label = "Kanji · Recognition"
+            template["qfmt"] = previous.RECOGNITION_FRONT.replace("{{CardLabel}}", label)
+            template["afmt"] = (
+                previous.EARLY_BACK.replace("{{CardLabel}}", label)
+                .replace("{{WordsLabel}}", "Words")
+                .replace("{{WordLegend}}", previous.WORD_LEGEND.rstrip("\n"))
+            )
+            original_back = template["afmt"]
+            col.models.add_template(model, template)
+            mid = col.models.add_dict(model).id
+            note = col.new_note(col.models.get(mid))
+            content = CardContent(
+                Identity(spec.key, "丈"),
+                "丈",
+                meanings=("length",),
+                examples=("丈夫",),
+                discovered_examples=("丈夫",),
+                example_statuses=(("丈夫", "new"),),
+            )
+            for name, value in content.fields().items():
+                note[name] = value
+            col.add_note(note, 1)
+            fields_before = dict(col.get_note(note.id).items())
+            cards_before = col.db.all("select * from cards order by id")
+            report = DiscoveryReport(
+                ScanResult(1, ("丈",), ("丈夫",), vocabulary_statuses=(("丈夫", "new"),)),
+                (KanjiEntry("丈", (), (), ("length",)),),
+                (),
+                (),
+                True,
+                (),
+            )
+            settings = Settings(
+                dictionaries=tuple(
+                    DictionaryChoice(name, "disabled")
+                    for name in ("kanjidic2", "kanjivg", "jitendex")
+                )
+            )
+            plan = plan_example_refresh(col, report, settings)
+            assert len(plan.updates) == 1 and not plan.updates[0].migration
+            assert apply_example_refresh(col, plan).updated == 1
+            upgraded = col.models.get(mid)
+            assert upgraded["tmpls"][0]["afmt"] == spec.back
+            assert upgraded["css"] == CSS
+            assert dict(col.get_note(note.id).items()) == fields_before
+            assert col.db.all("select * from cards order by id") == cards_before
+            assert "new: 'New'" in col.get_note(note.id).cards()[0].answer()
+            assert not plan_example_refresh(col, report, settings).updates
+            col.undo()
+            assert col.models.get(mid)["tmpls"][0]["afmt"] == original_back
+            assert col.models.get(mid)["css"] == previous.EARLY_CSS
+            assert col.db.all("select * from cards order by id") == cards_before
+            print("PASS: earliest polished stock layout upgrades; new word status, fields and Undo")
+        finally:
+            col.close()
+
+
 if __name__ == "__main__":
     main()
+    exercise_early_stock_upgrade()

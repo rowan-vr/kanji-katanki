@@ -8,11 +8,11 @@ Choose sources under **Settings → Discovery**, then use **Refresh** offline.
 | --- | --- | --- | --- |
 | KANJIDIC2 | 2026-10-23 | 13,108 entries; Japanese on/kun readings, English meanings, grade, primary stroke count | CC BY-SA 4.0 + EDRDG terms |
 | KanjiVG | r20260714 | 6,703 canonical non-variant SVG files | CC BY-SA 3.0 |
-| Jitendex | 2026.10.03.0 | Complete Yomitan export: 436,555 term rows; 17,126 eligible common word forms | CC BY-SA 4.0; Tatoeba CC BY 2.0 FR; EDRDG terms |
+| Jitendex | 2026.10.03.0 | Complete Yomitan export: 436,555 term rows; 17,616 eligible common word forms | CC BY-SA 4.0; Tatoeba CC BY 2.0 FR; EDRDG terms |
 
 Jitendex 2026.10.03.0 is also bundled in full: the original 38.8 MB Yomitan
-archive plus a lightweight CC BY-SA 4.0 suggestion index with 17,126 common
-headword/reading/priority rows (about 540 KB before ZIP compression). The complete
+archive plus a lightweight CC BY-SA 4.0 suggestion index with 17,616 common
+headword/reading/priority rows (about 541 KiB before ZIP compression). The complete
 add-on stays below 50 MB. JMdict
 is included through Jitendex; no separate JMdict archive is needed. An unofficial
 JLPT source has not been selected.
@@ -38,11 +38,15 @@ All three datasets use the same release-pack system:
   normal-build upstream download route.
 
 Jitendex's original Yomitan archive is retained byte-for-byte, including all
-436,555 term rows. The adapter compiles the 17,126 eligible common word forms on
+436,555 term rows. The adapter compiles the 17,616 eligible common word forms on
 first use and caches them in memory by source path, size and modification time.
 Bundled, installed and local sources use the same reader and ranking rules.
 Changing a source does not modify user dictionaries or fetch data during review.
 See [card examples](CARD_EXAMPLES.md#default-words) for ranking.
+Since 2026-10-24, eligibility is evaluated per sense: an archaic secondary meaning
+does not exclude an otherwise modern common word. Format-1 suggestion caches are
+rebuilt under format 2; dictionary versions, original bytes, and checksums remain
+unchanged.
 
 Jitendex is © Stephen Kraus, under CC BY-SA 4.0, and includes JMdict © EDRDG.
 The source attribution, EDRDG terms, CC BY-SA 4.0 and Tatoeba CC BY 2.0 FR license
