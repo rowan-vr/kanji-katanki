@@ -37,6 +37,10 @@ jobs:
       - name: Install locked dependencies
         run: uv sync --locked
 
+      - name: Install Qt runtime libraries
+        if: runner.os == 'Linux'
+        run: sudo apt-get update && sudo apt-get install --no-install-recommends -y libegl1 libgl1 libopengl0
+
       - name: Check lint and formatting
         if: matrix.os == 'ubuntu-latest' && matrix.python == '3.12'
         run: |

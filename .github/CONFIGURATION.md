@@ -30,6 +30,8 @@ waits for the gate result before completing the scan job. The `scripts/smoke_*.p
 files are test harnesses and are classified as tests alongside `tests/`, rather
 than application code requiring its own unit coverage. Card settings tests use
 real PyQt6 widgets with the offscreen platform, without launching Anki.
+Linux test jobs install the EGL/OpenGL runtime libraries needed to import Qt,
+including for offscreen rendering.
 
 The Linux/Python 3.12 job uploads `kanji-katanki-addon`, containing the installable
 `kanji-katanki.ankiaddon`, as a workflow artifact retained for 14 days. Download it from
