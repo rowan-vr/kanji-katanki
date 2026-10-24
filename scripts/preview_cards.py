@@ -128,11 +128,31 @@ document.querySelectorAll('iframe').forEach(function(frame) {
     )
 
 
-if __name__ == "__main__":
+def write_gallery(output):
+    directory = (ROOT / "dist").resolve()
+    output = (directory / output).resolve()
+    if not output.is_relative_to(directory):
+        raise ValueError("Preview output must be inside the project's dist directory")
+    output.parent.mkdir(parents=True, exist_ok=True)
+    output.write_text(gallery(), encoding="utf-8")
+    return output
+
+
+def main(argv=None):
     parser = argparse.ArgumentParser(description=__doc__)
     parser.add_argument(
-        "--output", type=Path, default=Path("/tmp/katanki-card-layout-preview.html")
+        "--output",
+        type=Path,
+        default=Path("katanki-card-layout-preview.html"),
+        help="Output path within the project's dist directory (relative to dist)",
     )
-    args = parser.parse_args()
-    args.output.write_text(gallery(), encoding="utf-8")
-    print(args.output)
+    args = parser.parse_args(argv)
+    try:
+        output = write_gallery(args.output)
+    except ValueError as error:
+        parser.error(str(error))
+    print(output)
+
+
+if __name__ == "__main__":
+    main()

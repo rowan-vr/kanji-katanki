@@ -83,7 +83,8 @@ Templates, CSS, scripts, examples, status metadata, and sanitized SVGs are carri
 by the note type and fields. Exported cards can be studied offline without the
 add-on, source decks, or dictionaries. Responsive layouts and Anki night-mode
 styles are shared by card previews and actual cards. Generate a standalone gallery
-with `python scripts/preview_cards.py`.
+with `python scripts/preview_cards.py`. The gallery is written to
+`dist/katanki-card-layout-preview.html`; `--output` selects another path inside `dist`.
 
 ## Refreshing existing cards
 

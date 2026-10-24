@@ -25,6 +25,12 @@ Each CI job measures line and branch coverage for the add-on and maintenance
 scripts and uploads HTML and XML reports as `coverage-<os>-python-<version>`
 artifacts retained for 14 days. Coverage is reported without a minimum threshold.
 
+SonarQube applies its quality gate to new application and maintenance code and
+waits for the gate result before completing the scan job. The `scripts/smoke_*.py`
+files are test harnesses and are classified as tests alongside `tests/`, rather
+than application code requiring its own unit coverage. Card settings tests use
+real PyQt6 widgets with the offscreen platform, without launching Anki.
+
 The Linux/Python 3.12 job uploads `kanji-katanki-addon`, containing the installable
 `kanji-katanki.ankiaddon`, as a workflow artifact retained for 14 days. Download it from
 the workflow run's Artifacts section and extract the outer ZIP before installing.
