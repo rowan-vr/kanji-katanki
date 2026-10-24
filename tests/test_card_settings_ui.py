@@ -63,7 +63,8 @@ def test_opening_and_saving_preserves_all_preferences(panel_factory, category, s
         assert panel.limit.isHidden()
         assert not hasattr(panel, "front_source")
     else:
-        assert not panel.furigana.isEnabled()
+        assert panel.furigana.isEnabled()
+        assert panel.front_furigana.isEnabled()
         assert not panel.word_status.isEnabled()
 
 
@@ -110,3 +111,15 @@ def test_parts_choices_preserve_legacy_limit_and_word_options(panel_factory):
     )
     assert panel.settings() == expected
     assert panel_factory("parts", panel.settings()).settings() == expected
+
+
+def test_furigana_switches_save_independently(panel_factory):
+    panel = panel_factory("production", CardSettings(front_furigana=True))
+    panel.front_furigana.setChecked(False)
+    panel.furigana.setChecked(True)
+    saved = panel.settings()
+    assert not saved.front_furigana and saved.furigana
+    panel = panel_factory("production", saved)
+    panel.front_furigana.setChecked(True)
+    panel.furigana.setChecked(False)
+    assert panel.settings().front_furigana and not panel.settings().furigana

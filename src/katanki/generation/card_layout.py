@@ -1,5 +1,7 @@
 """Self-contained review layouts: no host bridge, external assets or network."""
 
+from .furigana import SCRIPT as FURIGANA_SCRIPT
+
 EXAMPLES = r"""<div class="katanki-examples" data-kind="{{CardKind}}">
 <div class="user-examples" hidden>{{UserExamples}}</div>
 <div class="managed-examples" hidden>{{VocabExamples}}</div>
@@ -11,17 +13,21 @@ EXAMPLES = r"""<div class="katanki-examples" data-kind="{{CardKind}}">
 </div>
 <script>
 (function() {
+  /* FURIGANA */
   var root = document.currentScript.previousElementSibling;
   var output = root.querySelector('.example-output'), seen = new Set();
   var labels = {learned: 'Known', relearning: 'Relearning', learning: 'Learning',
     new: 'New', exists: 'Card exists (refresh to update status)', missing: 'No card'};
   var order = {learned: 0, relearning: 1, learning: 2, new: 3, exists: 3, missing: 4};
-  var statuses = new Map(), entries = [];
+  var statuses = new Map(), entries = [], readings = new Map();
   var parts = root.dataset.kind === 'primitive', front = root.dataset.side === 'front';
   var limit = Number(root.dataset.limit || 0);
   if (front && limit < 0) { root.closest('.words-section').hidden = true; return; }
   root.querySelectorAll('.managed-examples > div').forEach(function(node) {
     var word = node.textContent.trim(), status = node.dataset.status || 'missing';
+    if (node.dataset[front ? 'frontFurigana' : 'backFurigana'] === 'true') {
+      readings.set(word, node.dataset.reading || '');
+    }
     if (!Object.prototype.hasOwnProperty.call(labels, status)) status = 'missing';
     if (!statuses.has(word) || order[status] < order[statuses.get(word)]) {
       statuses.set(word, status);
@@ -60,6 +66,10 @@ EXAMPLES = r"""<div class="katanki-examples" data-kind="{{CardKind}}">
     line.title = front ? entry.word : parts ? 'Related kanji' : labels[entry.status];
     line.setAttribute('aria-label', entry.word + ': ' + line.title);
     line.textContent = entry.word;
+    var reading = readings.get(entry.word);
+    if (!parts && reading && reading !== entry.word) {
+      katankiFurigana(line, entry.word, reading);
+    }
     (front || index < 12 ? output : extra).appendChild(line);
   });
   var section = root.closest('.words-section');
@@ -77,6 +87,8 @@ EXAMPLES = r"""<div class="katanki-examples" data-kind="{{CardKind}}">
   if (!entries.length) section.hidden = true;
 })();
 </script>"""
+
+EXAMPLES = EXAMPLES.replace("/* FURIGANA */", FURIGANA_SCRIPT)
 
 STROKE_SCRIPT = r"""<script>
 function katankiNumbers(button) {
@@ -163,11 +175,13 @@ BACK = (
 PRODUCTION_FRONT = r"""<article class="katanki-card question-card production-card">
 <div class="eyebrow">{{CardLabel}}</div>
 <div class="prompt-source" hidden>{{Prompt}}</div>
+<div class="production-readings" hidden>{{VocabExamples}}</div>
 <div class="production-meaning"></div>
 <div class="production-words word-grid" lang="ja"></div>
 <div class="writing-space" aria-hidden="true"><span>?</span></div>
 <script>
 (function() {
+  /* FURIGANA */
   var root = document.currentScript.closest('.katanki-card');
   var html = root.querySelector('.prompt-source').innerHTML;
   var lines = html.replace(/<br\s*\/?\s*>|<\/(?:div|p)>/gi, '\n').split('\n')
@@ -179,11 +193,26 @@ PRODUCTION_FRONT = r"""<article class="katanki-card question-card production-car
   var output = root.querySelector('.production-words');
   lines.forEach(function(line) {
     var chip = document.createElement('span'); chip.className = 'clue-chip';
-    chip.textContent = line; output.appendChild(chip);
+    chip.textContent = line;
+    var candidates = Array.from(root.querySelectorAll('.production-readings > div'))
+      .filter(function(n) {
+        return n.dataset.masked === line;
+      });
+    var node = candidates[0];
+    if (node && node.dataset.frontFurigana === 'true' && node.dataset.reading) {
+      var word = node.textContent;
+      var target = Array.from(word).find(function(c) {
+        return word.split(c).join('__') === line;
+      });
+      katankiFurigana(chip, word, node.dataset.reading, target);
+    }
+    output.appendChild(chip);
   });
 })();
 </script>
 </article>"""
+
+PRODUCTION_FRONT = PRODUCTION_FRONT.replace("/* FURIGANA */", FURIGANA_SCRIPT)
 
 RECOGNITION_FRONT = (
     """<article class="katanki-card question-card recognition-card">
@@ -323,5 +352,17 @@ CSS = """.card {
   .meaning, .production-meaning {font-size: 24px;}
   .word-chip, .clue-chip {font-size: 20px; padding: 6px 12px;}
   .word-chip.word-relearning {padding: 4px 10px;}
+}
+"""
+
+CSS += """
+.word-grid {align-items: flex-start; row-gap: 12px;}
+.word-grid ruby {ruby-align: center; ruby-position: under;}
+.word-grid rt {font-size: .55em; line-height: 1.2; color: var(--kk-muted);}
+.word-grid .has-furigana {padding-bottom: 18px; padding-top: 9px;}
+.word-grid .word-relearning.has-furigana {padding-bottom: 16px; padding-top: 7px;}
+@media (max-width: 480px) {
+  .word-grid .has-furigana {padding-bottom: 17px; padding-top: 8px;}
+  .word-grid .word-relearning.has-furigana {padding-bottom: 15px; padding-top: 6px;}
 }
 """

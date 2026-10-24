@@ -5,7 +5,14 @@ from hashlib import sha256
 
 from . import legacy_cards, legacy_layout_v1
 from .cards import CSS, note_type_spec
-from .layout_fingerprints import STYLES, TEMPLATE_PAIRS
+from .layout_fingerprints import (
+    PRE_FURIGANA_PAIRS,
+    PRE_FURIGANA_STYLE,
+    STYLES,
+    TEMPLATE_PAIRS,
+    WHOLE_WORD_FURIGANA_PAIRS,
+    WHOLE_WORD_FURIGANA_STYLE,
+)
 
 
 def upgrade_stock_layout(model, key):
@@ -52,7 +59,11 @@ def upgrade_stock_layout(model, key):
     old_pair = old_pair or (
         sha256(template["qfmt"].encode()).hexdigest(),
         sha256(template["afmt"].encode()).hexdigest(),
-    ) == TEMPLATE_PAIRS.get(key)
+    ) in (
+        TEMPLATE_PAIRS.get(key),
+        PRE_FURIGANA_PAIRS.get(key),
+        WHOLE_WORD_FURIGANA_PAIRS.get(key),
+    )
     stock_pair = template["qfmt"] == spec.front and template["afmt"] == spec.back
     if not (old_pair or stock_pair):
         return False
@@ -60,10 +71,14 @@ def upgrade_stock_layout(model, key):
     if old_pair:
         template["qfmt"], template["afmt"] = spec.front, spec.back
         changed = True
-    if (
-        model.get("css") in (*legacy_cards.STYLES, legacy_layout_v1.CSS, legacy_layout_v1.EARLY_CSS)
-        or sha256(model.get("css", "").encode()).hexdigest() in STYLES
-    ):
+    if model.get("css") in (
+        *legacy_cards.STYLES,
+        legacy_layout_v1.CSS,
+        legacy_layout_v1.EARLY_CSS,
+    ) or sha256(model.get("css", "").encode()).hexdigest() in STYLES | {
+        PRE_FURIGANA_STYLE,
+        WHOLE_WORD_FURIGANA_STYLE,
+    }:
         model["css"] = CSS
         changed = True
     return changed

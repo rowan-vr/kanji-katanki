@@ -87,6 +87,10 @@ class CardSettingsPanel(QWidget):
         )
         if not parts:
             front_form.addRow("Maximum front examples", self.limit)
+        if not parts:
+            self.front_furigana = QCheckBox("Show readings below example words")
+            self.front_furigana.setChecked(settings.front_furigana)
+            front_form.addRow("Furigana", self.front_furigana)
         layout.addWidget(front)
 
         back = QGroupBox("Answer — back of card")
@@ -115,11 +119,9 @@ class CardSettingsPanel(QWidget):
 
         options = QFormLayout()
         if not parts:
-            self.furigana = QCheckBox("Show readings above example words")
+            self.furigana = QCheckBox("Show readings below example words")
             self.furigana.setChecked(settings.furigana)
-            self.furigana.setEnabled(False)
-            self.furigana.setToolTip("Not available yet. Example words currently use plain text.")
-            options.addRow("Furigana", self.furigana)
+            back_form.addRow("Furigana", self.furigana)
             self.word_status = QComboBox()
             self.word_status.addItem("All matching Anki words, including unreviewed cards", True)
             self.word_status.addItem("Only words with an Anki card I have reviewed", False)
@@ -169,5 +171,6 @@ class CardSettingsPanel(QWidget):
                 else selected
             )
             changes["furigana"] = self.furigana.isChecked()
+            changes["front_furigana"] = self.front_furigana.isChecked()
             changes["include_new"] = self.word_status.currentData()
         return replace(self.saved_settings, **changes)

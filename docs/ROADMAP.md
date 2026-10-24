@@ -453,13 +453,17 @@ Anki progress. Covers FR-03, FR-05 and the detail-view portion of FR-04.
   Refresh now overwrites Katanki-managed fields, including edits and damaged or
   missing tracking, without replacement review. `UserExamples` remains untouched;
   enabled update options still control which fields are regenerated.
-  Pending furigana/reviewed-only controls are visibly unavailable rather than
-  implying that saved preferences affect current rendering. Standalone Qt checks
+  Reviewed-only controls remain visibly unavailable. Furigana now has independent
+  front/back switches: Production defaults to both sides, Recognition to back only.
+  Creation and Refresh persist escaped whole-word Jitendex readings for offline
+  ruby rendering below kanji groups, including masked production clues. Kana
+  anchors align mixed words; ambiguous splits retain grouped readings. Chips add
+  padding when annotated; unknown readings stay plain. Standalone Qt checks
   cover UI save/reopen, real-Anki settings persistence, and offline exported cards
   with Anki-only fronts and dictionary-expanded backs.
   Verification: 377 unit tests, lint/format checks, real-Anki generation/example
   refresh lifecycle checks, and the offline packaged build pass (2026-10-24).
-  Native AnkiMobile/AnkiDroid checks, furigana, seen/new filtering, and live
+  Native AnkiMobile/AnkiDroid checks, seen/new filtering, and live
   production clues after editing `UserExamples` remain pending.
 - [ ] Allow automatic card creation from selected statistics/classification lists
   (for example JLPT levels), reusing configured generation, duplicate checks,

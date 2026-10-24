@@ -54,7 +54,7 @@ class GenerationSettings:
 class CardSettings:
     show_examples: bool = True
     example_source: str = "discovered"
-    furigana: bool = False
+    furigana: bool = True
     auto_refresh: bool = True
     include_new: bool = True
     show_name: bool = True
@@ -62,6 +62,8 @@ class CardSettings:
     # The existing source setting controls the back. None retains the legacy
     # shared front/back choice; an explicit front choice is independent.
     front_example_source: str | None = None
+
+    front_furigana: bool = False
 
     @property
     def front_source(self):
@@ -73,6 +75,7 @@ class CardSettings:
             for value in (
                 self.show_examples,
                 self.furigana,
+                self.front_furigana,
                 self.auto_refresh,
                 self.include_new,
                 self.show_name,
@@ -161,7 +164,13 @@ class Settings:
             raise ValueError("Generation settings need Recognition, Production, and Parts.")
 
         if not self.cards:
-            object.__setattr__(self, "cards", tuple(CardSettings() for _ in GENERATION_CATEGORIES))
+            object.__setattr__(
+                self,
+                "cards",
+                tuple(
+                    CardSettings(front_furigana=c == "production") for c in GENERATION_CATEGORIES
+                ),
+            )
         if len(self.cards) != len(GENERATION_CATEGORIES) or any(
             not isinstance(item, CardSettings) for item in self.cards
         ):
@@ -295,12 +304,13 @@ def from_dict(data) -> Settings:
                 CardSettings(
                     entry.get("show_examples", True),
                     entry.get("example_source", "discovered"),
-                    entry.get("furigana", False),
+                    entry.get("furigana", True),
                     entry.get("auto_refresh", True),
                     entry.get("include_new", True),
                     entry.get("show_name", True),
                     entry.get("example_limit", 5),
                     entry.get("front_example_source"),
+                    entry.get("front_furigana", category == "production"),
                 )
             )
         cards = tuple(parsed)

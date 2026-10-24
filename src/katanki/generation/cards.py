@@ -76,9 +76,14 @@ class CardContent:
     front_examples: tuple[str, ...] | None = None
     back_examples: tuple[str, ...] | None = None
 
+    example_readings: tuple[tuple[str, str], ...] = ()
+    front_furigana: bool | None = None
+    back_furigana: bool = True
+
     def fields(self) -> dict[str, str]:
         spec = note_type_spec(self.identity.note_type)
         statuses = dict(self.example_statuses)
+        readings = dict(self.example_readings)
         front = set(self.front_examples) if self.front_examples is not None else set(self.examples)
         back = set(self.back_examples) if self.back_examples is not None else set(self.examples)
         values = {
@@ -99,6 +104,18 @@ class CardContent:
                     if word in self.discovered_examples
                     else "default"
                 )
+                + '" data-reading="'
+                + escape(readings.get(word, ""), quote=True)
+                + '" data-front-furigana="'
+                + str(
+                    self.front_furigana
+                    if self.front_furigana is not None
+                    else self.identity.note_type == "kanji-production"
+                ).lower()
+                + '" data-back-furigana="'
+                + str(self.back_furigana).lower()
+                + '" data-masked="'
+                + escape(word.replace(self.identity.key, "__"), quote=True)
                 + '" data-status="'
                 + (statuses.get(word) if statuses.get(word) in WORD_STATUS_ORDER else "missing")
                 + '">'
