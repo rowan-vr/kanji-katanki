@@ -136,7 +136,7 @@ def exported_cards(directory):
         clean.close()
 
 
-def webview_checks(cards):
+def webview_checks(cards, screenshots):
     from aqt.qt import (
         QApplication,
         QCoreApplication,
@@ -244,7 +244,7 @@ def webview_checks(cards):
             panel.resize(760, 720)
             panel.show()
             app.processEvents()
-            panel.grab().save(f"/tmp/katanki-{category}-example-settings.png")
+            panel.grab().save(str(screenshots / f"{category}-example-settings.png"))
             panel.close()
             panel.deleteLater()
             restored.deleteLater()
@@ -352,7 +352,9 @@ def webview_checks(cards):
                         QTimer.singleShot(250, paint.quit)
                         paint.exec()
                         view.grab().save(
-                            f"/tmp/katanki-card-back-{width}-{'dark' if dark else 'light'}.png"
+                            str(
+                                screenshots / f"card-back-{width}-{'dark' if dark else 'light'}.png"
+                            )
                         )
         assert not errors, errors
         assert not requests, requests
@@ -368,7 +370,7 @@ def webview_checks(cards):
 def main():
     with TemporaryDirectory(prefix="katanki-layout-") as temporary:
         cards = exported_cards(Path(temporary))
-        webview_checks(cards)
+        webview_checks(cards, Path(temporary))
 
 
 if __name__ == "__main__":
