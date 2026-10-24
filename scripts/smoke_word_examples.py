@@ -107,10 +107,10 @@ def exercise_example_rendering(mw):
     from katanki.generation.review import render_card_preview
 
     for limit, visible, expected in (
-        (1, True, ["景色", "景観", "風景"]),
-        (2, True, ["景色", "景観", "風景"]),
-        (0, True, ["景色", "景観", "風景"]),
-        (5, False, ["景色", "景観", "風景"]),
+        (1, True, ["景色", "風景"]),
+        (2, True, ["景色", "風景"]),
+        (0, True, ["景色", "風景"]),
+        (5, False, ["景色", "風景"]),
     ):
         content = CardContent(
             Identity("kanji-recognition", "景"),
@@ -120,10 +120,6 @@ def exercise_example_rendering(mw):
             show_examples=visible,
         )
         _, back = render_card_preview(content)
-        back = back.replace(
-            '<div class="user-examples" hidden></div>',
-            '<div class="user-examples" hidden><div>景色</div><div>景観</div></div>',
-        )
         view = AnkiWebView(parent=mw)
         loop, timer, results = QEventLoop(), QTimer(mw), []
         timer.setInterval(50)

@@ -161,13 +161,13 @@ def test_source_removal_clears_recognition_but_keeps_production_clues(setup):
     assert "empty production clues" in plan.conflicts[0]
 
 
-def test_production_uses_user_first_and_masks_every_target(setup):
+def test_production_ignores_deferred_user_examples(setup):
     collection, notes = setup
     note = add(notes, mode="production")
     note["UserExamples"] = "<div>時時</div><div>時計</div>"
     settings = Settings(cards=(CardSettings(), CardSettings(example_limit=1), CardSettings()))
     plan = refresh.plan_example_refresh(collection, report(), settings)
-    assert dict(plan.updates[0].after)["Prompt"] == "time<br><br>____"
+    assert dict(plan.updates[0].after)["Prompt"] == "time<br><br>__計"
     assert "時計" in dict(plan.updates[0].after)["VocabExamples"]
 
 
@@ -500,7 +500,7 @@ def test_refresh_uses_anki_only_front_and_dictionary_back_without_leaking_clues(
     plan = refresh.plan_example_refresh(collection, report(("時間",)), settings)
     assert len(plan.updates) == 1 and not plan.updates[0].migration
     after = dict(plan.updates[0].after)
-    assert lines(after["Prompt"]) == ("time", "__々", "__間")
+    assert lines(after["Prompt"]) == ("time", "__間")
     assert words_for_side(after["VocabExamples"], "front") == ("時間",)
     assert words_for_side(after["VocabExamples"], "back") == ("時間", "時代", "時計")
     assert refresh.apply_example_refresh(collection, plan).updated == 1

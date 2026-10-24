@@ -60,3 +60,22 @@ WHOLE_WORD_FURIGANA_PAIRS = {
     ),
 }
 WHOLE_WORD_FURIGANA_STYLE = "62697c58ce91f6069ad27f375bd3cce9656541aeaf93e04b0ffd77babc2dc085"
+
+USER_EXAMPLES_PAIRS = {
+    "kanji-recognition": (
+        "a73634b75968b5e068040a4dc360d050f102a294f423768cedfaf90afec5fe02",
+        "ac00f61ef194fac8f4b059160d4c8edcb5e55da2013cdcf02fba9e63f763e5f4",
+    ),
+    "kanji-production": (
+        "c73ef2bb7e369d75d6f218669643a88b6e6e51faf0cd0e3cea2cbe358116e262",
+        "86a32f7294da969e7e6353411a883cf8ec141d099fd4d7162370377115af8c47",
+    ),
+    "primitive-recognition": (
+        "da9bb6c8096eefdb5092eb1856bba0379a49c922e24863b392ed32046e557564",
+        "2c0d423ef29526a13a95d9f4a1b8354d77a207e742f402a288be695a324412f3",
+    ),
+    "primitive-production": (
+        "e4c4253b03e173413821891d839a02d5d4911070f999df3b8aa17668e301fcc6",
+        "2fe293930b62008da49597a7126140a9b267aaf0e1a252c169daa2f326ce39bd",
+    ),
+}

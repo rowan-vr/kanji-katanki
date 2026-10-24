@@ -159,7 +159,6 @@ def plan_example_refresh(collection, report, settings):
             settings.refresh.update_examples or settings.refresh.update_dictionary_data
         ):
             options = settings.card_settings("production")
-            words = lines(note["UserExamples"]) if "UserExamples" in note else ()
             examples = (
                 (content.front_examples if content.front_examples is not None else content.examples)
                 if settings.refresh.update_examples
@@ -167,7 +166,7 @@ def plan_example_refresh(collection, report, settings):
                 if "VocabExamples" in note
                 else ()
             )
-            words = tuple(dict.fromkeys((*words, *examples)))
+            words = tuple(dict.fromkeys(examples))
             shown = words[: options.example_limit] if options.example_limit else words
             if not options.show_examples:
                 shown = ()
@@ -312,7 +311,7 @@ def apply_example_refresh(collection, plan, *, migrate=False):
             note = collection.get_note(update.note_id)
             model = note.note_type()
             changed = upgrade_stock_layout(model, update.identity.note_type)
-            for name in (*dict(update.after), "UserExamples"):
+            for name in dict(update.after):
                 if name not in {field["name"] for field in model["flds"]}:
                     collection.models.add_field(model, collection.models.new_field(name))
                     changed = True

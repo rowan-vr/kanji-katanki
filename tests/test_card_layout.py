@@ -206,3 +206,11 @@ def test_first_polished_stock_layout_upgrades_and_customized_copy_is_preserved(k
     assert upgrade_stock_layout(model, key)
     assert model["tmpls"][0]["afmt"] == note_type_spec(key).back
     assert model["css"] == CSS
+
+
+def test_new_note_types_and_stock_templates_omit_deferred_user_examples():
+    for key in NOTE_TYPES:
+        spec = note_type_spec(key)
+        assert "UserExamples" not in spec.fields
+        assert "UserExamples" not in spec.front + spec.back
+        assert "user-examples" not in spec.front + spec.back

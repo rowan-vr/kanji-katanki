@@ -47,6 +47,11 @@ def main():
                 for nid in generated
                 if col.get_note(nid).note_type()["katanki_note_type"] == "kanji-production"
             )
+            # Simulate an older note type with preserved custom example data.
+            model = production.note_type()
+            col.models.add_field(model, col.models.new_field("UserExamples"))
+            col.models.update_dict(model)
+            production = col.get_note(production.id)
             production["UserExamples"] = "<div>景景</div><div>風景</div>"
             production.tags = ["keep-my-tag"]
             col.update_note(production)
@@ -62,7 +67,7 @@ def main():
             result = apply_refresh_examples(col, refresh_result, settings)
             assert result.updated == 2
             updated = col.get_note(production.id)
-            assert updated["Prompt"].endswith("____<br>風__<br>__色")
+            assert updated["Prompt"].endswith("__色<br>風__")
             assert updated["UserExamples"] == production["UserExamples"]
             assert updated.tags == ["keep-my-tag"]
             for table in ("cards", "revlog"):

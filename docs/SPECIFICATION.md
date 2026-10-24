@@ -156,8 +156,8 @@ A manifest might have `id`, `category`, `format`, `source`, `capabilities`, `lic
   additional source planned via Jitendex in a follow-up PR. `真ん中` supplies examples
   for `真` and `中`, not `間`.
 - Example fields and rendering follow the
-  [card example design](CARD_EXAMPLES.md): separate Katanki-managed `VocabExamples`
-  and user-owned `UserExamples`, user examples first, deduplication, stable ordering,
+  [card example design](CARD_EXAMPLES.md): Katanki-managed `VocabExamples`,
+  deduplication, stable ordering,
   and a per-category display limit of 5 by default (0 means show all). Store all
   eligible examples. Configure front and back sources independently: selected Anki
   words only, or Anki words plus Jitendex dictionary words. Preserve legacy shared
@@ -173,11 +173,11 @@ A manifest might have `id`, `category`, `format`, `source`, `capabilities`, `lic
   snapshots must work independently of source decks and the add-on. Use distinct
   front/back layouts without instruction prompts or repeated front content.
   Production masks the target
-  in both fields at rendering time. Parts uses example kanji containing the part,
+  in managed examples. Parts uses example kanji containing the part,
   on the back, rather than vocabulary words. Keep meanings and examples separate
   from the production prompt representation. Remaining example display work,
-  furigana, seen/new filtering, and live production rendering are scheduled for
-  Phase 4 alongside the interface improvements.
+  seen/new filtering is scheduled for Phase 4. Furigana with kana-anchored
+  alignment is delivered; editable user examples are deferred to Phase 6.
 - Preserve source deck data; no source-to-generated lifecycle tracking.
 - Review cards must be self-contained and responsive on desktop Anki, AnkiMobile,
   and AnkiDroid, including after deck export/import. Include required templates,
@@ -314,10 +314,12 @@ with real Anki progress.
 - [ ] **Polish card layouts.** Improve recognition, production, and Parts layouts
   for desktop and mobile, and complete the remaining
   [card example design](CARD_EXAMPLES.md), including
-  furigana, seen/new filtering, live production clues after user edits, display
+  seen/new filtering, display
   controls, preview parity, and acceptance coverage. Verify offline study on
   desktop, AnkiMobile, and AnkiDroid, plus export/import into a clean profile
   without the add-on or source decks, including required media and stroke controls.
+- [x] Example furigana: independent front/back toggles, mode-specific defaults,
+  offline kana-anchored alignment below kanji groups, and adjusted chip spacing.
 - [ ] Read existing card states and review history from Anki for the dashboard;
   Anki continues to control scheduling and due dates.
 - [ ] Classification registry and sourced/versioned JLPT dataset.
@@ -339,6 +341,10 @@ with real Anki progress.
 - [ ] Add-on verified not to corrupt or mutate unrelated notes; backup guidance.
 
 ### Phase 6 — Optional enhancements
+
+- [ ] Editable user examples, user-first ordering/deduplication, and live production
+  clues after editor changes. Preserve existing `UserExamples` data while deferred;
+  new note types omit the field and stock review/refresh ignores its contents.
 
 - [ ] Migaku Kanji GOD migration with safe progress preservation.
 - [ ] Manual lists, more dictionary providers, fallback selection, custom classifications.
@@ -382,9 +388,9 @@ with real Anki progress.
   remain later work.
 - Source and validation of unofficial JLPT levels; meaning of “coverage” when a dataset omits characters.
 - Kanji production fronts: **resolved**, extended 2026-10-23. Use kanji meanings
-  with configurable masked examples. Store all eligible vocabulary examples plus
-  user-added examples separately; show user examples first with a default limit
-  of 5 (0 = all). Validate the visible clues after filtering/limits. Explicitly
+  with configurable masked examples. Store all eligible managed vocabulary
+  examples with a default front limit of 5 (0 = all). Editable user examples
+  are deferred to Phase 6. Validate the visible clues after filtering/limits. Explicitly
   enabled example refresh preserves user content and review progress. See
   [card example design](CARD_EXAMPLES.md). Jitendex default example-word support is deferred to a separate PR.
 - Primitive naming system and component-vs-radical distinctions.

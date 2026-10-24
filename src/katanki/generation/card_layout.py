@@ -3,7 +3,6 @@
 from .furigana import SCRIPT as FURIGANA_SCRIPT
 
 EXAMPLES = r"""<div class="katanki-examples" data-kind="{{CardKind}}">
-<div class="user-examples" hidden>{{UserExamples}}</div>
 <div class="managed-examples" hidden>{{VocabExamples}}</div>
 <div class="example-output word-grid"></div>
 <details class="more-words" hidden>
@@ -33,25 +32,16 @@ EXAMPLES = r"""<div class="katanki-examples" data-kind="{{CardKind}}">
       statuses.set(word, status);
     }
   });
-  ['.user-examples', '.managed-examples'].forEach(function(selector) {
-    var source = root.querySelector(selector);
-    var words = selector === '.managed-examples'
-      ? Array.from(source.children).filter(function(n) {
-          return n.dataset[front ? 'front' : 'back'] !== 'false';
-        }).map(function(n) { return n.textContent; })
-      : source.innerHTML.replace(/<br\s*\/?\s*>|<\/(?:div|p)>/gi, '\n').split('\n')
-        .map(function(s) {
-          var node = document.createElement('div'); node.innerHTML = s;
-          return node.textContent;
-        });
-    words.forEach(function(word) {
-      word = word.trim();
-      if (!word || seen.has(word)) return;
-      seen.add(word);
-      entries.push({word: word, status: statuses.get(word) || 'missing', index: entries.length});
-    });
+  var words = Array.from(root.querySelector('.managed-examples').children)
+    .filter(function(n) { return n.dataset[front ? 'front' : 'back'] !== 'false'; })
+    .map(function(n) { return n.textContent; });
+  words.forEach(function(word) {
+    word = word.trim();
+    if (!word || seen.has(word)) return;
+    seen.add(word);
+    entries.push({word: word, status: statuses.get(word) || 'missing', index: entries.length});
   });
-  // Deduplicate user-first, then group by study stage with stable ordering within each stage.
+  // Deduplicate, then group by study stage with stable ordering within each stage.
   if (!parts && !front) entries.sort(function(a, b) {
     return order[a.status] - order[b.status] || a.index - b.index;
   });
