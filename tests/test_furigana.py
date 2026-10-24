@@ -100,5 +100,5 @@ const results = CASES.map(([word, reading, target]) => {
 process.stdout.write(JSON.stringify(results));
 """
     script = SCRIPT + harness.replace("CASES", json.dumps(cases, ensure_ascii=False))
-    result = subprocess.run([node], input=script, text=True, capture_output=True, check=True)
+    result = subprocess.run([node], input=script, encoding="utf-8", capture_output=True, check=True)
     assert json.loads(result.stdout) == [case[3] for case in cases]
