@@ -65,7 +65,7 @@ def test_opening_and_saving_preserves_all_preferences(panel_factory, category, s
     else:
         assert panel.furigana.isEnabled()
         assert panel.front_furigana.isEnabled()
-        assert not panel.word_status.isEnabled()
+        assert panel.word_status.isEnabled()
 
 
 @pytest.mark.parametrize("category", ("recognition", "production"))
@@ -123,3 +123,13 @@ def test_furigana_switches_save_independently(panel_factory):
     panel.front_furigana.setChecked(True)
     panel.furigana.setChecked(False)
     assert panel.settings().front_furigana and not panel.settings().furigana
+
+
+@pytest.mark.parametrize("category", ("recognition", "production"))
+def test_review_filter_can_be_changed_and_reopened(panel_factory, category):
+    panel = panel_factory(category, CardSettings())
+    panel.word_status.setCurrentIndex(panel.word_status.findData(False))
+    saved = panel.settings()
+    assert not saved.include_new
+    reopened = panel_factory(category, saved)
+    assert reopened.word_status.currentData() is False

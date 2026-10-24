@@ -176,7 +176,7 @@ A manifest might have `id`, `category`, `format`, `source`, `capabilities`, `lic
   in managed examples. Parts uses example kanji containing the part,
   on the back, rather than vocabulary words. Keep meanings and examples separate
   from the production prompt representation. Remaining example display work,
-  seen/new filtering is scheduled for Phase 4. Furigana with kana-anchored
+  reviewed-only filtering resolves selected Anki word states at creation/refresh. Furigana with kana-anchored
   alignment is delivered; editable user examples are deferred to Phase 6.
 - Preserve source deck data; no source-to-generated lifecycle tracking.
 - Review cards must be self-contained and responsive on desktop Anki, AnkiMobile,
@@ -311,12 +311,12 @@ once, then run all configured steps with a refresh button.
 **Deliverable:** Polished, portable review cards and a Kanji GOD-style dashboard
 with real Anki progress.
 
-- [ ] **Polish card layouts.** Improve recognition, production, and Parts layouts
+- [x] **Polish card layouts.** Improve recognition, production, and Parts layouts
   for desktop and mobile, and complete the remaining
   [card example design](CARD_EXAMPLES.md), including
   seen/new filtering, display
   controls, preview parity, and acceptance coverage. Verify offline study on
-  desktop, AnkiMobile, and AnkiDroid, plus export/import into a clean profile
+  desktop and responsive mobile-sized webviews, plus export/import into a clean profile
   without the add-on or source decks, including required media and stroke controls.
 - [x] Example furigana: independent front/back toggles, mode-specific defaults,
   offline kana-anchored alignment below kanji groups, and adjusted chip spacing.

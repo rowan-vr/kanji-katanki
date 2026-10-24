@@ -133,3 +133,74 @@ def test_dictionary_credits_are_deduplicated_before_first_refresh():
         attribution=("Dictionary & contributors", "Stroke source", "Dictionary & contributors"),
     )
     assert content.fields()["Attribution"] == "Dictionary &amp; contributors<br>Stroke source"
+
+
+@pytest.mark.parametrize("include_new", (False, True))
+def test_review_filter_resolves_both_sides_before_front_limits(include_new):
+    words = ("時新", "時学", "時済", "時再", "時無", "時旧")
+    states = ("new", "learning", "learned", "relearning", "missing", "exists")
+    discovery = replace(
+        report(),
+        scan=ScanResult(
+            6, ("時",), words, vocabulary_statuses=tuple(zip(words, states, strict=True))
+        ),
+    )
+    options = CardSettings(include_new=include_new, example_limit=1)
+    result = build_preview(
+        discovery,
+        (),
+        recognition=("時",),
+        production=("時",),
+        include_primitives=False,
+        card_settings={"recognition": options, "production": options},
+        word_suggestions=WordSuggestions(()),
+    )
+    expected = tuple(sorted(words if include_new else ("時学", "時済", "時再")))
+    for content in result.contents:
+        fields = content.fields()
+        assert words_for_side(fields["VocabExamples"], "front") == expected
+        assert words_for_side(fields["VocabExamples"], "back") == expected
+        if content.identity.note_type == "kanji-production":
+            assert content.prompt == "time\n\n" + expected[0].replace("時", "__")
+
+
+def test_review_filter_keeps_explicit_dictionary_additions():
+    options = CardSettings(include_new=False, example_source="discovered_and_default")
+    result = build_preview(
+        report(),
+        (),
+        recognition=("時",),
+        production=(),
+        include_primitives=False,
+        card_settings={"recognition": options},
+        word_suggestions=WordSuggestions([("時間", "じかん", 200)]),
+    )
+    assert result.contents[0].examples == ("時間",)
+    assert result.contents[0].discovered_examples == ()
+
+
+def test_filtered_out_words_cannot_disambiguate_production():
+    discovery = DiscoveryReport(
+        ScanResult(
+            2,
+            ("時", "刻"),
+            ("時計", "刻印"),
+            vocabulary_statuses=(("時計", "new"), ("刻印", "new")),
+        ),
+        (KanjiEntry("時", (), (), ("time",)), KanjiEntry("刻", (), (), ("time",))),
+        (),
+        (),
+        True,
+        (),
+    )
+    result = build_preview(
+        discovery,
+        (),
+        recognition=(),
+        production=("時", "刻"),
+        include_primitives=False,
+        card_settings={"production": CardSettings(include_new=False)},
+        word_suggestions=WordSuggestions(()),
+    )
+    assert all(item.outcome == "unavailable" for item in result.plan.items)
+    assert all(content.prompt == "time" for content in result.contents)

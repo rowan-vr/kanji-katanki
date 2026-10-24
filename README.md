@@ -239,8 +239,10 @@ creation/refresh; customized templates and styles are preserved.
 Choose **My Anki words + Jitendex dictionary words** for either side to add
 Jitendex suggestions after your Anki words. The complete pinned Jitendex export lives at `bundled/jitendex.zip`
 with the other datasets; an in-memory index ranks common words. Parts show
-containing kanji on the back; Production fronts show masked clues. Seen-only
-filtering and remaining display controls are planned for Phase 4. Editable user
+containing kanji on the back; Production fronts show masked clues. The reviewed-only
+filter includes learning, review and relearning Anki words on both sides and excludes
+new/unmatched words. Explicit Jitendex additions are unaffected. Creation and Refresh
+save the filtered examples for offline review. Editable user
 examples and live production clues after editor changes are planned for Phase 6.
 
 The **Refresh** tab saves **Update tags from source vocabulary** (off by default),
