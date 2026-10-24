@@ -162,7 +162,6 @@ def apply_generation(
             model = matches[0]
             legacy_fields = set(spec.fields) - {
                 "VocabExamples",
-                "UserExamples",
                 "ExampleLimit",
                 STATE_FIELD,
             }

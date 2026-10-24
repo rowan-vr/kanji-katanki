@@ -72,6 +72,7 @@ def exported_cards(directory):
                     "風景",
                     "背景",
                     "光景",
+                    "絶景",
                     "夜景",
                     "情景",
                     "景勝",
@@ -99,11 +100,6 @@ def exported_cards(directory):
         assert apply_generation(source, preview, deck_id=1).created == 2
         nids = source.find_notes('"note:Kanji Katanki*"')
         assert len(nids) == 2
-        # User-first deduplication must retain the known word's saved status.
-        for nid in nids:
-            note = source.get_note(nid)
-            note["UserExamples"] = "<div>景色</div><div>絶景</div>"
-            source.update_note(note)
         package = directory / "cards.apkg"
         source.export_anki_package(
             out_path=str(package),
@@ -272,9 +268,8 @@ def webview_checks(cards, screenshots):
                         assert result["meaning"] == "scenery, view"
                         assert result["clues"] == ["光__"]
                     else:
-                        # UserExamples are rendered live on recognition fronts;
-                        # limits and source choices still exclude dictionary-only words.
-                        assert result["clues"] == ["景色"]
+                        # Recognition fronts use only front-eligible managed words.
+                        assert result["clues"] == ["光景"]
                     assert not {"夜景", "情景", "景勝"} & set(result["clues"])
                     result = render(
                         document(back, dark=dark),

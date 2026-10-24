@@ -49,7 +49,7 @@ def test_each_side_uses_its_own_source_pool_without_changing_note_fields(front, 
         assert words_for_side(fields["VocabExamples"], "back") == (
             own if back == "discovered" else combined
         )
-        assert len(fields) == 12  # The existing owned note schema and baseline shape stay stable.
+        assert "UserExamples" not in fields  # Editable examples are deferred to Phase 6.
         if content.identity.note_type == "kanji-production":
             assert content.prompt == (
                 "time\n\n__間割" if front == "discovered" else "time\n\n__間割\n__間\n__計"

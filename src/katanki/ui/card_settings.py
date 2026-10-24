@@ -82,7 +82,7 @@ class CardSettingsPanel(QWidget):
         self.limit.setSpecialValueText("All matching examples")
         self.limit.setValue(settings.example_limit)
         self.limit.setToolTip(
-            "Limits question-side examples, including your UserExamples. "
+            "Limits question-side examples. "
             "The answer side keeps its full selected list."
         )
         if not parts:
@@ -144,8 +144,7 @@ class CardSettingsPanel(QWidget):
             _hint(
                 "My Anki words means the Japanese text in the fields selected under Discovery. "
                 "Other fields are not searched. Dictionary words come from the Jitendex selected "
-                "under Dictionaries. Examples entered in UserExamples are included on both sides, "
-                "subject to the front visibility and limit."
+                "under Dictionaries."
                 if not parts
                 else "Example kanji are characters containing this graphical part, "
                 "rather than vocabulary words."

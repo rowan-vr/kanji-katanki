@@ -409,11 +409,11 @@ Anki progress. Covers FR-03, FR-05 and the detail-view portion of FR-04.
   with the notes/deck; review must not depend on an add-on bridge, local server,
   installed dictionaries, or source vocabulary decks. The add-on is for easy
   creation and refresh, not a requirement for studying existing cards.
-  Include the remaining [card example design](CARD_EXAMPLES.md): furigana
-  alignment, seen/new vocabulary filtering, live production
-  clues after editing `UserExamples`, and remaining display controls and preview
-  parity. Preserve the delivered managed/protected fields, all-example storage,
-  per-category front limits (default 5; 0 = all), user-first stable deduplication,
+  Include the remaining [card example design](CARD_EXAMPLES.md): seen/new
+  vocabulary filtering, remaining display controls, and preview parity. Editable
+  user examples and live clues after editor changes are deferred to Phase 6.
+  Preserve the delivered managed/protected fields, all-example storage,
+  per-category front limits (default 5; 0 = all), stable deduplication,
   production masking and visible-clue ambiguity checks, Parts back examples, and
   protected existing-note refresh. Complete the remaining example acceptance
   coverage as part of this work. Resolve source-dependent filtering at creation
@@ -451,7 +451,8 @@ Anki progress. Covers FR-03, FR-05 and the detail-view portion of FR-04.
   Recognition fronts now render their selected word examples. Existing shared
   choices migrate unchanged, with no new note fields or baseline adoption needed.
   Refresh now overwrites Katanki-managed fields, including edits and damaged or
-  missing tracking, without replacement review. `UserExamples` remains untouched;
+  missing tracking, without replacement review. Legacy `UserExamples` data is
+  preserved but ignored; new note types omit that field;
   enabled update options still control which fields are regenerated.
   Reviewed-only controls remain visibly unavailable. Furigana now has independent
   front/back switches: Production defaults to both sides, Recognition to back only.
@@ -463,8 +464,11 @@ Anki progress. Covers FR-03, FR-05 and the detail-view portion of FR-04.
   with Anki-only fronts and dictionary-expanded backs.
   Verification: 377 unit tests, lint/format checks, real-Anki generation/example
   refresh lifecycle checks, and the offline packaged build pass (2026-10-24).
-  Native AnkiMobile/AnkiDroid checks, seen/new filtering, and live
-  production clues after editing `UserExamples` remain pending.
+  Native AnkiMobile/AnkiDroid checks and seen/new filtering remain pending.
+- [x] **Example furigana.** Independent front/back toggles; Production defaults
+  to both sides, Recognition to back only. Offline readings appear below kanji
+  groups, aligned using kana boundaries, with safe grouped fallback and adjusted
+  chip spacing. Masked clues retain alignment. Unit/JavaScript checks pass.
 - [ ] Allow automatic card creation from selected statistics/classification lists
   (for example JLPT levels), reusing configured generation, duplicate checks,
   ignores, and creation review.
@@ -556,6 +560,12 @@ Acceptance: users can install and use the release without Python, uv, Node.js,
 accounts, telemetry, or network-required reviews.
 
 ## Phase 6 — Optional enhancements (post-beta)
+
+- [ ] Editable user examples (`UserExamples`), user-first deduplication/ordering,
+  optional readings, and live production clues after note-editor changes. Restore
+  the editor field and integrate limits, masking, ambiguity checks, and previews.
+  Deferred 2026-10-24: new note types omit the field; existing field contents are
+  preserved but ignored by stock cards and refreshed production prompts.
 
 - [ ] FR-07: explicit Migaku Kanji GOD import with backup, dry-run mappings,
   unmappable-data warnings, confirmation, and copied-profile tests; preserve

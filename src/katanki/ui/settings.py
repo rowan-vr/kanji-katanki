@@ -108,7 +108,7 @@ class SettingsDialog(QDialog):
         refresh_layout.addWidget(self.refresh_dictionary)
         update_hint = QLabel(
             "Example updates respect each category's refresh setting under Cards. "
-            "Refresh overwrites Katanki-managed fields; UserExamples is kept. "
+            "Refresh overwrites Katanki-managed fields. "
             "Tag and dictionary-content updates remain planned."
         )
         update_hint.setWordWrap(True)
@@ -242,7 +242,7 @@ class SettingsDialog(QDialog):
         prompt.setText("Your card settings have been saved.")
         prompt.setInformativeText(
             "Refresh your cards to apply the changed settings. Refresh uses your saved "
-            "update preferences and overwrites Katanki-managed fields. UserExamples is kept. "
+            "update preferences and overwrites Katanki-managed fields. "
             "You can also do this later "
             "from Katanki → Refresh and generate Kanji Cards."
         )

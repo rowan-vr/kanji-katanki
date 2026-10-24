@@ -1,23 +1,21 @@
 # Card examples
 
-Card example design, partially implemented in Phase 3. Remaining example and
-rendering work is scheduled for Phase 4 alongside the interface improvements. Creation and Refresh now store managed
-suggestions in `VocabExamples` and protect `UserExamples`. Recognition and Parts
-show examples on the back. Production uses a generated `Prompt` snapshot rebuilt
-on Refresh, merging user examples first, deduplicating, limiting, and masking all
-target occurrences. Settings control default words, visibility and limits.
-Seen/new filtering and live production-front rendering after an editor
-change remain pending; refresh applies user-example edits to production clues.
-Exact previous stock templates are upgraded during creation or example refresh;
-managed-field refresh also upgrades legacy notes without a replacement review.
-Customized templates and styles are preserved.
+Creation and Refresh store selected-source and optional dictionary examples in
+`VocabExamples`. Recognition fronts and backs use their independently selected
+words; Parts shows related kanji on the back. Production uses a masked `Prompt`
+snapshot rebuilt on Refresh. Settings control sources, furigana, visibility, and
+front limits. Seen/new filtering remains pending in Phase 4.
+
+Editable user examples and live production clues after editor changes are deferred
+to Phase 6. New note types omit `UserExamples`; existing field contents are preserved
+but ignored by stock rendering and prompt refresh. Customized templates are preserved.
+Exact previous stock templates upgrade during creation or example refresh.
 
 ## Fields
 
 | Field | Content | Updated by |
 | --- | --- | --- |
 | `VocabExamples` | Examples from vocabulary sources and optional default words | Katanki refresh |
-| `UserExamples` | Extra examples entered in the note editor | The user only |
 
 Store examples separately from meanings instead of combining them in `Prompt`.
 Store the original words; mask the target kanji when rendering production fronts.
@@ -32,20 +30,18 @@ separate setting.
 
 Each category has an example limit: **5 by default**, **0 for all**. Store all
 eligible examples on the note. Apply visibility and limits to front clues; the
-answer side shows every configured stored example, including user examples,
-independently of the front limit or front-example visibility.
+answer side shows every configured stored example, independently of the front limit or front-example visibility.
 For long lists, show 12 chips initially and put the rest in an accessible native
 **Show N more words** disclosure. Display the full unique count in the heading;
 every word is stored/rendered, with no additional generator or back-display cap.
 
-Show user examples first, followed by managed examples. Remove duplicates before
-applying the front limit, keeping the user's version. Preserve user ordering and
-keep managed examples in a stable order. Both fields count toward the front limit.
+Deduplicate managed examples before applying the front limit, preserving their
+stable order.
 
 Recognition and Production respect the example visibility, source, furigana,
 and seen/new settings. Parts has no furigana or word review-status filter.
 
-Production masks every occurrence of the target kanji in both fields without
+Production masks every occurrence of the target kanji in managed examples without
 changing the stored text. Check for ambiguous production clues after filtering,
 masking, and limiting: an example that isn't shown cannot distinguish two cards.
 Previews and actual cards must render the same content.
@@ -66,14 +62,13 @@ Vocabulary chips show a saved snapshot from the configured Discovery sources:
 - **Rose with a double border:** relearning (card type 3).
 - **Amber with a dashed border:** learning (card type 1).
 - **Plain outlined:** new (card type 0).
-- **Gray:** no matching source card exists. Default or user-only words without
+- **Gray:** no matching source card exists. Default words without
   a matching configured source card also use gray.
 
 Creation and enabled example refresh capture the status in `VocabExamples` data
 attributes. Sort words **known → relearning → learning → new → no card**.
 Duplicate source words/cards use the first matching state in that order.
-Deduplicate user-first, retain a matching managed word's status, and preserve
-user-first order within each state group. Older generic card-exists snapshots
+Deduplicate words and preserve stable order within each state group. Older generic card-exists snapshots
 remain outlined until refresh records their exact stage. No note/card IDs or live collection
 links are embedded. The legend says these are statuses at last creation/refresh;
 reviewing vocabulary changes the colors on the next enabled refresh. Related
@@ -171,7 +166,7 @@ Store the union of selected words with `data-front` / `data-back` flags in
 `VocabExamples`; the note field schema and protected baseline shape stay unchanged.
 Recognition renders only front-eligible words with the configured visibility/limit.
 Production creation and refresh build their masked `Prompt` only from front-eligible
-words, including user examples first. Back-only words never disambiguate a front.
+managed words. Back-only words never disambiguate a front.
 Dictionary-data-only refresh retains the saved front flags instead of introducing
 hidden back words into a question. Back rendering filters on back flags and still
 provides every selected back word through expansion. Unmarked older words remain
@@ -190,14 +185,13 @@ review-status or furigana filtering. All managed suggestions are stored even whe
 hidden or beyond the display limit. Production ambiguity uses only the limited,
 visible, masked clues. Existing notes use the refresh rules above.
 
-Dictionary readings can help with future furigana, but whole-word readings do not
-always resolve ambiguous readings or show which kana belongs to each kanji.
+Kana boundaries align dictionary readings to kanji groups. Ambiguous splits keep
+a grouped reading rather than guessing individual-kanji readings.
 
 ## Open questions
 
 - Refining word ranking and expanding the conservative default-word coverage.
-- Editable example format, optional readings, and duplicate matching rules.
-- Furigana alignment and handling of ambiguous readings.
+- Phase 6: editable example format, optional readings, and duplicate matching rules.
 - Whether seen-only filtering excludes defaults without a matching reviewed word.
 - Rich preview/editing of legacy migration and customized template upgrades.
 
@@ -212,7 +206,7 @@ hidden examples, and the shared preview renderer. Host baseline: Linux Anki
 26.09.3 / Python 3.14.8. `scripts/smoke_example_refresh.py` checks real source
 additions/removals, manual edits, migration decisions, unchanged scheduling and
 Undo. `scripts/smoke_refresh.py` exercises existing-note updates through the actual
-Refresh button and CollectionOp. Furigana and seen/new filtering remain pending.
+Refresh button and CollectionOp. Seen/new filtering remains pending; furigana is delivered below.
 
 Remaining acceptance coverage for the full design:
 
@@ -221,7 +215,7 @@ exports only the generated notes, imports into a clean collection without source
 vocabulary, and renders the imported front/back templates in an offline Qt
 webview without an add-on bridge. It checks all five saved word statuses and their
 order/distinct chip styles, independent Anki-only fronts and dictionary-expanded
-backs, UI control save/reopen, user-first deduplication within groups, all 16 words
+backs, UI control save/reopen, stable deduplication within groups, all 16 words
 despite a front limit of one, expansion beyond 12 chips, production masking, stroke-number
 toggle/playback, light/dark themes, and 360/900 px layouts. Native AnkiMobile and
 AnkiDroid verification remains pending. Unit coverage includes status aggregation,
@@ -235,7 +229,7 @@ unchanged user examples/tags/
 scheduling/history, grouped Undo, and duplicate-free repeated refresh. The native
 review lifecycle also verifies a new tracking record remains readable after answering.
 
-Cover limits including 0 and more user examples than the limit, ordering,
+Cover limits including 0, managed example ordering,
 duplicates, masking, ambiguity after limiting, Parts examples, and preview parity.
 
 For updates, cover source additions/removals, seen-state changes, disabled refresh,
@@ -254,3 +248,9 @@ a grouped reading; ambiguous alignments fall back to the whole word. Masked
 production clues preserve these boundaries without revealing the target kanji.
 Chips with readings have extra bottom padding.
 Words without a dictionary reading remain plain text. Parts do not show furigana.
+
+### Deferred user examples (Phase 6)
+
+Restore user-editable examples with user-first deduplication, optional readings,
+front limits, live masking, visible-clue ambiguity checks, and preview parity.
+Legacy field contents must remain available for that future feature.

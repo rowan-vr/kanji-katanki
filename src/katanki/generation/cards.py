@@ -49,7 +49,6 @@ def note_type_spec(key: str) -> NoteTypeSpec:
             "Strokes",
             "Attribution",
             "VocabExamples",
-            "UserExamples",
             "ExampleLimit",
             STATE_FIELD,
         ),
@@ -89,7 +88,6 @@ class CardContent:
         values = {
             spec.fields[0]: self.identity.key,
             "Display": escape(self.display),
-            "UserExamples": "",
             "ExampleLimit": str(self.example_limit if self.show_examples else -1),
             "VocabExamples": "".join(
                 '<div data-front="'

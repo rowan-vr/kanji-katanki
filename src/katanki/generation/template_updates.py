@@ -10,6 +10,7 @@ from .layout_fingerprints import (
     PRE_FURIGANA_STYLE,
     STYLES,
     TEMPLATE_PAIRS,
+    USER_EXAMPLES_PAIRS,
     WHOLE_WORD_FURIGANA_PAIRS,
     WHOLE_WORD_FURIGANA_STYLE,
 )
@@ -63,6 +64,7 @@ def upgrade_stock_layout(model, key):
         TEMPLATE_PAIRS.get(key),
         PRE_FURIGANA_PAIRS.get(key),
         WHOLE_WORD_FURIGANA_PAIRS.get(key),
+        USER_EXAMPLES_PAIRS.get(key),
     )
     stock_pair = template["qfmt"] == spec.front and template["afmt"] == spec.back
     if not (old_pair or stock_pair):

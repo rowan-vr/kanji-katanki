@@ -5,7 +5,7 @@ Offline-first kanji learning for desktop Anki. **Phase 3: saved settings and ref
 Configure vocabulary sources, generation categories, decks/tags, and dictionaries
 under **Katanki → Settings…**. Then choose **Katanki → Refresh and generate Kanji Cards**
 to scan saved sources. Refresh overwrites managed examples when enabled, preserving
-`UserExamples` and review progress.
+review progress.
 Only new eligible cards open a single creation review, with category tabs, green
 selected tiles, and an inline front/back preview. Approve creation with **Create … cards**.
 Generated notes are never deleted when source vocabulary disappears.
@@ -214,16 +214,18 @@ the first option under **Examples on the front** and the second under
 **Examples on the back**. Front visibility and the front limit do not change the
 answer's selected list. Recognition fronts show unmasked words; Production fronts
 use masked clues. Dictionary words selected only for the back never distinguish
-production questions during ambiguity checks. `UserExamples` are included on both
-sides, subject to front visibility and the front limit.
-Furigana and reviewed-only filtering are not available yet; those controls are
-disabled with explanatory tooltips, preserving existing preferences. All matching
+production questions during ambiguity checks. Editable user examples are deferred
+to Phase 6; new note types omit `UserExamples` and existing contents are preserved
+but ignored by stock cards and refreshed clues.
+Furigana has independent front/back switches: Production defaults to both sides,
+Recognition to the back only. Readings appear below kanji groups with kana-based
+alignment and extra chip spacing. Reviewed-only filtering remains unavailable. All matching
 Anki words are currently eligible, with their saved review states shown on the back.
 Parts instead saves whether to show the part's name on the front, show example
 kanji containing it on the back, use kanji from your vocabulary alone or also
 other kanji, and automatically refresh example kanji (on by default).
 Each category also saves a front-example limit: 5 by default, with 0 meaning
-show all. The limit includes user examples; all eligible examples remain stored.
+show all. All eligible managed examples remain stored.
 Backs show every configured stored example, regardless of the front limit or
 front-example visibility. Long backs show 12 chips and a **Show N more words**
 disclosure for the rest, with the full word count displayed. Words sort by
@@ -237,10 +239,9 @@ creation/refresh; customized templates and styles are preserved.
 Choose **My Anki words + Jitendex dictionary words** for either side to add
 Jitendex suggestions after your Anki words. The complete pinned Jitendex export lives at `bundled/jitendex.zip`
 with the other datasets; an in-memory index ranks common words. Parts show
-containing kanji on the back; Production fronts show masked clues. Furigana, seen-only filtering, and the additional Parts/name controls
-are planned for Phase 4 alongside the interface improvements, together with live
-production clues after user edits. Production UserExamples edits currently take
-effect when you run Refresh.
+containing kanji on the back; Production fronts show masked clues. Seen-only
+filtering and remaining display controls are planned for Phase 4. Editable user
+examples and live production clues after editor changes are planned for Phase 6.
 
 The **Refresh** tab saves **Update tags from source vocabulary** (off by default),
 **Update example words** (on by default), and **Update dictionary data** (off by
@@ -250,8 +251,8 @@ These controls are independent of the automatic-refresh switch. Example updates
 respect both **Update example words** and each category's automatic-example-refresh
 setting under Cards. Refresh overwrites Katanki-managed fields according to the enabled
 update options, including manual edits and older or damaged tracking records.
-Keep custom examples in `UserExamples`, which is never overwritten. No baseline
-repair or migration approval is required. Tracking is regenerated with HTML-safe JSON.
+Legacy `UserExamples` contents are retained but ignored while editable examples
+are deferred. No baseline repair or migration approval is required. Tracking is regenerated with HTML-safe JSON.
 Updates support Anki Undo and preserve note/card IDs, scheduling, history, tags and
 decks. Empty/ambiguous production updates keep their previous clues. Tag and
 dictionary-content updates remain planned; those two checkboxes save preferences only.
