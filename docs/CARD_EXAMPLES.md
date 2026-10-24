@@ -4,7 +4,11 @@ Creation and Refresh store selected-source and optional dictionary examples in
 `VocabExamples`. Recognition fronts and backs use their independently selected
 words; Parts shows related kanji on the back. Production uses a masked `Prompt`
 snapshot rebuilt on Refresh. Settings control sources, furigana, visibility, and
-front limits. Seen/new filtering remains pending in Phase 4.
+front limits. Reviewed-only filtering applies to selected Anki words on both sides
+at creation/Refresh, before limits and production ambiguity checks. Learning,
+review and relearning states qualify; new, unknown and missing states do not.
+Explicit Jitendex additions remain independent and can include unreviewed words.
+The stored result remains studyable offline; review changes apply on Refresh.
 
 Editable user examples and live production clues after editor changes are deferred
 to Phase 6. New note types omit `UserExamples`; existing field contents are preserved
@@ -192,7 +196,6 @@ a grouped reading rather than guessing individual-kanji readings.
 
 - Refining word ranking and expanding the conservative default-word coverage.
 - Phase 6: editable example format, optional readings, and duplicate matching rules.
-- Whether seen-only filtering excludes defaults without a matching reviewed word.
 - Rich preview/editing of legacy migration and customized template upgrades.
 
 ## Verification
@@ -206,7 +209,7 @@ hidden examples, and the shared preview renderer. Host baseline: Linux Anki
 26.09.3 / Python 3.14.8. `scripts/smoke_example_refresh.py` checks real source
 additions/removals, manual edits, migration decisions, unchanged scheduling and
 Undo. `scripts/smoke_refresh.py` exercises existing-note updates through the actual
-Refresh button and CollectionOp. Seen/new filtering remains pending; furigana is delivered below.
+Refresh button and CollectionOp. Reviewed-only filtering uses the shared creation/refresh preview pipeline.
 
 Remaining acceptance coverage for the full design:
 
@@ -217,8 +220,8 @@ webview without an add-on bridge. It checks all five saved word statuses and the
 order/distinct chip styles, independent Anki-only fronts and dictionary-expanded
 backs, UI control save/reopen, stable deduplication within groups, all 16 words
 despite a front limit of one, expansion beyond 12 chips, production masking, stroke-number
-toggle/playback, light/dark themes, and 360/900 px layouts. Native AnkiMobile and
-AnkiDroid verification remains pending. Unit coverage includes status aggregation,
+toggle/playback, light/dark themes, and 360/900 px layouts. Native mobile verification is not a completion requirement; responsive
+mobile-sized webview checks remain required. Unit coverage includes status aggregation,
 stage changes on refresh, stock-layout upgrades, and customized-layout preservation.
 All 377 unit tests, lint/format checks, the existing real-Anki generation and
 example-refresh lifecycle checks, and the offline add-on build pass.

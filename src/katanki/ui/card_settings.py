@@ -125,12 +125,12 @@ class CardSettingsPanel(QWidget):
             self.word_status.addItem("All matching Anki words, including unreviewed cards", True)
             self.word_status.addItem("Only words with an Anki card I have reviewed", False)
             self.word_status.setCurrentIndex(self.word_status.findData(settings.include_new))
-            self.word_status.setEnabled(False)
             self.word_status.setToolTip(
-                "Not available yet. All matching Anki words are currently included. "
-                "Chip colors on the back still show each word's saved review state."
+                "Applies to Anki words on both sides at creation and Refresh. "
+                "Learning, review and relearning cards count as reviewed. "
+                "Explicitly selected Jitendex additions are unaffected."
             )
-            options.addRow("Filter my Anki words by reviews", self.word_status)
+            options.addRow("Filter example words by reviews", self.word_status)
         self.refresh = QCheckBox("Update examples on existing cards during Refresh")
         self.refresh.setChecked(settings.auto_refresh)
         self.refresh.setToolTip(

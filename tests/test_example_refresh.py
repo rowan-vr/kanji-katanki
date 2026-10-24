@@ -551,3 +551,33 @@ def test_hiding_front_examples_keeps_dictionary_words_on_back(setup, monkeypatch
     assert words_for_side(fields["VocabExamples"], "back") == ("時間", "時代")
     assert refresh.apply_example_refresh(collection, plan).updated == 1
     assert not refresh.plan_example_refresh(collection, report(("時間",)), settings).updates
+
+
+def test_reviewed_only_refresh_tracks_stage_changes_without_changing_identity(setup):
+    collection, notes = setup
+    add(notes)
+    options = CardSettings(include_new=False)
+    settings = Settings(cards=(options, options, CardSettings()))
+    discovery = replace(
+        report(("時間", "時計")),
+        scan=ScanResult(
+            2,
+            ("時",),
+            ("時間", "時計"),
+            vocabulary_statuses=(("時間", "new"), ("時計", "learning")),
+        ),
+    )
+    plan = refresh.plan_example_refresh(collection, discovery, settings)
+    assert len(plan.updates) == 1
+    fields = dict(plan.updates[0].after)
+    assert "時計" in fields["VocabExamples"]
+    assert "時間" not in fields["VocabExamples"]
+    changed = replace(
+        discovery,
+        scan=replace(discovery.scan, vocabulary_statuses=(("時間", "learned"), ("時計", "new"))),
+    )
+    plan = refresh.plan_example_refresh(collection, changed, settings)
+    fields = dict(plan.updates[0].after)
+    assert "時間" in fields["VocabExamples"]
+    assert "時計" not in fields["VocabExamples"]
+    assert plan.updates[0].note_id == 1

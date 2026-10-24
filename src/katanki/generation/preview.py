@@ -114,7 +114,20 @@ def build_preview(
             else:
                 parents = tuple(add_component(parent) for parent in visual.prerequisites)
         options = card_settings.get(mode, CardSettings(front_furigana=mode == "production"))
-        discovered = tuple(sorted({word for word in report.scan.vocabulary if key in word}))
+        # Resolve source review state here so previews, refresh and exported
+        # notes share the same independent snapshot. Dictionary additions remain
+        # a separate explicit source choice.
+        discovered = tuple(
+            sorted(
+                word
+                for word in set(report.scan.vocabulary)
+                if key in word
+                and (
+                    options.include_new
+                    or vocabulary_statuses.get(word) in {"learning", "learned", "relearning"}
+                )
+            )
+        )
         defaults = (
             word_suggestions.lookup(key)
             if "discovered_and_default" in (options.front_source, options.example_source)

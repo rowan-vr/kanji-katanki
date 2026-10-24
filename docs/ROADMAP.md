@@ -401,11 +401,11 @@ workflow and respects the user's update choices.
 Deliverable: polished, portable review cards and a dashboard driven by actual
 Anki progress. Covers FR-03, FR-05 and the detail-view portion of FR-04.
 
-- [ ] **Polish card layouts.** Improve recognition, production, and Parts review
+- [x] **Polish card layouts.** Improve recognition, production, and Parts review
   layouts for desktop and mobile, including readable typography, spacing,
   responsive examples, and usable stroke controls. Cards must remain fully
   studyable offline without the add-on, including after export/import and on
-  AnkiMobile and AnkiDroid. Package required templates, styles, scripts, and media
+  portable review clients. Package required templates, styles, scripts, and media
   with the notes/deck; review must not depend on an add-on bridge, local server,
   installed dictionaries, or source vocabulary decks. The add-on is for easy
   creation and refresh, not a requirement for studying existing cards.
@@ -419,7 +419,7 @@ Anki progress. Covers FR-03, FR-05 and the detail-view portion of FR-04.
   coverage as part of this work. Resolve source-dependent filtering at creation
   or refresh and store the data needed for independent review on the notes.
   Verify front/back rendering, examples, masking, furigana, and stroke controls
-  on desktop and mobile, plus an exported deck imported into a clean profile
+  on desktop and responsive mobile-sized webviews, plus an exported deck imported into a clean profile
   without the add-on or source decks, offline.
   Implemented 2026-10-24: distinct front/back layouts without instruction prompts
   or repeated front content, responsive type/spacing, inline strokes, touch-sized
@@ -454,7 +454,7 @@ Anki progress. Covers FR-03, FR-05 and the detail-view portion of FR-04.
   missing tracking, without replacement review. Legacy `UserExamples` data is
   preserved but ignored; new note types omit that field;
   enabled update options still control which fields are regenerated.
-  Reviewed-only controls remain visibly unavailable. Furigana now has independent
+  Furigana now has independent
   front/back switches: Production defaults to both sides, Recognition to back only.
   Creation and Refresh persist escaped whole-word Jitendex readings for offline
   ruby rendering below kanji groups, including masked production clues. Kana
@@ -464,7 +464,12 @@ Anki progress. Covers FR-03, FR-05 and the detail-view portion of FR-04.
   with Anki-only fronts and dictionary-expanded backs.
   Verification: 377 unit tests, lint/format checks, real-Anki generation/example
   refresh lifecycle checks, and the offline packaged build pass (2026-10-24).
-  Native AnkiMobile/AnkiDroid checks and seen/new filtering remain pending.
+  Reviewed-only filtering now applies to selected Anki words on both sides before
+  front limits and production ambiguity checks. Learning, review and relearning
+  snapshots qualify; new, unknown and missing states do not. Explicit Jitendex
+  additions remain independent. Creation, refresh and previews share this logic;
+  stored results remain portable offline. Native mobile verification is no longer
+  a completion requirement; responsive webview coverage remains.
 - [x] **Example furigana.** Independent front/back toggles; Production defaults
   to both sides, Recognition to back only. Offline readings appear below kanji
   groups, aligned using kana boundaries, with safe grouped fallback and adjusted
