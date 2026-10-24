@@ -82,8 +82,7 @@ class CardSettingsPanel(QWidget):
         self.limit.setSpecialValueText("All matching examples")
         self.limit.setValue(settings.example_limit)
         self.limit.setToolTip(
-            "Limits question-side examples. "
-            "The answer side keeps its full selected list."
+            "Limits question-side examples. The answer side keeps its full selected list."
         )
         if not parts:
             front_form.addRow("Maximum front examples", self.limit)
