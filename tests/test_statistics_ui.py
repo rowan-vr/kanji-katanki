@@ -484,3 +484,62 @@ def test_create_cards_uses_selected_union_despite_grid_filters(qt_host, monkeypa
     dialog._set_loading(False)
     dialog.scope.clearSelection()
     assert not dialog.create_targets.isEnabled()
+
+
+def test_list_creation_prepares_exact_targets_then_requires_review(qt_host, monkeypatch):
+    from unittest.mock import Mock
+
+    from katanki.config import Settings
+
+    host = qt_host
+    warnings = []
+    utils = ModuleType("aqt.utils")
+    utils.showWarning = lambda message, **kwargs: warnings.append(message)
+    monkeypatch.setitem(sys.modules, "aqt.utils", utils)
+    generation = ModuleType("katanki.ui.generation")
+    review = Mock()
+    review.exec.return_value = 0
+    generation.CreationReviewDialog = Mock(return_value=review)
+    monkeypatch.setitem(sys.modules, "katanki.ui.generation", generation)
+    monkeypatch.delitem(sys.modules, "katanki.ui.manual", raising=False)
+    manual = importlib.import_module("katanki.ui.manual")
+    try:
+        settings = Settings()
+        monkeypatch.setattr(manual, "load_settings", lambda _: settings)
+        result = SimpleNamespace(
+            report=SimpleNamespace(dictionary_loaded=True),
+            preview=SimpleNamespace(
+                plan=SimpleNamespace(items=(SimpleNamespace(outcome="create"),))
+            ),
+        )
+        prepare = Mock(return_value=result)
+        monkeypatch.setattr(manual, "prepare_targets", prepare)
+        dialog = manual.ManualKanjiDialog(
+            host.window, targets=("月", "日"), source_title="Selected group"
+        )
+        assert dialog.text.isReadOnly()
+        assert dialog.text.toPlainText() == "月日"
+        assert dialog.create_button.text() == "Review cards…"
+        dialog.type_buttons["production"].setChecked(False)
+        dialog.create_button.click()
+        assert dialog.busy
+        assert not dialog.create_button.isEnabled()
+        assert not dialog.cancel.isEnabled()
+        host.operations[-1].complete()
+        assert prepare.call_args.args == (host.window.col, settings, ("月", "日"))
+        assert prepare.call_args.kwargs["categories"] == ("recognition",)
+        generation.CreationReviewDialog.assert_called_once_with(
+            host.window, result.preview, summary_label="Kanji ready"
+        )
+        assert dialog.result() == 0
+        assert not dialog.busy
+        assert not warnings
+        dialog_factory = Mock()
+        monkeypatch.setattr(manual, "ManualKanjiDialog", dialog_factory)
+        manual.open_list_creation(host.window, ("月", "日"), "Selected group")
+        dialog_factory.assert_called_once_with(
+            host.window, targets=("月", "日"), source_title="Selected group"
+        )
+        dialog_factory.return_value.exec.assert_called_once_with()
+    finally:
+        sys.modules.pop("katanki.ui.manual", None)
