@@ -88,6 +88,9 @@ class StatisticsDialog(QDialog):
         self.manage.clicked.connect(self._settings)
         self.refresh = QPushButton("Refresh")
         self.refresh.clicked.connect(self.reload)
+        self.history = QPushButton("History…")
+        self.history.clicked.connect(self._history)
+        heading.addWidget(self.history)
         heading.addWidget(self.manage)
         heading.addWidget(self.refresh)
         layout.addLayout(heading)
@@ -527,6 +530,12 @@ class StatisticsDialog(QDialog):
             if cards:
                 query = " or ".join(f"cid:{card['card_id']}" for card in cards)
                 dialogs.open("Browser", self.mw).search_for(query)
+
+    def _history(self):
+        from .history import HistoryDialog
+
+        dialog = HistoryDialog(self.mw)
+        dialog.exec()
 
     def _settings(self):
         from .settings import open_settings
