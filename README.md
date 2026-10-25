@@ -107,6 +107,30 @@ refreshing code. `.anki-test/` is ignored by Git and is separate from your norma
 Anki data directory. A separate single-instance key keeps launches separate from
 your normal Anki process. Do not put personal study data in this test profile.
 
+Manage target lists under **Katanki → Settings… → Statistics → Lists**. Choose
+bundled/updated or local JSON sources, check contents and provenance, and manage
+list updates independently of the dictionary controls under **Dictionaries**.
+The daily dataset update-check schedule is shared by both pages. The statistics
+dashboard is available under **Katanki → Statistics**.
+
+The native Qt statistics window shows known percentages and mature counts for
+each list and each school grade, in list order. Select multiple grades to see their
+combined unique targets. It includes recognition/writing modes, state counts, a searchable kanji grid and
+character details. The grid defaults to learning-state order (mature, young,
+relearning, learning, new, missing); switch to dataset list order with
+**Sort**. **All kanji with cards** is a dynamic list of unique kanji with Katanki
+recognition or writing cards, including kanji outside enabled target lists. It
+refreshes with the snapshot and keeps the same membership in both modes. Colours and the legend distinguish grey missing cards, red new cards,
+orange learning, purple relearning, turquoise young and green mature. Counts use Katanki's own kanji cards across the collection;
+vocabulary exposure does not imply recognition or writing mastery. A mature card
+is in review with an interval of at least 21 days. For mixed matching cards,
+relearning takes priority, followed by the least advanced state. Missing cards
+remain distinct from new cards. Suspended/buried cards retain their learning state.
+Click a kanji for matching Anki cards, recorded-answer pass rate and offline
+dictionary/stroke data. **Refresh** reloads the snapshot; collection changes mark
+it as stale. **Manage lists** opens settings. The dashboard never changes cards or
+scheduling. Historical progress charts and primitive statistics remain planned.
+
 Use **Katanki → Settings… → Discovery → Test discovery** to inspect vocabulary
 and kanji candidates without saving settings or generating cards.
 See [dataset setup and fixtures](docs/DATASETS.md) for dictionary preparation.
@@ -219,7 +243,7 @@ to Phase 6; new note types omit `UserExamples` and existing contents are preserv
 but ignored by stock cards and refreshed clues.
 Furigana has independent front/back switches: Production defaults to both sides,
 Recognition to the back only. Readings appear below kanji groups with kana-based
-alignment and extra chip spacing. Reviewed-only filtering remains unavailable. All matching
+alignment and extra chip spacing. Known-only filtering remains unavailable. All matching
 Anki words are currently eligible, with their saved review states shown on the back.
 Parts instead saves whether to show the part's name on the front, show example
 kanji containing it on the back, use kanji from your vocabulary alone or also
@@ -239,7 +263,7 @@ creation/refresh; customized templates and styles are preserved.
 Choose **My Anki words + Jitendex dictionary words** for either side to add
 Jitendex suggestions after your Anki words. The complete pinned Jitendex export lives at `bundled/jitendex.zip`
 with the other datasets; an in-memory index ranks common words. Parts show
-containing kanji on the back; Production fronts show masked clues. The reviewed-only
+containing kanji on the back; Production fronts show masked clues. The known-only
 filter includes learning, review and relearning Anki words on both sides and excludes
 new/unmatched words. Explicit Jitendex additions are unaffected. Creation and Refresh
 save the filtered examples for offline review. Editable user

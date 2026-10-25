@@ -46,6 +46,7 @@ def exercise_settings_dialog(mw, selection):
         "Generation",
         "Cards",
         "Dictionaries",
+        "Statistics",
         "Ignored cards",
         "Refresh",
     ]
@@ -64,8 +65,8 @@ def exercise_settings_dialog(mw, selection):
         else:
             assert panel.source.itemText(0) == "Words from my selected Anki fields"
             panel.front_source.setCurrentIndex((index + 1) % 2)
-            assert not panel.furigana.isEnabled()
-            assert not panel.word_status.isEnabled()
+            assert panel.furigana.isEnabled()
+            assert panel.word_status.isEnabled()
             panel.furigana.setChecked(index == 1)
             panel.word_status.setCurrentIndex(index % 2)
         panel.refresh.setChecked(index != 1)
@@ -87,7 +88,7 @@ def exercise_settings_dialog(mw, selection):
         selection.deck_ids[0],
         True,
         tuple(panel.settings() for panel in dialog.generation_panels.values()),
-        dialog.dictionary_panel.choices(),
+        dialog.dictionary_panel.choices() + dialog.statistics_panel.choices(),
         tuple(panel.settings() for panel in dialog.card_panels.values()),
         RefreshSettings(True, False, True, True, False, True),
     )

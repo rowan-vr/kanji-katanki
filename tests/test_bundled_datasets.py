@@ -18,12 +18,37 @@ from katanki.dictionaries.registry import (
     verify_bundle,
 )
 from katanki.generation.discovery.report import classify_scan
+from katanki.stats.sources import load_target_registry
+from katanki.stats.targets import parse_target_list
 from scripts.bundle_datasets import refresh_sources
 
 requires_datasets = pytest.mark.skipif(
     not all(path.is_file() for path in bundled_sources().values()),
     reason="Build the add-on first to run bundled-data verification (no unit-test downloads).",
 )
+
+
+@requires_datasets
+def test_built_in_targets_use_independent_dataset_and_export_offline(monkeypatch):
+    monkeypatch.setattr("urllib.request.urlopen", Mock(side_effect=AssertionError("Network used")))
+    target = load_target_registry({"school-grades": bundled_sources()["school-grades"]}).lists[0]
+    assert len(target.characters()) == 1026
+    assert sum(len(group.characters) for group in target.groups[:6]) == 1026
+    assert len(target.groups) == 6
+    full = load_target_registry({"joyo": bundled_sources()["joyo"]}).lists[0]
+    assert len(full.characters()) == 2136
+    assert set(target.characters()) < set(full.characters())
+    both = load_target_registry(
+        {
+            "joyo": bundled_sources()["joyo"],
+            "school-grades": bundled_sources()["school-grades"],
+        }
+    )
+    assert len(both.targets((("school-grades", None), ("joyo", None)))) == 2136
+    manifest = next(item for item in list_datasets() if item.id == "school-grades")
+    assert target.version == manifest.bundled["version"]
+    assert target.source.sha256 != manifest.bundled["sha256"]
+    assert parse_target_list(target.to_json().encode()).target_list == target
 
 
 @requires_datasets
@@ -34,10 +59,13 @@ def test_defaults_load_offline_with_licenses_and_versioned_fingerprints(monkeypa
         assert manager.lookup_kanji("景").meanings != ("fixture scenery",)
         assert manager.lookup_strokes("景") is not None
         for manifest in list_datasets():
-            assert manifest.bundled["version"] in " ".join(manager.source_details())
+            if manifest.format != "target_lists_json":
+                assert manifest.bundled["version"] in " ".join(manager.source_details())
     for manifest in list_datasets():
         verify_bundle(manifest)
-        assert manifest.bundled["entries"] > 6000
+        assert manifest.bundled["entries"] > (
+            1000 if manifest.format == "target_lists_json" else 6000
+        )
     assert "CC BY-SA 4.0" in bundled_path("bundled/NOTICE.txt").read_text(encoding="utf-8")
     assert "CC BY-SA 3.0" in bundled_path("bundled/NOTICE.txt").read_text(encoding="utf-8")
 

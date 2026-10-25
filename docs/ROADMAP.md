@@ -3,7 +3,7 @@
 Progress tracker based on [the implementation specification](SPECIFICATION.md).
 The specification defines requirements; this file tracks delivery and verification.
 
-Last reviewed: **2026-10-23**. Phase 3 is complete. Current milestone:
+Last known: **2026-10-25**. Phase 3 is complete. Current milestone:
 **Phase 4 — statistics and modern interface**.
 Phase 1 ownership-count integration is delivered. Production uses kanji meanings
 and blanked examples copied from selected source vocabulary. Minimum
@@ -88,8 +88,8 @@ and leave the collection unchanged. Covers FR-01 and the initial dictionary work
   kanji recognition notes, deduplicated by character. Production is independent.
   Counts remain **not assessed** when dictionaries or valid ownership data are absent.
   Evidence: `anki/analysis.py`, `scripts/smoke_generation.py`.
-- [x] Document fetching/preparing sample data without committing unreviewed datasets.
-  Evidence: [dataset preparation](DATASETS.md). Reviewed KANJIDIC2 subset and
+- [x] Document fetching/preparing sample data without committing unknown datasets.
+  Evidence: [dataset preparation](DATASETS.md). Known KANJIDIC2 subset and
   pinned KanjiVG data are bundled at build time with their own licenses; both raw
   downloads and generated payloads/notices remain ignored by Git.
 - [x] Test extraction (`景色`, `少数民族`, kana-only, punctuation, mixed scripts)
@@ -401,6 +401,35 @@ workflow and respects the user's update choices.
 Deliverable: polished, portable review cards and a dashboard driven by actual
 Anki progress. Covers FR-03, FR-05 and the detail-view portion of FR-04.
 
+Delivered slice (2026-10-25): reusable target datasets and the native Qt
+statistics dashboard. See the [target-list and statistics plan](KANJI_STATS.md)
+for the canonical format, source provenance, dashboard and Anki progress policy.
+Personal-list management, creation from lists and historical statistics remain.
+
+- [x] Implement the versioned target-list contract, validation, registry, and
+  ordered unique group selection independently of Anki and dictionary coverage.
+  Evidence: `stats/targets.py`, shared `common/characters.py`, and
+  `tests/test_target_lists.py`. Built-ins reuse dataset manifests, pack validation,
+  updates, locked builds and offline fallback through `target_lists_json`;
+  `tests/test_target_datasets.py` covers multiple providers, failed installs,
+  overrides, checksum fallback and offline pack restore.
+- [x] Bundle pinned, attributed school-grade/Jōyō datasets and list/group selection.
+  Separate `school-grades` (1,026 elementary targets, grades 1–6) and `joyo`
+  (all 2,136 Jōyō targets) entries are delivered, each with its own
+  manifest/version/pack and generated canonical JSON.
+  `scripts/generate_target_lists.py` derives it from pinned KANJIDIC2 data; runtime
+  dictionary changes do not affect it. Clean builds restore checksum-pinned list
+  bytes. Both list ZIPs are published in `datasets-target-lists-2026-10-25`;
+  catalog/build-lock entries use verified public URLs. Shared cold-list-cache and
+  offline restore pass. List/group selection is available in the dashboard.
+  Source controls now live in **Settings → Statistics → Lists**, separately from
+  Dictionaries, using the same canonical format and dataset lifecycle. Real
+  Anki/Qt verification: `scripts/smoke_statistics_settings.py` (2026-10-25) covers
+  page separation, source persistence/cancel, update filtering and shared schedule.
+  Modern unofficial JLPT and additional exam/textbook adapters follow separately.
+- [ ] Add personal-list import/export and profile-specific list storage/management.
+  Local dataset overrides are available; a dedicated personal-list workflow remains.
+
 - [x] **Polish card layouts.** Improve recognition, production, and Parts review
   layouts for desktop and mobile, including readable typography, spacing,
   responsive examples, and usable stroke controls. Cards must remain fully
@@ -464,7 +493,7 @@ Anki progress. Covers FR-03, FR-05 and the detail-view portion of FR-04.
   with Anki-only fronts and dictionary-expanded backs.
   Verification: 377 unit tests, lint/format checks, real-Anki generation/example
   refresh lifecycle checks, and the offline packaged build pass (2026-10-24).
-  Reviewed-only filtering now applies to selected Anki words on both sides before
+  Known-only filtering now applies to selected Anki words on both sides before
   front limits and production ambiguity checks. Learning, review and relearning
   snapshots qualify; new, unknown and missing states do not. Explicit Jitendex
   additions remain independent. Creation, refresh and previews share this logic;
@@ -477,21 +506,51 @@ Anki progress. Covers FR-03, FR-05 and the detail-view portion of FR-04.
 - [ ] Allow automatic card creation from selected statistics/classification lists
   (for example JLPT levels), reusing configured generation, duplicate checks,
   ignores, and creation review.
-- [ ] Read existing card states and review history from Anki for the dashboard.
+- [x] Read existing card states and review history from Anki for the dashboard.
   Anki continues to control scheduling and due dates.
+  Delivered 2026-10-25: **Katanki → Statistics**, a modeless singleton with
+  list/group selection, independent recognition/writing modes, state summaries,
+  searchable grid and details. `anki/statistics.py` reads owned kanji notes/cards;
+  details read native review logs and exclude manual reschedules from answered
+  totals. Collection changes flag the timestamped snapshot for Refresh.
 - [ ] Aggregate unique kanji/primitive states: unseen, learning, young, mature,
   and relearning; include retention and progress history.
-- [ ] Separate recognition and writing evidence; distinguish missing production
+  Unique kanji counts and current states are delivered. Conservative duplicate
+  aggregation gives relearning priority, then new → learning → young → mature.
+  Review interval ≥21 days defines mature; queue suspension/burial are separate
+  flags. Detail pass rate is all recorded answers, not Anki's True Retention.
+  Primitive statistics, retention charts and historical progress remain open.
+- [x] Separate recognition and writing evidence; distinguish missing production
   notes from failed writing cards.
 - [ ] Select and validate an unofficial JLPT source; expose provenance/version and
   define coverage for omitted characters.
-- [ ] Implement classification registry, N5–N1 coverage graphs, and mode toggle.
-- [ ] Build searchable kanji grid/explorer and per-character detail pane with
+- [x] Implement target registry, school-grade/Jōyō coverage and evidence-mode toggle.
+- [ ] Add modern JLPT N5–N1 coverage graphs after validating a source.
+- [x] Build searchable kanji grid/explorer and per-character detail pane with
   stroke links and offline stroke display/playback.
-- [ ] Bundle React/TypeScript static assets in an Anki webview with an explicit
-  bridge; require no local web server.
-- [ ] Test unique-identity counts, duplicate suppression, mixed progress, missing
+  Search by kanji, meanings or kana readings; details show both evidence modes,
+  matching-card browser links, available meanings/readings and sanitized KanjiVG
+  SVG with playback. Disabled/missing dictionaries do not change target totals.
+- [x] Build the dashboard entirely with native Qt widgets and model/view classes.
+  List/group progress bars show known percentages and mature counts in source
+  order, including each elementary grade. Multiple groups use a unique union.
+  Qt SVG handles offline stroke playback; no frontend build is needed.
+  Overview cards use subtle theme-aware state colours with a labelled legend.
+  The grid defaults to mature → young → relearning → learning → new → missing,
+  with dataset order available as the other sorting option.
+- [x] Add a dynamic **All kanji with cards** scope from owned recognition/writing
+  cards, independent of enabled lists. Duplicate identities count once; both
+  modes share membership and preserve missing-mode evidence. Refresh updates it.
+- [x] Keep generated target payloads out of version control. Generate into ignored
+  `dist/targets/` and restore built-ins from checksum-locked GitHub release ZIPs.
+- [x] Test unique-identity counts, duplicate suppression, mixed progress, missing
   writing cards, and classification gaps.
+  Evidence: `tests/test_statistics.py`, packaging/menu tests, offline Qt rendering
+  (`scripts/smoke_statistics.py`) and real packaged Anki window/lifecycle checks
+  (`scripts/anki_dev.py --statistics-smoke`). Desktop and compact layouts,
+  light/dark, filters, groups, playback and unchanged collection tables verified.
+  Cleanup verification (2026-10-25): 480 unit tests, lint/format checks, native Qt
+  statistics/settings checks, full packaged Anki smoke and offline build pass.
 
 Acceptance: polished cards work on desktop and mobile and remain studyable
 offline after export/import without the add-on or source decks. Dashboard counts
@@ -521,7 +580,7 @@ Covers FR-06 and production readiness of the dictionary subsystem.
     packs. Produce a review summary of versions, entry/coverage changes, parser
     warnings, download sizes, checksums, and license/provenance differences.
   - [ ] Allow a maintainer to approve and publish an existing candidate artifact
-    without downloading upstream again or regenerating the reviewed bytes.
+    without downloading upstream again or regenerating the known bytes.
     Publish immutable assets first, then verify their public download URLs, sizes,
     hashes, pack metadata, and included notices before any catalog promotion.
   - [ ] Open a promotion PR with the exact published catalog. Distinguish runtime
@@ -590,7 +649,8 @@ accounts, telemetry, or network-required reviews.
   a small catalog, with bundled offline fallback. Additional providers and
   per-character downloads remain deferred.
 - [ ] Custom primitive names and exclusions.
-- [ ] Additional classifications: Jōyō, school grade, frequency, and custom packs.
+- [ ] Additional classifications: frequency and custom packs.
+  Jōyō and school-grade datasets are delivered in Phase 4.
 - [ ] Enhanced stroke animation and optional handwriting canvas/validation.
   Automatic handwritten-stroke recognition remains outside the current scope.
 - [ ] Public third-party extension API after internal interfaces stabilize.
@@ -619,5 +679,6 @@ defaults for the specification's open questions.
   User decision: dictionary meanings plus masked matching source vocabulary,
   automatic from selected sources, with production opt-in per character.
 - [ ] Primitive naming system and component/radical distinctions.
-- [ ] Final packaging/resource approach for the embedded frontend.
-  The Python `src/` layout already builds into a root-entrypoint archive.
+- [x] Finalize packaging for native dashboard resources.
+  Python Qt widgets ship in the root-entrypoint archive; target datasets restore
+  from locked release packs. No separate frontend assets or build are required.

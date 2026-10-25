@@ -112,11 +112,16 @@ def _unpack(data: bytes, dataset_id: str, release: dict, destination: Path) -> d
             or files.get(bundle["path"]) != bundle.get("sha256")
         ):
             raise ValueError("Incomplete dictionary payload or license metadata.")
+        manifest = next((item for item in list_datasets() if item.id == dataset_id), None)
+        if manifest is None:
+            raise ValueError("Unknown dataset pack.")
         filename = {
             "kanjidic2": "bundled/kanjidic2.xml",
             "kanjivg": "bundled/kanjivg.zip",
             "jitendex": "bundled/jitendex.zip",
-        }[dataset_id]
+        }.get(dataset_id)
+        if manifest.format == "target_lists_json":
+            filename = f"bundled/{dataset_id}.json"
         if bundle["path"] != filename:
             raise ValueError("Unexpected dictionary payload filename.")
         for name, expected in files.items():
@@ -145,7 +150,24 @@ def validate_contents(dataset_id: str, root: Path, bundle: dict) -> None:
     from .adapters.kanjivg_svg import KanjiVgSvg
 
     path = bundled_path(bundle["path"], root)
-    if dataset_id == "kanjidic2":
+    manifest = next((item for item in list_datasets() if item.id == dataset_id), None)
+    if manifest is None:
+        raise ValueError("Unknown dataset pack.")
+    if manifest.format == "target_lists_json":
+        from .adapters.target_lists_json import TargetListsJson
+
+        provider = TargetListsJson(path)
+        target = provider.target_lists[0]
+        if (
+            provider.version != bundle["version"]
+            or len(target.characters()) != bundle["entries"]
+            or target.source.url is None
+            or target.source.sha256 is None
+            or target.source.authority == "user"
+            or provider.warnings
+        ):
+            raise ValueError("Target-list pack has invalid contents or incomplete provenance.")
+    elif dataset_id == "kanjidic2":
         provider = KanjidicXml(path)
         if (
             len(provider.entries) != bundle["entries"]

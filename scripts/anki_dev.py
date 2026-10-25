@@ -48,7 +48,7 @@ def prepare(base: Path) -> None:
         archive.extractall(destination)
 
 
-def smoke(base: Path) -> None:
+def smoke(base: Path, *, statistics_only: bool = False) -> None:
     import aqt
     from aqt import gui_hooks
     from aqt.qt import QMenu, QTimer
@@ -70,6 +70,7 @@ def smoke(base: Path) -> None:
             assert [item.text() for item in menu.actions() if not item.isSeparator()] == [
                 "Refresh and generate Kanji Cards",
                 "New Kanji Cards",
+                "Statistics",
                 "Settings…",
             ], "Repeated registration duplicated a command"
             log = base / "logs" / "addons" / "katanki" / "katanki.log"
@@ -78,6 +79,13 @@ def smoke(base: Path) -> None:
 
             assert menu.actions()[0].text() == "Refresh and generate Kanji Cards"
             assert all(action.text() != "Analyze Collection" for action in menu.actions())
+            if statistics_only:
+                from scripts.smoke_statistics import exercise_dashboard, fixture
+
+                fixture(mw.col)
+                exercise_dashboard(mw)
+                passed = True
+                return
             assert exercise_discovery(mw)
             from scripts.smoke_refresh import exercise_refresh
 
@@ -88,6 +96,9 @@ def smoke(base: Path) -> None:
             from scripts.smoke_word_examples import exercise_example_rendering
 
             exercise_example_rendering(mw)
+            from scripts.smoke_statistics import exercise_dashboard
+
+            exercise_dashboard(mw)
             passed = True
             print(
                 "PASS: packaged discovery preserves data; generation preview cancel/approve, "
@@ -110,15 +121,20 @@ if __name__ == "__main__":
     parser = argparse.ArgumentParser(description=__doc__)
     mode = parser.add_mutually_exclusive_group()
     mode.add_argument("--smoke", action="store_true", help="Open and verify Anki, then exit")
+    mode.add_argument(
+        "--statistics-smoke",
+        action="store_true",
+        help="Verify the packaged statistics window in Anki",
+    )
     mode.add_argument("--run", action="store_true", help="Prepare the profile and launch Anki")
     args = parser.parse_args()
     os.environ.setdefault("QT_QUICK_BACKEND", "software")
-    if args.smoke:
+    if args.smoke or args.statistics_smoke:
         os.environ["ANKI_SINGLE_INSTANCE_KEY"] = f"kanji-katanki-smoke-{os.getpid()}"
         with TemporaryDirectory(prefix="kanji-katanki-smoke-") as directory:
             base = Path(directory) / "Anki"
             prepare(base)
-            smoke(base)
+            smoke(base, statistics_only=args.statistics_smoke)
     else:
         os.environ["ANKI_SINGLE_INSTANCE_KEY"] = "katanki-development"
         base = (ROOT / ".anki-test").resolve()

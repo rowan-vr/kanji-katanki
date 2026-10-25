@@ -6,7 +6,7 @@ from dataclasses import dataclass
 from pathlib import Path
 from urllib.parse import urlsplit
 
-FORMATS = {"kanjidic2_xml", "kanjivg_svg", "jitendex_yomitan"}
+FORMATS = {"kanjidic2_xml", "kanjivg_svg", "jitendex_yomitan", "target_lists_json"}
 
 
 @dataclass(frozen=True)
@@ -58,6 +58,7 @@ def read_manifest(path: Path) -> DatasetManifest:
         "kanjidic2_xml": {"kanji"},
         "kanjivg_svg": {"strokes", "components"},
         "jitendex_yomitan": {"words"},
+        "target_lists_json": {"target_lists"},
     }
     if (
         not isinstance(raw["capabilities"], list)
@@ -75,6 +76,8 @@ def read_manifest(path: Path) -> DatasetManifest:
         )
     ):
         raise ValueError("Invalid compression types.")
+    if raw["format"] == "target_lists_json" and raw["compression"] != ["none"]:
+        raise ValueError("Canonical target lists use uncompressed UTF-8 JSON.")
     license = raw["license"]
     if (
         not isinstance(license, dict)
@@ -100,6 +103,8 @@ def read_manifest(path: Path) -> DatasetManifest:
             raise ValueError("Invalid bundled dataset metadata.")
         for filename in [bundled["path"], *bundled["license_files"]]:
             bundled_path(filename)
+        if raw["format"] == "target_lists_json" and bundled["path"] != f"bundled/{raw['id']}.json":
+            raise ValueError("Target dataset payload must use bundled/<dataset-id>.json.")
     return DatasetManifest(
         raw["id"],
         raw["name"],

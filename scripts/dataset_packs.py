@@ -7,7 +7,7 @@ import shutil
 import sys
 from hashlib import sha256
 from pathlib import Path
-from tempfile import TemporaryDirectory
+from tempfile import NamedTemporaryFile, TemporaryDirectory
 from zipfile import ZIP_DEFLATED, ZIP_STORED, ZipFile, ZipInfo
 
 ROOT = Path(__file__).resolve().parents[1]
@@ -19,6 +19,7 @@ from katanki.dictionaries.packs import (  # noqa: E402
     read_catalog,
     revision,
     unpack,
+    validate_contents,
     verify_download,
 )
 from katanki.dictionaries.registry import list_datasets  # noqa: E402
@@ -46,7 +47,7 @@ def prepare(tag: str, output: Path, *, refresh: bool = False) -> dict:
     catalog = {"schema_version": 1, "datasets": {}}
     for manifest in list_datasets():
         bundle = manifest.bundled
-        if bundle["entries"] < 6000:
+        if bundle["entries"] < 6000 and manifest.format != "target_lists_json":
             raise ValueError(f"Unexpectedly small {manifest.name}; review upstream coverage.")
         filename = f"{manifest.id}.zip"
         files = {
@@ -97,14 +98,20 @@ def prepare(tag: str, output: Path, *, refresh: bool = False) -> dict:
 
 
 def restore(*, offline: bool = False) -> None:
-    catalog = read_catalog(json.loads(LOCK.read_text(encoding="utf-8")))
+    raw = json.loads(LOCK.read_text(encoding="utf-8"))
+    catalog = read_catalog(raw)
     manifests = [manifest for manifest in list_datasets() if manifest.default]
-    if set(catalog) != {manifest.id for manifest in manifests}:
+    local = raw.get("local_datasets", {})
+    if not isinstance(local, dict) or set(local) & set(catalog):
+        raise ValueError("Invalid or conflicting local dataset baselines.")
+    if set(catalog) | set(local) != {manifest.id for manifest in manifests}:
         raise ValueError("Build lock must specify every default dictionary in a supported format.")
     CACHE.mkdir(parents=True, exist_ok=True)
     with TemporaryDirectory(dir=BUNDLED.parent, prefix=".restore-") as directory:
         stage = Path(directory) / "dictionaries"
         for manifest in manifests:
+            if manifest.id in local:
+                continue  # Restore reviewed local JSON after shared license files.
             release = catalog[manifest.id]
             path = CACHE / f"{release['sha256']}.zip"
             data = path.read_bytes() if path.is_file() else None
@@ -120,9 +127,17 @@ def restore(*, offline: bool = False) -> None:
                     )
                 data = download(release["url"], limit=release["bytes"])
                 verify_download(data, release)
-                temporary = Path(directory) / "download.zip"
-                temporary.write_bytes(data)
-                temporary.replace(path)
+                temporary = None
+                try:
+                    # The cache may be on a different filesystem from the
+                    # package staging directory. Rename within the cache only.
+                    with NamedTemporaryFile(dir=CACHE, prefix=".download-", delete=False) as stream:
+                        temporary = Path(stream.name)
+                        stream.write(data)
+                    temporary.replace(path)
+                finally:
+                    if temporary is not None:
+                        temporary.unlink(missing_ok=True)
             pack_stage = Path(directory) / manifest.id
             pack_stage.mkdir()
             metadata = unpack(data, manifest.id, release, pack_stage)
@@ -140,6 +155,28 @@ def restore(*, offline: bool = False) -> None:
                     raise ValueError(f"Locked packs contain conflicting shared file: {name}")
                 target.parent.mkdir(parents=True, exist_ok=True)
                 shutil.copyfile(source, target)
+        for manifest in manifests:
+            if manifest.id not in local:
+                continue
+            entry = local[manifest.id]
+            if (
+                manifest.format != "target_lists_json"
+                or manifest.bundled is None
+                or not isinstance(entry, dict)
+                or set(entry) != {"path", "sha256"}
+                or entry["path"] != f"dist/targets/{manifest.id}.json"
+                or entry["sha256"] != manifest.bundled["sha256"]
+            ):
+                raise ValueError("Invalid local target dataset baseline.")
+            payload = (ROOT / entry["path"]).read_bytes()
+            if sha256(payload).hexdigest() != entry["sha256"]:
+                raise ValueError("Local target dataset checksum mismatch.")
+            target = stage / manifest.bundled["path"]
+            target.parent.mkdir(parents=True, exist_ok=True)
+            target.write_bytes(payload)
+            validate_contents(manifest.id, stage, manifest.bundled)
+            if any(not (stage / name).is_file() for name in manifest.bundled["license_files"]):
+                raise ValueError("Local target dataset notices are missing.")
         previous = Path(directory) / "previous"
         if BUNDLED.exists():
             BUNDLED.rename(previous)

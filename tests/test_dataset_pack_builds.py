@@ -3,6 +3,7 @@
 import json
 from dataclasses import replace
 from io import BytesIO
+from pathlib import Path
 from unittest.mock import Mock
 from zipfile import ZipFile
 
@@ -59,6 +60,22 @@ def test_failed_build_preserves_prepared_defaults(build_environment, monkeypatch
     assert (bundled / "old.txt").read_text() == "previous bundle"
     if offline:
         network.assert_not_called()
+
+
+def test_download_is_staged_on_the_cache_filesystem(build_environment, monkeypatch):
+    _, _, payload, bundled = build_environment
+    monkeypatch.setattr(dataset_packs, "download", Mock(return_value=payload))
+    original = Path.replace
+
+    def replace_on_same_filesystem(source, target):
+        if Path(target).parent == dataset_packs.CACHE:
+            assert source.parent == dataset_packs.CACHE
+        return original(source, target)
+
+    monkeypatch.setattr(Path, "replace", replace_on_same_filesystem)
+    dataset_packs.restore()
+    assert (bundled / "kanjidic2.xml").is_file()
+    assert not list(dataset_packs.CACHE.glob(".download-*"))
 
 
 @pytest.mark.parametrize("changed", [False, True])

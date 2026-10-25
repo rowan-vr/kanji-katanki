@@ -23,9 +23,9 @@ Kanji Katanki is a modular, offline-first, open-source **desktop Anki add-on** f
 
 - **Anki add-on host:** Python loaded by desktop Anki; `aqt`/Qt and Anki APIs accessed only by integration/adapters.
 - **Development environment:** `uv` + `pyproject.toml` + `uv.lock`; `pytest`, `ruff`, and type checking when practical. `uv` is **not** an end-user runtime dependency.
-- **User interface:** Minimal Qt dialog for the first POC; **React + TypeScript** bundled into an Anki webview for the dashboard in a later phase. A bundled frontend must not require a local web server.
+- **User interface:** Native Qt dialogs and model/view widgets for settings and statistics, including Qt SVG stroke playback.
 - **Data:** JSON manifests; upstream gzip/ZIP/XML/SVG as supplied; normalized, indexed SQLite cache if useful for runtime performance. Do not build a second collection database.
-- **Packaging:** `.ankiaddon`, bundled Python modules and compiled frontend/static assets; versioned dictionary downloads or bundled data subject to licensing.
+- **Packaging:** `.ankiaddon`, bundled Python modules and static resources; versioned dictionary downloads or bundled data subject to licensing.
 - **Platform target:** Windows, Linux and macOS desktop Anki. Explicit minimum supported Anki/Python versions to be selected after an integration smoke test. Mobile add-on support is not a goal.
 
 ## 3. Repository layout
@@ -58,7 +58,7 @@ katanki/
 │   │   ├── primitives/             # Component graph and prerequisite ordering
 │   │   ├── cards/                  # Recognition, writing and primitive specs/templates
 │   │   └── planner.py              # Side-effect-free generation preview
-│   ├── statistics/
+│   ├── stats/
 │   │   ├── aggregation.py          # Card states + Anki progress, no duplicate SRS
 │   │   ├── coverage.py             # Unique-character coverage by classifications
 │   │   ├── history.py
@@ -69,11 +69,8 @@ katanki/
 │   │   ├── notes.py                # Safe materialization in later phases
 │   │   └── identities.py           # Persistent deduplication identity
 │   └── ui/
-│       ├── bridge.py
-│       └── webview.py
-├── frontend/                       # Introduced with React dashboard phase
-│   ├── src/
-│   └── package.json
+│       ├── dashboard.py
+│       └── statistics_widgets.py
 ├── tests/
 │   ├── unit/
 │   └── integration/
@@ -92,7 +89,7 @@ katanki/
 - `generation`: may depend on `common` and dictionary **interfaces**; no Anki/Qt imports.
 - `statistics`: may depend on `common` and dictionary/classification interfaces; consumes normalized Anki review snapshots, not live Anki objects.
 - `anki`: translates real Anki collection data into core models and applies explicitly approved note-creation plans. May orchestrate other packages.
-- `ui`: presents data and triggers application operations via an explicit bridge, without implementing dictionary, scheduling or generation logic.
+- `ui`: presents data and triggers application operations via application callbacks, without implementing dictionary, scheduling or generation logic.
 
 No circular dependencies. Each package must be independently unit-testable where possible.
 
@@ -320,13 +317,21 @@ with real Anki progress.
   without the add-on or source decks, including required media and stroke controls.
 - [x] Example furigana: independent front/back toggles, mode-specific defaults,
   offline kana-anchored alignment below kanji groups, and adjusted chip spacing.
-- [ ] Read existing card states and review history from Anki for the dashboard;
+- [x] Read existing card states and review history from Anki for the dashboard;
   Anki continues to control scheduling and due dates.
-- [ ] Classification registry and sourced/versioned JLPT dataset.
+- [x] Versioned target-list contract and registry with ordered groups, exact
+  character identities and unique unions. Built-ins reuse dictionary dataset
+  manifests, release packs, updates and offline fallback; personal JSON uses the
+  same reader. Separate elementary-school-grade and full Jōyō datasets are
+  explicitly generated from KANJIDIC2 and versioned independently of runtime dictionaries.
+- [ ] Personal target-list import/selection UI and persistent storage.
+- [ ] Sourced/versioned unofficial JLPT dataset using the shared target-list format.
 - [ ] Coverage graphs and recognition/writing mode toggle.
-- [ ] Searchable kanji explorer + detail pane.
-- [ ] React/TypeScript frontend built as static files embedded in Anki webview.
-- [ ] Tests for counts, duplicate suppression, mixed progress and missing writing cards.
+  Current list-state distribution and mode toggle are delivered; historical
+  progress and JLPT coverage charts remain open.
+- [x] Searchable kanji explorer + detail pane.
+- [x] Native Qt statistics dashboard with per-list and per-grade coverage.
+- [x] Tests for counts, duplicate suppression, mixed progress and missing writing cards.
 
 ### Phase 5 — Public beta
 
@@ -357,8 +362,8 @@ with real Anki progress.
 | --- | --- | --- | --- |
 | **A — Anki host** | `anki/`, bootstrap, packaging, test-profile integration | Immediately | Parsing dictionaries, core kanji algorithms |
 | **B — Dictionaries** | `dictionaries/`, manifests, format adapters, canonical data models proposed via `common/` PR | Immediately | Collection writes, generation strategy |
-| **C — Generation** | `generation/`, graph and generation planning, card specifications | Once shared model contracts agreed | Direct `aqt` calls, frontend |
-| **D — Statistics/UI** | `statistics/`, `ui/`, `frontend/`, classifications | Models/fixtures now; UI after Phase 1 | Direct Anki database writes, SRS implementation |
+| **C — Generation** | `generation/`, graph and generation planning, card specifications | Once shared model contracts agreed | Direct `aqt` calls, UI |
+| **D — Statistics/UI** | `stats/`, `ui/`, classifications | Models/fixtures now; UI after Phase 1 | Direct Anki database writes, SRS implementation |
 
 **Before agent parallelization:** agree on `KanjiEntry`, `PrimitiveEntry`, `DatasetManifest`, `ScanResult`, `GeneratedNoteSpec`, `ReviewSnapshot`, and provider protocols. Use JSON fixtures for independent tests. Cross-package changes require review; keep pull requests small. Do not let agents create competing abstractions or duplicate the same models.
 
@@ -394,7 +399,7 @@ with real Anki progress.
   enabled example refresh preserves user content and review progress. See
   [card example design](CARD_EXAMPLES.md). Jitendex default example-word support is deferred to a separate PR.
 - Primitive naming system and component-vs-radical distinctions.
-- Add-on folder/packaging approach for `src/` layout and embedded frontend resources.
+- Add-on folder/packaging approach for `src/` layout and native dashboard resources.
 
 ---
 

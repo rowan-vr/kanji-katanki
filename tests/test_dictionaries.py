@@ -17,7 +17,13 @@ FIXTURES = Path(__file__).parent / "fixtures"
 
 def test_registry_loads_default_data_only_manifests():
     manifests = list_datasets()
-    assert {manifest.id for manifest in manifests} == {"kanjidic2", "kanjivg", "jitendex"}
+    assert {manifest.id for manifest in manifests} == {
+        "kanjidic2",
+        "kanjivg",
+        "jitendex",
+        "school-grades",
+        "joyo",
+    }
     assert all(manifest.default and manifest.attribution for manifest in manifests)
 
 
