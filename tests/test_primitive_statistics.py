@@ -90,3 +90,43 @@ def test_targets_use_provider_keys_and_preserve_missing_notes(monkeypatch):
     assert progress.state("graphical:1", "recognition") == "missing"
     assert progress.details("owned:no-cards")["recognition"]["note_ids"] == [1]
     assert not warnings
+
+
+def test_unavailable_targets_preserve_owned_parts_and_warn(monkeypatch):
+    from katanki.anki import primitive_statistics as module
+    from katanki.stats.progress import ProgressSnapshot
+
+    owned = ProgressSnapshot((), (("owned", "recognition", 1),))
+    monkeypatch.setattr(module, "load_settings", lambda _: SimpleNamespace(dictionaries=()))
+    monkeypatch.setattr(module, "read_primitive_progress", lambda _: owned)
+
+    def unavailable(**_):
+        raise OSError("source missing")
+
+    monkeypatch.setattr(module, "load_target_registry", unavailable)
+    progress, labels, warnings = module.primitive_snapshot(object())
+    assert progress is owned
+    assert labels == {"owned": "owned"}
+    assert warnings == ("Component targets unavailable: source missing",)
+
+
+def test_unsupported_card_evidence_does_not_erase_note_presence():
+    class Note(dict):
+        def cards(self):
+            return [SimpleNamespace(id=1, type=99, ivl=30)]
+
+    model = {
+        "id": 1,
+        "name": "Parts",
+        MODEL_MARKER: "primitive-recognition",
+        "flds": [{"name": "Component"}],
+    }
+    collection = SimpleNamespace(
+        models=SimpleNamespace(all=lambda: [model]),
+        find_notes=lambda _: [2],
+        get_note=lambda _: Note(Component="graphical:key"),
+    )
+    progress = read_primitive_progress(collection)
+    assert progress.state("graphical:key", "recognition") == "missing"
+    assert progress.details("graphical:key")["recognition"]["note_ids"] == [2]
+    assert progress.warnings == ("Card 1: unsupported card type; excluded.",)
