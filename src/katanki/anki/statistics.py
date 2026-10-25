@@ -9,6 +9,7 @@ from ..dictionaries.registry import bundled_path, list_datasets, verify_bundle
 from ..stats.progress import CardEvidence, ProgressSnapshot, card_state
 from ..stats.sources import load_target_registry
 from .identities import MODEL_MARKER
+from .target_lists import store_for_collection
 
 
 def read_progress(collection) -> ProgressSnapshot:
@@ -60,6 +61,16 @@ def read_progress(collection) -> ProgressSnapshot:
 def dashboard_snapshot(collection):
     settings = load_settings(collection)
     registry = load_target_registry(choices=settings.dictionaries)
+    personal_warnings = []
+    if getattr(collection, "path", None):
+        try:
+            for target in store_for_collection(collection).load():
+                try:
+                    registry.register(target)
+                except ValueError as error:
+                    personal_warnings.append(str(error))
+        except (OSError, ValueError) as error:
+            personal_warnings.append(f"Personal target lists unavailable: {error}")
     progress = read_progress(collection)
     targets = tuple(
         dict.fromkeys(
@@ -69,7 +80,7 @@ def dashboard_snapshot(collection):
             ]
         )
     )
-    metadata, warnings = {}, []
+    metadata, warnings = {}, personal_warnings
     try:
         paths = dictionary_sources(settings.dictionaries, capability="kanji")
         for manifest in list_datasets():

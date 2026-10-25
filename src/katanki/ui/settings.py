@@ -222,6 +222,7 @@ class SettingsDialog(QDialog):
                     self.refresh_examples.isChecked(),
                     self.refresh_dictionary.isChecked(),
                 ),
+                load_settings(self.collection).statistics_selection,
             )
             dictionary_sources(settings.dictionaries)
             dictionary_sources(settings.dictionaries, capability="target_lists")

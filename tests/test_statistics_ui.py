@@ -406,3 +406,58 @@ def test_dataset_checks_browsing_notices_and_update_outcomes(
     panel._update()
     panel._use_bundled()
     assert len(host.operations) == count
+
+
+def test_dashboard_list_selection_survives_reopening(qt_host, monkeypatch):
+    from katanki.config import CONFIG_KEY, load_settings
+
+    host = qt_host
+    stored = {}
+    host.window.col = SimpleNamespace(
+        get_config=lambda key, default: stored.get(key, default),
+        set_config=lambda key, value: stored.__setitem__(key, value),
+    )
+    module = host.modules.dashboard
+    monkeypatch.setattr(module, "dashboard_snapshot", lambda col: snapshot())
+    module.open_statistics(host.window)
+    host.app.processEvents()
+    host.operations[-1].complete()
+    dialog = host.window._katanki_statistics
+    dialog.select_scope(("@cards", None))
+    assert load_settings(host.window.col).statistics_selection == (("@cards", None),)
+    assert CONFIG_KEY in stored
+    dialog.close()
+    module.open_statistics(host.window)
+    host.app.processEvents()
+    host.operations[-1].complete()
+    reopened = host.window._katanki_statistics
+    assert [
+        tuple(item.data(0, host.qt.Qt.ItemDataRole.UserRole))
+        for item in reopened.scope.selectedItems()
+    ] == [("@cards", None)]
+    assert reopened.source.rowCount() == 2
+
+
+def test_dashboard_queues_reload_during_inflight_snapshot(qt_host, monkeypatch):
+    host = qt_host
+    module = host.modules.dashboard
+    monkeypatch.setattr(module, "dashboard_snapshot", lambda col: snapshot())
+    module.open_statistics(host.window)
+    host.app.processEvents()
+    dialog = host.window._katanki_statistics
+    first = host.operations[-1]
+    dialog.reload()
+    dialog.reload()
+    assert dialog.reload_pending
+    first.complete()
+    assert dialog.loading and not dialog.reload_pending
+    assert host.operations[-1] is not first
+    host.operations[-1].complete()
+    assert not dialog.loading and dialog.snapshot is not None
+    dialog.reload()
+    dialog.reload()
+    failed = host.operations[-1]
+    failed.failed(ValueError("obsolete request failed"))
+    assert host.operations[-1] is not failed
+    host.operations[-1].complete()
+    assert not dialog.loading

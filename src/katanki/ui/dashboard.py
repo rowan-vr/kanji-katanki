@@ -1,5 +1,6 @@
 """Read-only, modeless Qt statistics with list/group coverage and a kanji explorer."""
 
+from dataclasses import replace
 from datetime import datetime
 
 from aqt import dialogs, gui_hooks
@@ -30,6 +31,7 @@ from aqt.qt import (
 )
 
 from ..anki.statistics import character_details, dashboard_snapshot
+from ..config import load_settings, save_settings
 from ..stats.groups import (
     LABELS,
     STATE_SORT_ORDER,
@@ -62,6 +64,7 @@ class StatisticsDialog(QDialog):
         self.snapshot = None
         self.allowed = set()
         self.loading = False
+        self.reload_pending = False
         self.closed = False
         self.selected_character = None
         self.detail_data = None
@@ -294,7 +297,10 @@ class StatisticsDialog(QDialog):
             control.setEnabled(not loading)
 
     def reload(self):
-        if self.loading or not self._valid():
+        if not self._valid():
+            return
+        if self.loading:
+            self.reload_pending = True
             return
         self._set_loading(True)
         self.status.setText("Loading target lists and Anki progress…")
@@ -306,9 +312,15 @@ class StatisticsDialog(QDialog):
         if not self._valid():
             return
         self._set_loading(False)
+        if self.reload_pending:
+            self.reload_pending = False
+            self.reload()
+            return
         selected = [
             tuple(item.data(0, Qt.ItemDataRole.UserRole)) for item in self.scope.selectedItems()
         ]
+        if not self.snapshot and hasattr(self.collection, "get_config"):
+            selected = list(load_settings(self.collection).statistics_selection)
         self.snapshot = snapshot
         registry, progress, metadata, warnings = snapshot
         self.sections = coverage_sections(registry, progress)
@@ -381,6 +393,11 @@ class StatisticsDialog(QDialog):
         characters = tuple(
             dict.fromkeys(char for section in selected for char in section.characters)
         )
+        if self._valid() and hasattr(self.collection, "get_config"):
+            selection = tuple(section.key for section in selected)
+            settings = load_settings(self.collection)
+            if settings.statistics_selection != selection:
+                save_settings(self.collection, replace(settings, statistics_selection=selection))
         self.current_targets = characters
         self.scope_title.setText(
             " · ".join(section.title for section in selected) or "Select a list or group"
@@ -521,6 +538,9 @@ class StatisticsDialog(QDialog):
         if self._valid():
             self._set_loading(False)
             self.status.setText(f"Could not load statistics: {error}")
+            if self.reload_pending:
+                self.reload_pending = False
+                self.reload()
 
     def _changed(self, changes, handler):
         if self._valid():

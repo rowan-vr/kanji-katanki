@@ -94,7 +94,7 @@ def test_version_six_shared_source_is_preserved_on_both_sides(source):
     for entry in saved["cards"].values():
         entry.pop("front_example_source")
     restored = from_dict(saved)
-    assert restored.to_dict()["version"] == 7
+    assert restored.to_dict()["version"] == 8
     for options in restored.cards:
         assert options.example_source == source
         assert options.front_source == source

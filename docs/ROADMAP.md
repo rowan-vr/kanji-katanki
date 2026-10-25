@@ -404,7 +404,8 @@ Anki progress. Covers FR-03, FR-05 and the detail-view portion of FR-04.
 Delivered slice (2026-10-25): reusable target datasets and the native Qt
 statistics dashboard. See the [target-list and statistics plan](KANJI_STATS.md)
 for the canonical format, source provenance, dashboard and Anki progress policy.
-Personal-list management, creation from lists and historical statistics remain.
+Personal-list management and persisted group selection are also delivered.
+Creation from lists and historical statistics remain.
 
 - [x] Implement the versioned target-list contract, validation, registry, and
   ordered unique group selection independently of Anki and dictionary coverage.
@@ -427,8 +428,16 @@ Personal-list management, creation from lists and historical statistics remain.
   Anki/Qt verification: `scripts/smoke_statistics_settings.py` (2026-10-25) covers
   page separation, source persistence/cancel, update filtering and shared schedule.
   Modern unofficial JLPT and additional exam/textbook adapters follow separately.
-- [ ] Add personal-list import/export and profile-specific list storage/management.
-  Local dataset overrides are available; a dedicated personal-list workflow remains.
+- [x] Add personal-list import/export and profile-specific list storage/management.
+  **Settings → Statistics → Personal lists** supports canonical JSON import review,
+  provenance/group counts, validation warnings, explicit replacement with member
+  diffs, export and confirmed removal. Files are profile-local under `user_files`
+  and do not sync; export/import transfers them. Personal lists join the dashboard
+  registry and version 8 settings retain list/group selection. File changes apply
+  immediately after confirmation, independently of Settings Save/Cancel.
+  Evidence: `tests/test_personal_target_lists.py`, dashboard/Qt tests,
+  real-Anki `scripts/smoke_personal_target_lists.py` (including unchanged
+  notes/cards/revlog), and an offline add-on package build (2026-10-25).
 
 - [x] **Polish card layouts.** Improve recognition, production, and Parts review
   layouts for desktop and mobile, including readable typography, spacing,
