@@ -1,0 +1,62 @@
+{
+  "schema_version": 1,
+  "id": "user:example-everyday-kanji",
+  "title": "Example: everyday kanji",
+  "version": "1",
+  "kind": "personal",
+  "source": {
+    "title": "Hand-picked example for testing personal lists",
+    "url": null,
+    "revision": "1",
+    "license": "MIT; see the repository LICENSE",
+    "attribution": "Kanji Katanki; original demonstration grouping, not a syllabus",
+    "authority": "user"
+  },
+  "groups": [
+    {
+      "id": "days",
+      "title": "Days of the week",
+      "characters": [
+        "日",
+        "月",
+        "火",
+        "水",
+        "木",
+        "金",
+        "土"
+      ]
+    },
+    {
+      "id": "nature",
+      "title": "Nature and surroundings",
+      "characters": [
+        "山",
+        "川",
+        "田",
+        "木",
+        "林",
+        "森",
+        "雨",
+        "空",
+        "海",
+        "花"
+      ]
+    },
+    {
+      "id": "study",
+      "title": "School and study",
+      "characters": [
+        "学",
+        "校",
+        "先",
+        "生",
+        "本",
+        "語",
+        "文",
+        "字",
+        "人",
+        "日"
+      ]
+    }
+  ]
+}
