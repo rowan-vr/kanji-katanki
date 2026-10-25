@@ -643,7 +643,14 @@ accounts, telemetry, or network-required reviews.
 - [ ] FR-07: explicit Migaku Kanji GOD import with backup, dry-run mappings,
   unmappable-data warnings, confirmation, and copied-profile tests; preserve
   scheduling/history only where a safe mapping is proven.
-- [ ] Imported kanji lists (manual text entry is delivered in Phase 3).
+- [ ] Personal-list editor under Settings → Statistics → Personal lists. Create
+  and edit list names and ordered groups, paste kanji with validation and
+  deduplication, and show per-group and unique-list counts. Keep source/provenance
+  fields in an expandable Source details section. Save to the existing
+  profile-local storage and import/export the same canonical JSON format; preview
+  membership changes before replacing a saved list. Editing targets must not
+  create/delete cards or change scheduling. JSON import/export is delivered in
+  Phase 4; this editor removes the need to hand-edit JSON.
 - [ ] JMdict integration and optional vocabulary-writing cards using reading plus
   meaning/context, with homophone ambiguity controls.
 - [ ] Additional dictionary providers, capability/fallback selection, and supported

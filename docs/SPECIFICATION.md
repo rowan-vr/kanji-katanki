@@ -352,7 +352,12 @@ with real Anki progress.
   new note types omit the field and stock review/refresh ignores its contents.
 
 - [ ] Migaku Kanji GOD migration with safe progress preservation.
-- [ ] Manual lists, more dictionary providers, fallback selection, custom classifications.
+- [ ] Personal-list editor: create/edit list names and ordered groups, paste kanji
+  with validation/deduplication and group/unique counts, and keep provenance in
+  expandable Source details. Reuse profile-local storage and canonical JSON
+  import/export; preview membership changes before replacement. Saving a list
+  does not create/delete cards or change scheduling.
+- [ ] More dictionary providers, fallback selection, custom classifications.
 - [ ] Enhanced stroke animation and optional handwriting canvas/validation.
 - [ ] Public third-party extension API only after internal interfaces stabilize.
 
