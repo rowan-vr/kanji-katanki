@@ -224,3 +224,39 @@ def test_list_creation_orders_targets_after_their_dependencies(monkeypatch):
         first,
         second,
     )
+
+
+@pytest.mark.parametrize("limit,expected", [(1, ("月",)), (2, ("月", "日")), (None, ("月", "日"))])
+def test_list_amount_skips_existing_and_retains_dependencies(monkeypatch, limit, expected):
+    from test_generation import report
+
+    from katanki.generation.planner import GenerationPlan, LearningUnit, PlanItem
+    from katanki.generation.preview import GenerationPreview
+
+    primitive = Identity("primitive-recognition", "一")
+    existing = Identity("kanji-recognition", "景")
+    targets = tuple(Identity("kanji-recognition", char) for char in ("月", "日"))
+    preview = GenerationPreview(
+        GenerationPlan(
+            (
+                PlanItem(LearningUnit(existing), "skip", "Already exists"),
+                PlanItem(LearningUnit(primitive), "create", ""),
+                *(
+                    PlanItem(LearningUnit(identity, (primitive,)), "create", "")
+                    for identity in targets
+                ),
+            )
+        ),
+        (),
+        (),
+    )
+    monkeypatch.setattr(refresh, "analyze_scan", lambda *args: report())
+    monkeypatch.setattr(refresh, "load_ignored", lambda _: frozenset())
+    monkeypatch.setattr(refresh, "preview_generation", lambda *args, **kwargs: preview)
+    result = refresh.prepare_targets(
+        Mock(), Settings(), ("景", "月", "日"), categories=("recognition",), limit=limit
+    )
+    creating = tuple(
+        item.unit.identity for item in result.preview.plan.items if item.outcome == "create"
+    )
+    assert creating == (primitive, *(Identity("kanji-recognition", char) for char in expected))

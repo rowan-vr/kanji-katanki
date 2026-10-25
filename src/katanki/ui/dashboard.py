@@ -84,14 +84,6 @@ class StatisticsDialog(QDialog):
         title.setFont(font)
         heading.addWidget(title)
         heading.addStretch()
-        self.create_targets = QPushButton("Create cards from selection…")
-        self.create_targets.setEnabled(False)
-        self.create_targets.setToolTip(
-            "Review cards for the union of selected lists/groups, in list order. "
-            "Search and state filters do not change the targets."
-        )
-        self.create_targets.clicked.connect(self._create_targets)
-        heading.addWidget(self.create_targets)
         self.manage = QPushButton("Manage lists…")
         self.manage.clicked.connect(self._settings)
         self.refresh = QPushButton("Refresh")
@@ -306,7 +298,6 @@ class StatisticsDialog(QDialog):
             self.sort_by,
         ):
             control.setEnabled(not loading)
-        self.create_targets.setEnabled(not loading and bool(getattr(self, "current_targets", ())))
 
     def reload(self):
         if not self._valid():
@@ -411,7 +402,6 @@ class StatisticsDialog(QDialog):
             if settings.statistics_selection != selection:
                 save_settings(self.collection, replace(settings, statistics_selection=selection))
         self.current_targets = characters
-        self.create_targets.setEnabled(bool(characters) and not self.loading)
         self.scope_title.setText(
             " · ".join(section.title for section in selected) or "Select a list or group"
         )
@@ -546,12 +536,6 @@ class StatisticsDialog(QDialog):
 
         dialog = HistoryDialog(self.mw)
         dialog.exec()
-
-    def _create_targets(self):
-        if self._valid() and not self.loading and getattr(self, "current_targets", ()):
-            from .manual import open_list_creation
-
-            open_list_creation(self.mw, self.current_targets, self.scope_title.text())
 
     def _settings(self):
         from .settings import open_settings

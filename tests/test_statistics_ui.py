@@ -463,29 +463,6 @@ def test_dashboard_queues_reload_during_inflight_snapshot(qt_host, monkeypatch):
     assert not dialog.loading
 
 
-def test_create_cards_uses_selected_union_despite_grid_filters(qt_host, monkeypatch):
-    host = qt_host
-    dashboard = host.modules.dashboard
-    dialog = dashboard.StatisticsDialog(host.window)
-    dialog._loaded(snapshot())
-    dialog.select_scope(("@cards", None))
-    targets = dialog.current_targets
-    assert targets
-    dialog.search.setText("definitely no matching character")
-    assert dialog.proxy.rowCount() == 0
-    manual = ModuleType("katanki.ui.manual")
-    calls = []
-    manual.open_list_creation = lambda *args: calls.append(args)
-    monkeypatch.setitem(sys.modules, "katanki.ui.manual", manual)
-    dialog.create_targets.click()
-    assert calls == [(host.window, targets, dialog.scope_title.text())]
-    dialog._set_loading(True)
-    assert not dialog.create_targets.isEnabled()
-    dialog._set_loading(False)
-    dialog.scope.clearSelection()
-    assert not dialog.create_targets.isEnabled()
-
-
 def test_list_creation_prepares_exact_targets_then_requires_review(qt_host, monkeypatch):
     from unittest.mock import Mock
 
@@ -506,40 +483,114 @@ def test_list_creation_prepares_exact_targets_then_requires_review(qt_host, monk
     try:
         settings = Settings()
         monkeypatch.setattr(manual, "load_settings", lambda _: settings)
-        result = SimpleNamespace(
-            report=SimpleNamespace(dictionary_loaded=True),
-            preview=SimpleNamespace(
-                plan=SimpleNamespace(items=(SimpleNamespace(outcome="create"),))
+        monkeypatch.setattr(manual, "load_target_registry", lambda **_: snapshot()[0])
+        monkeypatch.setattr(
+            manual,
+            "coverage_sections",
+            lambda _: (
+                SimpleNamespace(
+                    key=("example", None),
+                    parent=None,
+                    title="Example list",
+                    characters=("日", "月"),
+                ),
+                SimpleNamespace(
+                    key=("example", "group"),
+                    parent=("example", None),
+                    title="Group 1",
+                    characters=("月",),
+                ),
             ),
         )
+        from katanki.generation.planner import Identity
+
+        def result_for(*characters):
+            return SimpleNamespace(
+                report=SimpleNamespace(dictionary_loaded=True),
+                preview=SimpleNamespace(
+                    plan=SimpleNamespace(
+                        items=tuple(
+                            SimpleNamespace(
+                                outcome="create",
+                                identity=None,
+                                unit=SimpleNamespace(
+                                    identity=Identity("kanji-recognition", character)
+                                ),
+                            )
+                            for character in characters
+                        )
+                    )
+                ),
+            )
+
+        result = result_for("月")
         prepare = Mock(return_value=result)
         monkeypatch.setattr(manual, "prepare_targets", prepare)
-        dialog = manual.ManualKanjiDialog(
-            host.window, targets=("月", "日"), source_title="Selected group"
-        )
+        dialog = manual.ManualKanjiDialog(host.window)
+        assert dialog.source.itemText(0) == "Manual input"
+        assert dialog.source.maximumWidth() == 380
+        assert dialog.source.itemText(2) == "Example list › Group 1"
+        assert not dialog.amount.isEnabled()
+        assert not dialog.all_targets.isEnabled()
+        dialog.text.setPlainText("景")
+        dialog.source.setCurrentIndex(1)
         assert dialog.text.isReadOnly()
-        assert dialog.text.toPlainText() == "月日"
-        assert dialog.create_button.text() == "Review cards…"
-        dialog.type_buttons["production"].setChecked(False)
-        dialog.create_button.click()
-        assert dialog.busy
+        assert dialog.amount.value() == 10
+        assert dialog.amount.isEnabled()
         assert not dialog.create_button.isEnabled()
-        assert not dialog.cancel.isEnabled()
+        dialog._preview_timer.stop()
+        dialog._prepare_list()
         host.operations[-1].complete()
-        assert prepare.call_args.args == (host.window.col, settings, ("月", "日"))
-        assert prepare.call_args.kwargs["categories"] == ("recognition",)
+        assert dialog.text.toPlainText() == "月"  # Existing 日 is omitted.
+        assert prepare.call_args.args == (host.window.col, settings, ("日", "月"))
+        assert prepare.call_args.kwargs["limit"] == 10
+        assert dialog.create_button.isEnabled()
+        dialog.create_button.click()
         generation.CreationReviewDialog.assert_called_once_with(
             host.window, result.preview, summary_label="Kanji ready"
         )
-        assert dialog.result() == 0
-        assert not dialog.busy
+        assert dialog.result() == 0  # Cancelling review leaves the dialog open.
         assert not warnings
-        dialog_factory = Mock()
-        monkeypatch.setattr(manual, "ManualKanjiDialog", dialog_factory)
-        manual.open_list_creation(host.window, ("月", "日"), "Selected group")
-        dialog_factory.assert_called_once_with(
-            host.window, targets=("月", "日"), source_title="Selected group"
-        )
-        dialog_factory.return_value.exec.assert_called_once_with()
+
+        dialog.all_targets.setChecked(True)
+        assert not dialog.amount.isEnabled()
+        assert not dialog.create_button.isEnabled()
+        dialog._preview_timer.stop()
+        dialog._prepare_list()
+        old_operation = host.operations[-1]
+        dialog.type_buttons["production"].setChecked(False)
+        old_operation.complete()  # Obsolete results cannot enable Create.
+        assert not dialog.create_button.isEnabled()
+        dialog._preview_timer.stop()
+        prepare.return_value = result_for()
+        dialog._prepare_list()
+        host.operations[-1].complete()
+        assert prepare.call_args.kwargs["limit"] is None
+        assert prepare.call_args.kwargs["categories"] == ("recognition",)
+        assert dialog.text.toPlainText() == "No new cards"
+        assert "#d32f2f" in dialog.text.styleSheet()
+        assert not dialog.create_button.isEnabled()
+        assert dialog.text.isReadOnly()
+
+        # Failed checks also leave creation disabled and report the problem.
+        dialog.all_targets.setChecked(False)
+        dialog._preview_timer.stop()
+        dialog._prepare_list()
+        host.operations[-1].failed(ValueError("Dictionary unavailable"))
+        assert not dialog.create_button.isEnabled()
+        assert "Dictionary unavailable" in dialog.status.text()
+
+        dialog.source.setCurrentIndex(0)
+        assert not dialog.text.isReadOnly()
+        assert dialog.text.toPlainText() == "景"
+        assert not dialog.text.styleSheet()
+        assert not dialog.amount.isEnabled()
+        assert not dialog.all_targets.isEnabled()
+        assert dialog.create_button.isEnabled()
+        prepare.return_value = result_for("景")
+        dialog.create_button.click()
+        host.operations[-1].complete()
+        assert prepare.call_args.args[2] == ("景",)
+        assert prepare.call_args.kwargs["limit"] is None
     finally:
         sys.modules.pop("katanki.ui.manual", None)

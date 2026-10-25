@@ -60,8 +60,11 @@ def prepare_targets(
     categories=("recognition", "production", "parts"),
     progress=None,
     preserve_order=True,
+    limit=None,
 ):
     """Plan explicit list targets in their original order without changing identities."""
+    if limit is not None and limit < 1:
+        raise ValueError("The kanji amount must be positive.")
     characters = tuple(dict.fromkeys(characters))
     if any(
         not isinstance(char, str) or len(char) != 1 or not is_kanji(char) for char in characters
@@ -71,6 +74,8 @@ def prepare_targets(
         item not in ("recognition", "production", "parts") for item in categories
     ):
         raise ValueError("Choose recognition, production, or parts cards.")
+    if limit is not None and categories == ("parts",):
+        characters = characters[:limit]
     # Manual input selects characters; Jitendex supplies production example words.
     scan = ScanResult(0, characters)
     settings = replace(
@@ -102,11 +107,27 @@ def prepare_targets(
             visit(prerequisite)
         ordered.append(item)
 
+    if limit is not None:
+        eligible = tuple(
+            character
+            for character in characters
+            if any(
+                item.outcome == "create"
+                and item.unit.identity.key == character
+                and item.unit.identity.note_type in ("kanji-recognition", "kanji-production")
+                for item in items.values()
+            )
+        )
+        # Parts-only selections use target order as well.
+        characters = (
+            eligible if any(c in categories for c in ("recognition", "production")) else characters
+        )[:limit]
     for character in characters:
         for category in ("recognition", "production"):
             visit(Identity(f"kanji-{category}", character))
-    for identity in items:
-        visit(identity)
+    if limit is None or categories == ("parts",):
+        for identity in items:
+            visit(identity)
     preview = replace(result.preview, plan=replace(result.preview.plan, items=tuple(ordered)))
     return replace(result, preview=preview)
 
