@@ -171,13 +171,13 @@ def test_import_limits_bytes_groups_and_members(tmp_path, monkeypatch):
 
 
 def test_kanjidic_grades_exclude_name_only_and_unclassified_entries(tmp_path):
-    xml = (FIXTURES / "kanjidic2.xml").read_text()
+    xml = (FIXTURES / "kanjidic2.xml").read_text(encoding="utf-8")
     extra = "".join(
         f"<character><literal>{char}</literal><misc><grade>{grade}</grade></misc></character>"
         for char, grade in (("日", 1), ("亜", 8), ("凜", 9), ("﨑", 10))
     )
     path = tmp_path / "kanjidic.xml"
-    path.write_text(xml.replace("</kanjidic2>", extra + "</kanjidic2>"))
+    path.write_text(xml.replace("</kanjidic2>", extra + "</kanjidic2>"), encoding="utf-8")
     manifest = next(item for item in list_datasets() if item.id == "kanjidic2")
     target = school_grades(KanjidicXml(path), manifest, "2026-10-24")
     assert target.id == "school-grades"
@@ -200,9 +200,10 @@ def test_empty_grade_metadata_does_not_invent_targets(tmp_path):
     path = tmp_path / "no-grades.xml"
     path.write_text(
         (FIXTURES / "kanjidic2.xml")
-        .read_text()
+        .read_text(encoding="utf-8")
         .replace("<grade>4</grade>", "")
-        .replace("<grade>2</grade>", "")
+        .replace("<grade>2</grade>", ""),
+        encoding="utf-8",
     )
     manifest = next(item for item in list_datasets() if item.id == "kanjidic2")
     with pytest.raises(ValueError, match="members"):
@@ -216,7 +217,7 @@ def test_saved_disabled_and_local_choices_resolve_without_other_dictionary_files
     other_list = DictionaryChoice("joyo", "disabled")
     assert load_target_registry(choices=(disabled, unrelated, other_list)).lists == ()
     path = tmp_path / "list.json"
-    path.write_text(json.dumps(example_list()))
+    path.write_text(json.dumps(example_list()), encoding="utf-8")
     local = DictionaryChoice("school-grades", "local", str(path))
     registry = load_target_registry(choices=(local, unrelated, other_list))
     assert registry.lists[0].characters() == ("日", "月", "火")
