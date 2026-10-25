@@ -1,0 +1,39 @@
+{
+  "id": "jlpt-openjlpt",
+  "name": "JLPT N5–N1 (unofficial, OpenJLPT)",
+  "format": "target_lists_json",
+  "source": "https://github.com/evanclan/OpenJLPT/tree/0d1d3410bec90bd4098a7c72de820543cb4f707c",
+  "capabilities": [
+    "target_lists"
+  ],
+  "compression": [
+    "none"
+  ],
+  "version": "Independent dated target-list release",
+  "license": {
+    "name": "CC BY-SA 4.0; https://creativecommons.org/licenses/by-sa/4.0/",
+    "url": "https://creativecommons.org/licenses/by-sa/4.0/",
+    "attribution": "OpenJLPT contributors; Jonathan Waller's community JLPT lists; KANJIDIC2 by James William Breen and EDRDG. Adaptation: kanji identities and modern level assignments only, grouped N5 to N1."
+  },
+  "default": true,
+  "bundled": {
+    "path": "bundled/jlpt-openjlpt.json",
+    "sha256": "c2a11bad9121ff34220ecb29a5e23759d00fa7173b432ca20c97c75a93dd1f85",
+    "version": "2026-10-25",
+    "entries": 2383,
+    "license_files": [
+      "bundled/NOTICE.txt",
+      "bundled/SOURCES.json",
+      "bundled/licenses/CC-BY-2.0-FR.html",
+      "bundled/licenses/CC-BY-SA-4.0.txt",
+      "bundled/licenses/EDRDG-LICENCE.html",
+      "bundled/licenses/Jitendex-Attribution.txt",
+      "bundled/licenses/KANJIDIC-Documentation.html",
+      "bundled/licenses/KanjiVG-COPYING",
+      "bundled/licenses/KanjiVG-README.md",
+      "bundled/licenses/OpenJLPT-LICENSE",
+      "bundled/licenses/OpenJLPT-NOTICE.md",
+      "bundled/licenses/OpenJLPT-SOURCES.json"
+    ]
+  }
+}

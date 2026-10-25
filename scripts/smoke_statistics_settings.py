@@ -51,7 +51,7 @@ def main():
                 ]
                 dictionaries = dialog.dictionary_panel
                 assert set(dictionaries.panels) == {"kanjidic2", "kanjivg", "jitendex"}
-                assert set(stats.lists.panels) == {"school-grades", "joyo"}
+                assert set(stats.lists.panels) == {"school-grades", "joyo", "jlpt-openjlpt"}
                 target = stats.lists.panels["school-grades"]
                 assert target.check.text() == "Check list"
                 assert target.update_button.text() == "Update list"
@@ -73,21 +73,27 @@ def main():
                         text = result.call_args.args[0]
                         assert "School grades" in text and "Jitendex" not in text
                         assert (
-                            all(m.id == "joyo" for m, _ in result.call_args.kwargs["candidates"])
+                            all(
+                                m.id in {"joyo", "jlpt-openjlpt"}
+                                for m, _ in result.call_args.kwargs["candidates"]
+                            )
                             is True
                         )
                         # Local overrides are listed, but never updated automatically.
-                        assert [m.id for m, _ in result.call_args.kwargs["candidates"]] == ["joyo"]
+                        assert {m.id for m, _ in result.call_args.kwargs["candidates"]} == {
+                            "joyo",
+                            "jlpt-openjlpt",
+                        }
                     with patch.object(dictionaries, "_show_result") as result:
                         dictionaries._checked({})
                         assert "School grades" not in result.call_args.args[0]
                         assert all(
-                            m.id not in {"school-grades", "joyo"}
+                            m.id not in {"school-grades", "joyo", "jlpt-openjlpt"}
                             for m, _ in result.call_args.kwargs["candidates"]
                         )
                 dialog._save()
                 saved = load_settings(mw.col)
-                assert len(saved.dictionaries) == 5
+                assert len(saved.dictionaries) == 6
                 assert next(
                     c for c in saved.dictionaries if c.dataset_id == "school-grades"
                 ).path == str(local)

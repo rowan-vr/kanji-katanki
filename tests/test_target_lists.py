@@ -215,11 +215,12 @@ def test_saved_disabled_and_local_choices_resolve_without_other_dictionary_files
     disabled = DictionaryChoice("school-grades", "disabled")
     unrelated = DictionaryChoice("jitendex", "local", "/nonexistent/unrelated.zip")
     other_list = DictionaryChoice("joyo", "disabled")
-    assert load_target_registry(choices=(disabled, unrelated, other_list)).lists == ()
+    jlpt = DictionaryChoice("jlpt-openjlpt", "disabled")
+    assert load_target_registry(choices=(disabled, unrelated, other_list, jlpt)).lists == ()
     path = tmp_path / "list.json"
     path.write_text(json.dumps(example_list()), encoding="utf-8")
     local = DictionaryChoice("school-grades", "local", str(path))
-    registry = load_target_registry(choices=(local, unrelated, other_list))
+    registry = load_target_registry(choices=(local, unrelated, other_list, jlpt))
     assert registry.lists[0].characters() == ("日", "月", "火")
 
 

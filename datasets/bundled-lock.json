@@ -40,6 +40,14 @@
       "url": "https://github.com/rowan-vr/kanji-katanki/releases/download/datasets-target-lists-2026-10-25/joyo.zip",
       "sha256": "2f97215f5a766aa071a4f39ea2db53314e9e02687caebc394f759f44adcdd88f",
       "bytes": 58486
+    },
+    "jlpt-openjlpt": {
+      "version": "2026-10-25",
+      "revision": 20261025,
+      "format_version": 1,
+      "url": "https://github.com/rowan-vr/kanji-katanki/releases/download/datasets-jlpt-2026-10-25/jlpt-openjlpt.zip",
+      "sha256": "8d3d33d5d70c3ea572fdc7e8e6164cd49f83c314131181d5dc4c93ea40448f0d",
+      "bytes": 69224
     }
   }
 }

@@ -23,6 +23,7 @@ def test_registry_loads_default_data_only_manifests():
         "jitendex",
         "school-grades",
         "joyo",
+        "jlpt-openjlpt",
     }
     assert all(manifest.default and manifest.attribution for manifest in manifests)
 
