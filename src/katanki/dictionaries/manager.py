@@ -23,7 +23,7 @@ class DictionaryManager:
             {
                 manifest.id: default_source(manifest)
                 for manifest in self.manifests
-                if manifest.default
+                if manifest.default and manifest.format != "target_lists_json"
             }
             if sources is None
             else sources
@@ -35,7 +35,7 @@ class DictionaryManager:
         self.provenance: list[str] = []
         self.attributions: list[str] = []
         for manifest in self.manifests:
-            if manifest.id not in sources:
+            if manifest.id not in sources or manifest.format == "target_lists_json":
                 continue
             path = sources[manifest.id]
             is_bundled = manifest.bundled is not None and path.resolve() == bundled_path(
@@ -52,6 +52,8 @@ class DictionaryManager:
                 raise ValueError(f"{manifest.name} does not support {compression} input.")
             provider = ADAPTERS[manifest.format](path)
             for capability in manifest.capabilities:
+                if capability == "target_lists":
+                    continue  # Many target datasets coexist in stats.targets.TargetRegistry.
                 if capability in self.providers:
                     raise ValueError(f"Multiple selected providers for {capability}.")
                 self.providers[capability] = provider

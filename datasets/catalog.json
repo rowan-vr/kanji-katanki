@@ -24,6 +24,22 @@
       "url": "https://github.com/rowan-vr/kanji-katanki/releases/download/datasets-2026-10-23-jitendex/kanjivg.zip",
       "sha256": "85635ccdc45bdaf8ac6d86e239537a7156bdef4c0cee773bd1c01f80a1efe527",
       "bytes": 4770196
+    },
+    "school-grades": {
+      "version": "2026-10-25",
+      "revision": 20261025,
+      "format_version": 1,
+      "url": "https://github.com/rowan-vr/kanji-katanki/releases/download/datasets-target-lists-2026-10-25/school-grades.zip",
+      "sha256": "55abc3646e3c605b3e7cfdcc3068c231a601dee82c5f3732c8093d0e30531333",
+      "bytes": 55871
+    },
+    "joyo": {
+      "version": "2026-10-25",
+      "revision": 20261025,
+      "format_version": 1,
+      "url": "https://github.com/rowan-vr/kanji-katanki/releases/download/datasets-target-lists-2026-10-25/joyo.zip",
+      "sha256": "2f97215f5a766aa071a4f39ea2db53314e9e02687caebc394f759f44adcdd88f",
+      "bytes": 58486
     }
   }
 }

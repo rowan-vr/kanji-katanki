@@ -26,6 +26,7 @@ from .dictionaries import DictionarySettingsPanel
 from .generation_settings import GenerationSettingsPanel
 from .ignored import IgnoredCardsPanel
 from .sources import SourceSelector
+from .statistics import StatisticsSettingsPanel
 
 
 class SettingsDialog(QDialog):
@@ -88,6 +89,14 @@ class SettingsDialog(QDialog):
             self.card_tabs.addTab(panel, category.title())
         self.dictionary_panel = DictionarySettingsPanel(self, settings.dictionaries)
         self.tabs.addTab(self.dictionary_panel, "Dictionaries")
+        self.statistics_panel = StatisticsSettingsPanel(self, settings.dictionaries)
+        self.tabs.addTab(self.statistics_panel, "Statistics")
+        self.dictionary_panel.automatic.toggled.connect(
+            self.statistics_panel.lists.automatic.setChecked
+        )
+        self.statistics_panel.lists.automatic.toggled.connect(
+            self.dictionary_panel.automatic.setChecked
+        )
         self.ignored_panel = IgnoredCardsPanel(mw)
         self.tabs.addTab(self.ignored_panel, "Ignored cards")
         refresh_panel = QWidget()
@@ -148,6 +157,12 @@ class SettingsDialog(QDialog):
         self.test_button.setEnabled(not busy)
         self.buttons.setEnabled(not busy)
         self.dictionary_panel.setEnabled(not busy)
+        self.statistics_panel.setEnabled(not busy)
+        if not busy:
+            for section in (self.dictionary_panel, self.statistics_panel.lists):
+                section._show_last_check()
+                for panel in section.panels.values():
+                    panel.refresh_updates()
         self.ignored_panel.setEnabled(not busy)
 
     def _test_discovery(self):
@@ -197,7 +212,7 @@ class SettingsDialog(QDialog):
                     self.generation_panels[category].settings()
                     for category in GENERATION_CATEGORIES
                 ),
-                self.dictionary_panel.choices(),
+                self.dictionary_panel.choices() + self.statistics_panel.choices(),
                 tuple(self.card_panels[category].settings() for category in GENERATION_CATEGORIES),
                 RefreshSettings(
                     self.refresh_enabled.isChecked(),
@@ -209,6 +224,7 @@ class SettingsDialog(QDialog):
                 ),
             )
             dictionary_sources(settings.dictionaries)
+            dictionary_sources(settings.dictionaries, capability="target_lists")
             self.sources.selection()
             for category in GENERATION_CATEGORIES:
                 deck_id = settings.generation_settings(category).target_deck_id
@@ -311,5 +327,11 @@ class DiscoveryTestResults(QDialog):
         layout.addWidget(buttons)
 
 
-def open_settings(mw):
-    SettingsDialog(mw).exec()
+def open_settings(mw, *, tab=None):
+    dialog = SettingsDialog(mw)
+    if tab is not None:
+        for index in range(dialog.tabs.count()):
+            if dialog.tabs.tabText(index) == tab:
+                dialog.tabs.setCurrentIndex(index)
+                break
+    dialog.exec()

@@ -11,7 +11,9 @@ from .registry import list_datasets
 from .updates import default_source
 
 
-def dictionary_sources(choices: tuple[DictionaryChoice, ...]) -> dict[str, Path]:
+def dictionary_sources(
+    choices: tuple[DictionaryChoice, ...], *, capability: str | None = None
+) -> dict[str, Path]:
     manifests = {item.id: item for item in list_datasets()}
     if len({item.dataset_id for item in choices}) != len(choices):
         raise ValueError("Duplicate dictionary choices.")
@@ -20,6 +22,10 @@ def dictionary_sources(choices: tuple[DictionaryChoice, ...]) -> dict[str, Path]
     selected = {choice.dataset_id: choice for choice in choices}
     paths = {}
     for dataset_id, manifest in manifests.items():
+        if capability is None and manifest.format == "target_lists_json":
+            continue  # Target-only data must not block dictionary discovery/generation.
+        if capability is not None and capability not in manifest.capabilities:
+            continue
         choice = selected.get(dataset_id, DictionaryChoice(dataset_id))
         if choice.mode == "disabled":
             continue
@@ -37,6 +43,8 @@ def dictionary_sources(choices: tuple[DictionaryChoice, ...]) -> dict[str, Path]
                 raise ValueError("Jitendex: choose a Yomitan ZIP file.")
             if manifest.format == "kanjidic2_xml" and not path.is_file():
                 raise ValueError(f"{manifest.name}: choose an XML or XML.gz file.")
+            if manifest.format == "target_lists_json" and not path.is_file():
+                raise ValueError(f"{manifest.name}: choose a target-list JSON file.")
             if manifest.format == "kanjivg_svg" and not (
                 path.is_dir() or path.suffix.lower() == ".zip"
             ):
@@ -46,9 +54,32 @@ def dictionary_sources(choices: tuple[DictionaryChoice, ...]) -> dict[str, Path]
 
 
 def check_dictionary(choice: DictionaryChoice) -> str:
+    manifest = next(item for item in list_datasets() if item.id == choice.dataset_id)
     if choice.mode == "disabled":
+        if "target_lists" in manifest.capabilities:
+            return "Disabled. This list will not be used for statistics targets."
         return "Disabled. This dataset will not be used for discovery or generation."
-    paths = dictionary_sources((choice,))
+    paths = dictionary_sources(
+        (choice,), capability="target_lists" if manifest.format == "target_lists_json" else None
+    )
+    if manifest.format == "target_lists_json":
+        from ..stats.sources import load_target_registry
+        from .adapters.target_lists_json import TargetListsJson
+
+        path = paths[choice.dataset_id]
+        registry = load_target_registry({choice.dataset_id: path})
+        adapter = TargetListsJson(path)
+        return "\n".join(
+            ["Target dataset loaded successfully."]
+            + [
+                f"{target.title}: {len(target.characters()):,} unique kanji; "
+                f"{len(target.groups)} groups; version {target.version}; "
+                f"{target.source.attribution}; {target.source.license}"
+                for target in registry.lists
+            ]
+            + list(adapter.warnings)
+            + [f"SHA-256 {sha256(path.read_bytes()).hexdigest()}"]
+        )
     with DictionaryManager({choice.dataset_id: paths[choice.dataset_id]}) as manager:
         sample = ""
         provider = manager.providers.get("strokes")

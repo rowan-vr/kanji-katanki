@@ -1,0 +1,36 @@
+{
+  "id": "joyo",
+  "name": "Jōyō kanji",
+  "format": "target_lists_json",
+  "source": "https://www.edrdg.org/kanjidic/kanjidic2.xml.gz",
+  "capabilities": [
+    "target_lists"
+  ],
+  "compression": [
+    "none"
+  ],
+  "version": "Independent dated target-list release",
+  "license": {
+    "name": "CC BY-SA 4.0; see EDRDG attribution terms",
+    "url": "https://www.edrdg.org/edrdg/licence.html",
+    "attribution": "James William Breen and the Electronic Dictionary Research and Development Group (EDRDG)"
+  },
+  "default": true,
+  "bundled": {
+    "path": "bundled/joyo.json",
+    "sha256": "ad99fb6495701cd0a061761200963274036ef7ec0c29eef8dbb9b5b98d439e9b",
+    "version": "2026-10-25",
+    "entries": 2136,
+    "license_files": [
+      "bundled/NOTICE.txt",
+      "bundled/SOURCES.json",
+      "bundled/licenses/CC-BY-2.0-FR.html",
+      "bundled/licenses/CC-BY-SA-4.0.txt",
+      "bundled/licenses/EDRDG-LICENCE.html",
+      "bundled/licenses/Jitendex-Attribution.txt",
+      "bundled/licenses/KANJIDIC-Documentation.html",
+      "bundled/licenses/KanjiVG-COPYING",
+      "bundled/licenses/KanjiVG-README.md"
+    ]
+  }
+}

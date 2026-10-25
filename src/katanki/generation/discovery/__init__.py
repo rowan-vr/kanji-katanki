@@ -5,6 +5,7 @@ import unicodedata
 from collections.abc import Iterable
 from html.parser import HTMLParser
 
+from ...common.characters import is_kanji
 from ...common.models import WORD_STATUS_ORDER, NoteText, ScanResult
 
 
@@ -40,14 +41,7 @@ def visible_text(text: str) -> str:
 
 def extract_candidates(text: str) -> set[str]:
     # Do not NFKC-normalize: compatibility ideographs can have distinct identities.
-    return {
-        character
-        for character in visible_text(text)
-        if unicodedata.name(character, "").startswith(
-            ("CJK UNIFIED IDEOGRAPH-", "CJK COMPATIBILITY IDEOGRAPH-")
-        )
-        or character == "〇"
-    }
+    return {character for character in visible_text(text) if is_kanji(character)}
 
 
 def extract_vocabulary(text: str) -> set[str]:

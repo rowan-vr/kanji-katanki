@@ -17,6 +17,7 @@ sys.path.insert(0, str(ROOT / "src"))
 from katanki.dictionaries.adapters.jitendex_yomitan import convert  # noqa: E402
 from katanki.dictionaries.adapters.kanjidic2_xml import KanjidicXml  # noqa: E402
 from katanki.dictionaries.adapters.kanjivg_svg import KanjiVgSvg  # noqa: E402
+from katanki.dictionaries.registry import list_datasets, verify_bundle  # noqa: E402
 
 DICTIONARIES = ROOT / "src" / "katanki" / "dictionaries"
 BUNDLED = DICTIONARIES / "bundled"
@@ -175,7 +176,41 @@ def write_jitendex(source, target, notices):
     return index["revision"], index["term_count"]
 
 
+def preserve_target_datasets(stage: Path) -> dict:
+    """Dictionary source refresh does not regenerate independently versioned lists.
+
+    Keep their pinned payload and extra notices when replacing the bundle tree.
+    Newly generated shared notices/provenance take precedence in the staged tree.
+    """
+    metadata = {}
+    for manifest in list_datasets():
+        if manifest.format != "target_lists_json" or manifest.bundled is None:
+            continue
+        verify_bundle(manifest)
+        bundle = manifest.bundled
+        for name in (bundle["path"], *bundle["license_files"]):
+            relative = Path(name).relative_to("bundled")
+            target = stage / relative
+            if not target.exists():
+                target.parent.mkdir(parents=True, exist_ok=True)
+                shutil.copyfile(BUNDLED / relative, target)
+        metadata[manifest.id] = bundle
+    return metadata
+
+
 def prepare_from_sources(*, refresh=False, offline=False):
+    # A clean maintainer checkout has no ignored payloads. Restore pinned list
+    # baselines before refreshing dictionaries; lists have independent versions.
+    if any(
+        manifest.format == "target_lists_json"
+        and manifest.bundled
+        and not (DICTIONARIES / manifest.bundled["path"]).is_file()
+        for manifest in list_datasets()
+    ):
+        sys.path.insert(0, str(ROOT))
+        from scripts.dataset_packs import restore
+
+        restore(offline=offline)
     lock = json.loads((BUNDLED / "SOURCES.json").read_text(encoding="utf-8"))
     if refresh:
         pin_jitendex_release(lock)
@@ -207,7 +242,7 @@ def prepare_from_sources(*, refresh=False, offline=False):
         with KanjiVgSvg(stage / "kanjivg.zip") as provider:
             if provider.lookup_strokes("景") is None:
                 raise ValueError("Bundled KanjiVG is missing the smoke-test character.")
-        metadata = {}
+        metadata = preserve_target_datasets(stage)
         for dataset_id, filename, dataset_version, count in (
             ("kanjidic2", "kanjidic2.xml", version, kanji_count),
             ("kanjivg", "kanjivg.zip", lock["kanjivg_release"], stroke_count),

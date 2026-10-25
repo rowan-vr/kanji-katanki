@@ -52,6 +52,19 @@ def settings() -> None:
         showWarning("Katanki could not open settings. See Anki's console for details.")
 
 
+def statistics() -> None:
+    try:
+        if mw is None or mw.col is None:
+            showWarning("Open an Anki profile before viewing statistics.")
+            return
+        from ..ui.dashboard import open_statistics
+
+        open_statistics(mw)
+    except Exception:
+        logger.exception("Katanki Statistics failed")
+        showWarning("Katanki could not open statistics. See Anki's console for details.")
+
+
 def register() -> None:
     if mw is None or mw.menuBar().findChild(QMenu, MENU_NAME) is not None:
         return
@@ -72,6 +85,9 @@ def register() -> None:
     manual_action = QAction("New Kanji Cards", menu)
     manual_action.triggered.connect(new_kanji_cards)
     menu.addAction(manual_action)
+    statistics_action = QAction("Statistics", menu)
+    statistics_action.triggered.connect(statistics)
+    menu.addAction(statistics_action)
     menu.addSeparator()
     settings_action = QAction("Settings…", menu)
     settings_action.triggered.connect(settings)

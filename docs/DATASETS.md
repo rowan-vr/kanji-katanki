@@ -37,6 +37,92 @@ All three datasets use the same release-pack system:
   `scripts/bundle_datasets.py`. There is no separate Jitendex lock, folder or
   normal-build upstream download route.
 
+### Target classifications
+
+Built-in kanji target lists share this dataset infrastructure. Two independent
+entries are bundled, both version 2026-10-25, generated from KANJIDIC2 2026-10-23:
+
+- **School grades (Kyōiku kanji)** (`school-grades`): 1,026 elementary-school
+  targets, grouped by grades 1–6.
+- **Jōyō kanji** (`joyo`): all 2,136 Jōyō targets, including the elementary-school
+  subset and the remaining 1,110 grade-8 targets. This list has one complete group.
+
+Name-only grades 9/10 are excluded. Both lists record KANJIDIC2-derived provenance
+rather than claiming independently verified official coverage. Each has its own
+manifest, version, source choice, pack and update controls. Selecting both lists
+uses a unique union, so overlapping characters are counted once. The former
+combined `school-grades` dataset is now elementary-only, with a bumped version.
+Runtime loading uses the list JSON, never the dictionary. Updating, disabling, or
+replacing KANJIDIC2 leaves these lists unchanged.
+
+Manage target-list sources under **Settings → Statistics → Lists**: choose the
+bundled/updated version, a local canonical JSON, or Disabled; validate the source,
+inspect attribution/license notices, install updates, or return to the bundled
+snapshot. Dictionaries remain under **Settings → Dictionaries**. Both pages share
+the dataset update catalog and daily check schedule; each page only offers updates
+for its own sources. Saving preserves choices from both pages. Dataset downloads
+and returning to bundled data apply immediately; source-choice edits apply on Save.
+
+Generate a reviewed new snapshot explicitly:
+
+```sh
+uv run python scripts/generate_target_lists.py --version 2026-10-25 --bundle
+```
+
+The default generates both lists. Use `--dataset school-grades` or `--dataset joyo`
+to generate one independently. Use `--source /path/to/kanjidic2.xml` for another
+dictionary snapshot, or omit
+`--bundle` and specify a single `--dataset` and `--output` to generate a preview without changing the
+bundled baseline. The script records the input revision/checksum separately from
+the target dataset version. `--bundle` updates the ignored generated candidate, dataset
+manifest, bundled payload and build lock together. It does not publish anything.
+
+The list packs are published in the dataset-only
+[target-list release](https://github.com/rowan-vr/kanji-katanki/releases/tag/datasets-target-lists-2026-10-25):
+
+| Asset | Size | Targets |
+| --- | --- | --- |
+| `school-grades.zip` | 55,871 bytes | 1,026 |
+| `joyo.zip` | 58,486 bytes | 2,136 |
+
+Both public assets and the attached five-dataset catalog were downloaded and
+verified against their exact hashes, pack metadata, target counts, and notices.
+`datasets/catalog.json` and `datasets/bundled-lock.json` now use these immutable
+release URLs alongside the unchanged dictionary release entries. Shared restore
+was verified with the list packs absent from its cache, followed by offline
+restore. The dataset release uses `--latest=false` and does not publish add-on code.
+The catalog changes remain on the feature branch until merged; runtime update
+discovery from the public main-branch catalog follows that merge.
+
+Canonical target JSON is generated into ignored `dist/targets/`; generated
+payloads are not tracked in the repository. Normal builds restore the published,
+checksum-locked packs from GitHub releases. The generator and manifests remain
+tracked so new snapshots can be reproduced and reviewed. Preparing an unpublished
+snapshot with `--bundle` uses a checksum-pinned `local_datasets` entry pointing to
+`dist/targets/` for local development. Such locks require the generated output;
+promote the verified release entry to `datasets` before committing a release lock.
+Each list has its own ZIP and catalog identity.
+
+Independent lists use format `target_lists_json`, capability `target_lists`, and
+uncompressed UTF-8 JSON at `bundled/<dataset-id>.json`. Their manifests use the
+same source/license/bundle contract; their releases use the same catalog,
+checksum validation, atomic install and bundled fallback. `bundled.entries` is
+the count of unique targets across all groups. Version strings in published
+packs follow the existing dated dataset revision convention, while personal
+list versions can be arbitrary edition labels. Pack provenance requires an
+upstream URL and checksum, non-user authority, and included redistribution notices.
+Validate licensing before adding a manifest or publishing a new list pack.
+
+Many classifications may be loaded together through `TargetRegistry` without
+changing dictionary provider precedence. Target-only sources are excluded from
+dictionary generation. Dictionary source regeneration preserves independently
+versioned list payloads; release preparation/restore includes their packs using
+the shared lock and cache. Additional lists get their own manifests and versions.
+
+Personal lists use the same canonical JSON reader and registry without entering
+the public dataset catalog. The personal import/selection UI and persistent
+storage are a later slice. See [the target-list plan](KANJI_STATS.md).
+
 Jitendex's original Yomitan archive is retained byte-for-byte, including all
 436,555 term rows. The adapter compiles the 17,616 eligible common word forms on
 first use and caches them in memory by source path, size and modification time.
@@ -165,8 +251,8 @@ or promote the public catalog. Publishing runs only from `main`, in a separate
 job with write permission. Dataset prereleases do not trigger the add-on release
 job or replace the latest stable add-on release.
 
-The workflow artifact includes all three packs (`kanjidic2.zip`, `kanjivg.zip`,
-`jitendex.zip`), candidate `catalog.json`, and a
+The workflow artifact includes all five packs (`kanjidic2.zip`, `kanjivg.zip`,
+`jitendex.zip`, `school-grades.zip`, `joyo.zip`), candidate `catalog.json`, and a
 `review/` directory containing the shared source provenance and manifests. Pack preparation
 round-trips each candidate through the same validator used by installed clients.
 Upstream/format failures affect this maintenance workflow, not normal CI.

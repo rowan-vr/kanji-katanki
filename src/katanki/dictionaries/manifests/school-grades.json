@@ -1,0 +1,36 @@
+{
+  "id": "school-grades",
+  "name": "School grades (Kyōiku kanji)",
+  "format": "target_lists_json",
+  "source": "https://www.edrdg.org/kanjidic/kanjidic2.xml.gz",
+  "capabilities": [
+    "target_lists"
+  ],
+  "compression": [
+    "none"
+  ],
+  "version": "Independent dated target-list release",
+  "license": {
+    "name": "CC BY-SA 4.0; see EDRDG attribution terms",
+    "url": "https://www.edrdg.org/edrdg/licence.html",
+    "attribution": "James William Breen and the Electronic Dictionary Research and Development Group (EDRDG)"
+  },
+  "default": true,
+  "bundled": {
+    "path": "bundled/school-grades.json",
+    "sha256": "f779088fb47d9598c253b5b5bf8f3df2f88b1dd4d780ed63640f0bdd61296352",
+    "version": "2026-10-25",
+    "entries": 1026,
+    "license_files": [
+      "bundled/NOTICE.txt",
+      "bundled/SOURCES.json",
+      "bundled/licenses/CC-BY-2.0-FR.html",
+      "bundled/licenses/CC-BY-SA-4.0.txt",
+      "bundled/licenses/EDRDG-LICENCE.html",
+      "bundled/licenses/Jitendex-Attribution.txt",
+      "bundled/licenses/KANJIDIC-Documentation.html",
+      "bundled/licenses/KanjiVG-COPYING",
+      "bundled/licenses/KanjiVG-README.md"
+    ]
+  }
+}
