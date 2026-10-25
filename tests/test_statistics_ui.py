@@ -461,3 +461,26 @@ def test_dashboard_queues_reload_during_inflight_snapshot(qt_host, monkeypatch):
     assert host.operations[-1] is not failed
     host.operations[-1].complete()
     assert not dialog.loading
+
+
+def test_create_cards_uses_selected_union_despite_grid_filters(qt_host, monkeypatch):
+    host = qt_host
+    dashboard = host.modules.dashboard
+    dialog = dashboard.StatisticsDialog(host.window)
+    dialog._loaded(snapshot())
+    dialog.select_scope(("@cards", None))
+    targets = dialog.current_targets
+    assert targets
+    dialog.search.setText("definitely no matching character")
+    assert dialog.proxy.rowCount() == 0
+    manual = ModuleType("katanki.ui.manual")
+    calls = []
+    manual.open_list_creation = lambda *args: calls.append(args)
+    monkeypatch.setitem(sys.modules, "katanki.ui.manual", manual)
+    dialog.create_targets.click()
+    assert calls == [(host.window, targets, dialog.scope_title.text())]
+    dialog._set_loading(True)
+    assert not dialog.create_targets.isEnabled()
+    dialog._set_loading(False)
+    dialog.scope.clearSelection()
+    assert not dialog.create_targets.isEnabled()

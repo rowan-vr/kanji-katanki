@@ -2,6 +2,7 @@
 
 from dataclasses import dataclass, replace
 
+from ..common.characters import is_kanji
 from ..common.models import DiscoveryReport, ScanResult
 from ..config import load_settings
 from ..dictionaries.preferences import dictionary_sources
@@ -41,12 +42,37 @@ def prepare_refresh(collection, settings):
 def prepare_manual(
     collection, settings, text, *, categories=("recognition", "production", "parts"), progress=None
 ):
+    return prepare_targets(
+        collection,
+        settings,
+        tuple(sorted(extract_candidates(text))),
+        categories=categories,
+        progress=progress,
+        preserve_order=False,
+    )
+
+
+def prepare_targets(
+    collection,
+    settings,
+    characters,
+    *,
+    categories=("recognition", "production", "parts"),
+    progress=None,
+    preserve_order=True,
+):
+    """Plan explicit list targets in their original order without changing identities."""
+    characters = tuple(dict.fromkeys(characters))
+    if any(
+        not isinstance(char, str) or len(char) != 1 or not is_kanji(char) for char in characters
+    ):
+        raise ValueError("List targets must be single kanji characters.")
     if not categories or any(
         item not in ("recognition", "production", "parts") for item in categories
     ):
         raise ValueError("Choose recognition, production, or parts cards.")
     # Manual input selects characters; Jitendex supplies production example words.
-    scan = ScanResult(0, tuple(sorted(extract_candidates(text))))
+    scan = ScanResult(0, characters)
     settings = replace(
         settings,
         cards=tuple(
@@ -59,7 +85,30 @@ def prepare_manual(
     report = analyze_scan(collection, scan, dictionary_sources(settings.dictionaries))
     if progress:
         progress("Checking existing cards and preparing examples…")
-    return _prepare_report(collection, settings, report, categories=categories, progress=progress)
+    result = _prepare_report(collection, settings, report, categories=categories, progress=progress)
+    if result.preview is None or not preserve_order:
+        return result
+    # Visit each requested target in list order, retaining dependency-first ordering.
+    items = {item.unit.identity: item for item in result.preview.plan.items}
+    ordered = []
+    done = set()
+
+    def visit(identity):
+        if identity in done or identity not in items:
+            return
+        done.add(identity)
+        item = items[identity]
+        for prerequisite in item.unit.prerequisites:
+            visit(prerequisite)
+        ordered.append(item)
+
+    for character in characters:
+        for category in ("recognition", "production"):
+            visit(Identity(f"kanji-{category}", character))
+    for identity in items:
+        visit(identity)
+    preview = replace(result.preview, plan=replace(result.preview.plan, items=tuple(ordered)))
+    return replace(result, preview=preview)
 
 
 def _prepare_report(collection, settings, report, *, examples=None, categories=None, progress=None):

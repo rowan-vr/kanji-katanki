@@ -159,3 +159,68 @@ def test_manual_production_uses_jitendex_or_meaning_only(monkeypatch, show_examp
     else:
         assert prompts == {"日": "day", "本": "origin", "人": "person"}
     assert settings.card_settings("production").example_source == "discovered"
+
+
+def test_list_targets_preserve_order_identity_and_saved_ignores(monkeypatch):
+    from katanki.common.models import DiscoveryReport, KanjiEntry
+
+    ignored = frozenset({Identity("kanji-recognition", "月")})
+
+    def analyze(collection, scan, sources):
+        return DiscoveryReport(
+            scan,
+            tuple(KanjiEntry(key, (), (), (key,)) for key in scan.candidates),
+            (),
+            (),
+            True,
+            (),
+        )
+
+    monkeypatch.setattr(refresh, "analyze_scan", analyze)
+    monkeypatch.setattr(refresh, "load_ignored", lambda _: ignored)
+    preview = Mock()
+    monkeypatch.setattr(refresh, "preview_generation", preview)
+    from katanki.generation.planner import GenerationPlan
+    from katanki.generation.preview import GenerationPreview
+
+    preview.return_value = GenerationPreview(GenerationPlan(()), (), ())
+    collection = Mock()
+    result = refresh.prepare_targets(
+        collection, Settings(), ("月", "日", "月", "﨑"), categories=("recognition",)
+    )
+    assert result.report.scan.candidates == ("月", "日", "﨑")
+    assert preview.call_args.kwargs["recognition"] == ("日", "﨑")
+    assert preview.call_args.kwargs["production"] == ()
+    assert preview.call_args.kwargs["ignored"] == ignored
+    assert preview.call_args.kwargs["allow_missing_decks"]
+    collection.add_note.assert_not_called()
+
+
+@pytest.mark.parametrize("targets", [("日本",), ("a",), (None,)])
+def test_list_targets_reject_invalid_identities(targets):
+    with pytest.raises(ValueError, match="single kanji"):
+        refresh.prepare_targets(Mock(), Settings(), targets)
+
+
+def test_list_creation_orders_targets_after_their_dependencies(monkeypatch):
+    from test_generation import report
+
+    from katanki.generation.planner import GenerationPlan, LearningUnit, PlanItem
+    from katanki.generation.preview import GenerationPreview
+
+    primitive = Identity("primitive-recognition", "一")
+    first = Identity("kanji-recognition", "景")
+    second = Identity("kanji-recognition", "色")
+    units = (LearningUnit(second), LearningUnit(primitive), LearningUnit(first, (primitive,)))
+    preview = GenerationPreview(
+        GenerationPlan(tuple(PlanItem(unit, "create", "") for unit in units)), (), ()
+    )
+    monkeypatch.setattr(refresh, "analyze_scan", lambda *args: report())
+    monkeypatch.setattr(refresh, "load_ignored", lambda _: frozenset())
+    monkeypatch.setattr(refresh, "preview_generation", lambda *args, **kwargs: preview)
+    result = refresh.prepare_targets(Mock(), Settings(), ("景", "色"))
+    assert tuple(item.unit.identity for item in result.preview.plan.items) == (
+        primitive,
+        first,
+        second,
+    )

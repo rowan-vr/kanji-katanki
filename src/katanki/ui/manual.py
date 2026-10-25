@@ -4,16 +4,17 @@ from aqt.operations import QueryOp
 from aqt.qt import QCheckBox, QDialog, QHBoxLayout, QLabel, QPlainTextEdit, QPushButton, QVBoxLayout
 from aqt.utils import showWarning
 
-from ..anki.refresh import prepare_manual
+from ..anki.refresh import prepare_manual, prepare_targets
 from ..config import load_settings
 from ..generation.discovery import extract_candidates
 from .generation import CreationReviewDialog
 
 
 class ManualKanjiDialog(QDialog):
-    def __init__(self, mw):
+    def __init__(self, mw, *, targets=None, source_title=""):
         super().__init__(mw)
         self.mw = mw
+        self.targets = tuple(targets) if targets is not None else None
         self.busy = False
         self.setWindowTitle("Katanki — New Kanji Cards")
         self.resize(520, 340)
@@ -52,6 +53,17 @@ class ManualKanjiDialog(QDialog):
         self.create_button.clicked.connect(self._preview)
         row.addWidget(self.create_button)
         layout.addLayout(row)
+        if self.targets is not None:
+            self.setWindowTitle("Katanki — Create Cards from Lists")
+            hint.setText(
+                f"Selected: {source_title}\n"
+                "Review the selected list targets below and choose card types. "
+                "Search and state filters do not change this selection. "
+                "Existing cards and saved ignores are checked before the final creation review."
+            )
+            self.text.setPlainText("".join(self.targets))
+            self.text.setReadOnly(True)
+            self.create_button.setText("Review cards…")
         self.text.textChanged.connect(self._update)
         self._update()
 
@@ -79,14 +91,16 @@ class ManualKanjiDialog(QDialog):
         try:
             settings = load_settings(self.mw.col)
             text = self.text.toPlainText()
+            prepare = prepare_targets if self.targets is not None else prepare_manual
+            candidates = self.targets if self.targets is not None else text
             categories = tuple(
                 kind for kind, button in self.type_buttons.items() if button.isChecked()
             )
             self._set_busy(True)
             QueryOp(
                 parent=self.mw,
-                op=lambda collection: prepare_manual(
-                    collection, settings, text, categories=categories, progress=self._progress
+                op=lambda collection: prepare(
+                    collection, settings, candidates, categories=categories, progress=self._progress
                 ),
                 success=self._finished,
             ).failure(self._failed).with_progress(
@@ -140,3 +154,8 @@ class ManualKanjiDialog(QDialog):
 
 def open_manual(mw):
     ManualKanjiDialog(mw).exec()
+
+
+def open_list_creation(mw, targets, source_title):
+    """Open explicit category selection before the existing creation approval."""
+    ManualKanjiDialog(mw, targets=targets, source_title=source_title).exec()
