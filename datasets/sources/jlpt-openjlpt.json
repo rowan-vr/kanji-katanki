@@ -1,0 +1,41 @@
+{
+  "repository": "https://github.com/evanclan/OpenJLPT",
+  "revision": "0d1d3410bec90bd4098a7c72de820543cb4f707c",
+  "resources": {
+    "NOTICE.md": {
+      "url": "https://raw.githubusercontent.com/evanclan/OpenJLPT/0d1d3410bec90bd4098a7c72de820543cb4f707c/NOTICE.md",
+      "sha256": "a2e6f45517bb1a1c047628991832244916888a4ced3aa26adeafb89705588557",
+      "bytes": 3456
+    },
+    "LICENSE": {
+      "url": "https://raw.githubusercontent.com/evanclan/OpenJLPT/0d1d3410bec90bd4098a7c72de820543cb4f707c/LICENSE",
+      "sha256": "28a9529c7d0bb4dc51f4bf5c116a3d16ef247a052f7591466768ddf563fd1cf5",
+      "bytes": 20138
+    },
+    "n5.json": {
+      "url": "https://raw.githubusercontent.com/evanclan/OpenJLPT/0d1d3410bec90bd4098a7c72de820543cb4f707c/data/json/kanji/n5.json",
+      "sha256": "c81458831e5e2e807ce0bb81a5af971d493ac8a9243701005eb57fe353990fce",
+      "bytes": 46218
+    },
+    "n4.json": {
+      "url": "https://raw.githubusercontent.com/evanclan/OpenJLPT/0d1d3410bec90bd4098a7c72de820543cb4f707c/data/json/kanji/n4.json",
+      "sha256": "a034d51bea0ee6c9ee1cc48b1cc83d9602641b9f5d38d99a55f5136f447a58d8",
+      "bytes": 87744
+    },
+    "n3.json": {
+      "url": "https://raw.githubusercontent.com/evanclan/OpenJLPT/0d1d3410bec90bd4098a7c72de820543cb4f707c/data/json/kanji/n3.json",
+      "sha256": "c81669777f0ea37f848105babf8177ab36e968900307e5118b57e4156ed05fef",
+      "bytes": 201919
+    },
+    "n2.json": {
+      "url": "https://raw.githubusercontent.com/evanclan/OpenJLPT/0d1d3410bec90bd4098a7c72de820543cb4f707c/data/json/kanji/n2.json",
+      "sha256": "2e3bd6f9a26d8794aad2dd770b094836bc6c478950202d631e5fb9233e26cc85",
+      "bytes": 177767
+    },
+    "n1.json": {
+      "url": "https://raw.githubusercontent.com/evanclan/OpenJLPT/0d1d3410bec90bd4098a7c72de820543cb4f707c/data/json/kanji/n1.json",
+      "sha256": "1814dd4fd4b363854fb861f091c2ca408bac01c96dddb6e9b3a5e2566069a79e",
+      "bytes": 525772
+    }
+  }
+}

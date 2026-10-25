@@ -13,7 +13,9 @@ FIXTURES = Path(__file__).parent / "fixtures"
 
 def test_defaults_use_bundled_datasets_and_disabled_choices_remove_them():
     assert dictionary_sources(()) == {
-        key: path for key, path in bundled_sources().items() if key not in {"school-grades", "joyo"}
+        key: path
+        for key, path in bundled_sources().items()
+        if key not in {"school-grades", "joyo", "jlpt-openjlpt"}
     }
     assert dictionary_sources((DictionaryChoice("kanjidic2", "disabled"),)) == {
         "kanjivg": bundled_sources()["kanjivg"],
@@ -85,5 +87,7 @@ def test_version_three_migration_preserves_generation_preferences():
     assert settings.dictionaries == ()
     assert not settings.generation_settings("production").auto_generate
     assert dictionary_sources(settings.dictionaries) == {
-        key: path for key, path in bundled_sources().items() if key not in {"school-grades", "joyo"}
+        key: path
+        for key, path in bundled_sources().items()
+        if key not in {"school-grades", "joyo", "jlpt-openjlpt"}
     }

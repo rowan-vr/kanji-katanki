@@ -143,10 +143,13 @@ Settings does not undo these file operations; the Personal lists page states thi
    and validation warnings before installing. Restart/profile isolation,
    safe replacement and offline packaging are verified. A later plain-text/CSV
    adapter can create the same canonical model without expanding the core format.
-4. **Modern JLPT source investigation.** Compare candidate N5–N1 datasets for
-   provenance, license, update stability, overlaps, and coverage; pin one known
-   revision. Label it unofficial. KANJIDIC2's old four-level JLPT field cannot
-   supply modern N2/N3 membership. Do not synthesize modern levels from it.
+4. **Modern JLPT source validation and coverage — delivered.** The pinned
+   OpenJLPT-derived target dataset provides five nonoverlapping modern level groups
+   with explicit unofficial labels. Source comparison, license/attribution, exact
+   counts, omission policy and reproducible maintenance are in
+   [JLPT coverage](JLPT_COVERAGE.md). The existing native group coverage bars and
+   selected-scope distribution display N5–N1 in separate recognition/writing modes.
+   KANJIDIC2's legacy four-level JLPT field is never used for modern membership.
 5. **Additional sources.** JPT and textbooks use the same import contract when
    reliable membership is available. Do not invent a syllabus or assume an exam
    publishes kanji levels. Textbooks retain edition/chapter identity.

@@ -14,8 +14,8 @@ Jitendex 2026.10.03.0 is also bundled in full: the original 38.8 MB Yomitan
 archive plus a lightweight CC BY-SA 4.0 suggestion index with 17,616 common
 headword/reading/priority rows (about 541 KiB before ZIP compression). The complete
 add-on stays below 50 MB. JMdict
-is included through Jitendex; no separate JMdict archive is needed. An unofficial
-JLPT source has not been selected.
+is included through Jitendex; no separate JMdict archive is needed. Modern unofficial JLPT targets are bundled separately from
+OpenJLPT; see [JLPT coverage and source validation](JLPT_COVERAGE.md).
 
 Jitendex now participates in the shared dictionary update catalog, validation,
 installation and bundled-fallback machinery. Settings → Dictionaries exposes
@@ -39,13 +39,20 @@ All three datasets use the same release-pack system:
 
 ### Target classifications
 
-Built-in kanji target lists share this dataset infrastructure. Two independent
-entries are bundled, both version 2026-10-25, generated from KANJIDIC2 2026-10-23:
+Built-in kanji target lists share this dataset infrastructure. Three independent
+entries are bundled at version 2026-10-25. The first two are generated from
+KANJIDIC2 2026-10-23:
 
 - **School grades (Kyōiku kanji)** (`school-grades`): 1,026 elementary-school
   targets, grouped by grades 1–6.
 - **Jōyō kanji** (`joyo`): all 2,136 Jōyō targets, including the elementary-school
   subset and the remaining 1,110 grade-8 targets. This list has one complete group.
+- **JLPT N5–N1 (unofficial, OpenJLPT)** (`jlpt-openjlpt`): 2,383 targets,
+  in five disjoint modern level groups (84 / 169 / 387 / 398 / 1,345).
+  Source revision, licensing, omitted-character policy and the independent generator
+  are documented in [JLPT coverage](JLPT_COVERAGE.md). This pack includes
+  `OpenJLPT-LICENSE`, `OpenJLPT-NOTICE.md` and `OpenJLPT-SOURCES.json` under
+  `bundled/licenses/`, preserving the full attribution for this adaptation.
 
 Name-only grades 9/10 are excluded. Both lists record KANJIDIC2-derived provenance
 rather than claiming independently verified official coverage. Each has its own
@@ -121,7 +128,7 @@ the shared lock and cache. Additional lists get their own manifests and versions
 
 Personal lists use the same canonical JSON reader and registry without entering
 the public dataset catalog. The personal import/selection UI and persistent
-storage are a later slice. See [the target-list plan](KANJI_STATS.md).
+storage are available under Statistics → Personal lists. See [the target-list plan](KANJI_STATS.md).
 
 Jitendex's original Yomitan archive is retained byte-for-byte, including all
 436,555 term rows. The adapter compiles the 17,616 eligible common word forms on

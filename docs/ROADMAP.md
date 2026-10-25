@@ -427,7 +427,8 @@ Creation from lists and historical statistics remain.
   Dictionaries, using the same canonical format and dataset lifecycle. Real
   Anki/Qt verification: `scripts/smoke_statistics_settings.py` (2026-10-25) covers
   page separation, source persistence/cancel, update filtering and shared schedule.
-  Modern unofficial JLPT and additional exam/textbook adapters follow separately.
+  Modern unofficial JLPT is delivered below; additional exam/textbook adapters
+  remain future sources.
 - [x] Add personal-list import/export and profile-specific list storage/management.
   **Settings → Statistics → Personal lists** supports canonical JSON import review,
   provenance/group counts, validation warnings, explicit replacement with member
@@ -531,10 +532,20 @@ Creation from lists and historical statistics remain.
   Primitive statistics, retention charts and historical progress remain open.
 - [x] Separate recognition and writing evidence; distinguish missing production
   notes from failed writing cards.
-- [ ] Select and validate an unofficial JLPT source; expose provenance/version and
+- [x] Select and validate an unofficial JLPT source; expose provenance/version and
   define coverage for omitted characters.
+  The OpenJLPT adaptation pins revision `0d1d3410bec90bd4098a7c72de820543cb4f707c`,
+  all five source JSON hashes, explicit CC BY-SA 4.0 license and upstream notices.
+  [Source validation](JLPT_COVERAGE.md) compares candidates, documents 2,383 unique
+  targets and keeps omitted characters outside-list without inventing levels.
 - [x] Implement target registry, school-grade/Jōyō coverage and evidence-mode toggle.
-- [ ] Add modern JLPT N5–N1 coverage graphs after validating a source.
+- [x] Add modern JLPT N5–N1 coverage graphs after validating a source.
+  The bundled `jlpt-openjlpt` canonical list drives the native per-group coverage
+  bars, mature counts and selected-scope state distribution, independently for
+  recognition/writing. Multi-selection gives cumulative ordered unions.
+  `tests/test_jlpt_targets.py` and real-Anki/Qt `scripts/smoke_jlpt_coverage.py`
+  verify counts, provenance, missing dictionary data and unchanged collection
+  rows. The independent data pack is public and checksum-locked for clean builds.
 - [x] Build searchable kanji grid/explorer and per-character detail pane with
   stroke links and offline stroke display/playback.
   Search by kanji, meanings or kana readings; details show both evidence modes,

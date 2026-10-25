@@ -277,6 +277,7 @@ def test_dictionary_update_and_disable_do_not_change_bundled_targets(tmp_path, m
             choices=(
                 DictionaryChoice("school-grades", "disabled"),
                 DictionaryChoice("joyo", "disabled"),
+                DictionaryChoice("jlpt-openjlpt", "disabled"),
             )
         ).lists
         == ()
