@@ -103,6 +103,7 @@ def exercise_dashboard(mw):
         "relearning",
     }
     assert not hasattr(dialog, "web")
+    dialog.select_scope(("joyo", None))
     assert dialog.source.rowCount() == 2136
     dialog.select_scope(("school-grades", "grade-1"))
     assert dialog.source.rowCount() == 80
@@ -158,6 +159,7 @@ def native_checks(mw, app):
         "relearning",
     }
     assert not hasattr(dialog, "web")
+    dialog.select_scope(("joyo", None))
     assert dialog.count_labels["total"].text() == "2,136"
     assert dialog.counts["mature"] == 1
     assert dialog.counts["new"] == 1
@@ -191,7 +193,7 @@ def native_checks(mw, app):
     dialog.mode.setCurrentIndex(dialog.mode.findData("writing"))
     assert dialog.counts["missing"] == 2
     dialog.mode.setCurrentIndex(dialog.mode.findData("recognition"))
-    dialog.select_scope(("", None))
+    dialog.select_scope(("joyo", None))
     school = [section for section in dialog.sections if section.key[0] == "school-grades"]
     assert [section.key[1] for section in school] == [None, *[f"grade-{i}" for i in range(1, 7)]]
     g1 = dialog.section_items[("school-grades", "grade-1")]
