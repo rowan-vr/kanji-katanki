@@ -69,6 +69,8 @@ uv run python scripts/generate_jlpt_targets.py --fetch --version 2026-10-25 --bu
 The generator produces canonical JSON in ignored `dist/targets/` and the ignored
 bundle directory, plus the manifest and a local candidate lock. Normal builds use
 the reviewed pack entry in `datasets/bundled-lock.json`, not live upstream files.
+Custom `--output` paths must name a `.json` file inside the repository's
+`dist/targets/` directory; traversal and symlinks resolving outside it are rejected.
 The source record's checksum in canonical provenance is the SHA-256 of the source
 lock JSON, whose resources independently pin all five original level files.
 
