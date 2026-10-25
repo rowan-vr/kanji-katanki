@@ -125,3 +125,79 @@ def test_dynamic_card_scope_without_target_lists_and_independent_modes():
     assert coverage_sections(TargetRegistry(()), ProgressSnapshot((evidence("亀"),)))[
         1
     ].characters == ("亀",)
+
+
+def test_dashboard_and_details_use_offline_dictionary_capabilities(monkeypatch):
+    from pathlib import Path
+
+    from katanki.anki import statistics
+    from katanki.dictionaries.registry import list_datasets
+    from katanki.stats.targets import TargetRegistry
+
+    fixtures = Path(__file__).parent / "fixtures"
+    paths = {"kanjidic2": fixtures / "kanjidic2.xml", "kanjivg": fixtures / "kanjivg"}
+    manifests = tuple(m for m in list_datasets() if m.id in paths)
+    progress = ProgressSnapshot((evidence("景"), evidence("龍", cid=2)))
+    monkeypatch.setattr(statistics, "load_settings", lambda col: SimpleNamespace(dictionaries=()))
+    monkeypatch.setattr(statistics, "load_target_registry", lambda **kwargs: TargetRegistry(()))
+    monkeypatch.setattr(statistics, "read_progress", lambda col: progress)
+    monkeypatch.setattr(statistics, "list_datasets", lambda: manifests)
+    monkeypatch.setattr(
+        statistics,
+        "dictionary_sources",
+        lambda *args, capability: {
+            m.id: paths[m.id] for m in manifests if capability in m.capabilities
+        },
+    )
+    collection = SimpleNamespace(get_review_logs=lambda cid: [])
+    registry, actual, metadata, warnings = statistics.dashboard_snapshot(collection)
+    assert actual is progress and not warnings
+    assert "景" in metadata and "龍" not in metadata
+    details = statistics.character_details(collection, progress, "景")
+    assert details["dictionary"]["strokes"] == 12
+    assert "<" in details["svg"] and not details["warnings"]
+    assert details["evidence"]["recognition"]["answered"] == 0
+    missing = statistics.character_details(collection, progress, "龍")
+    assert "dictionary" not in missing and "svg" not in missing
+
+    def unavailable(*args, **kwargs):
+        raise OSError("offline source missing")
+
+    monkeypatch.setattr(statistics, "dictionary_sources", unavailable)
+    assert "offline source missing" in statistics.dashboard_snapshot(collection)[3][0]
+    warnings = statistics.character_details(collection, progress, "景")["warnings"]
+    assert len(warnings) == 2
+    assert warnings[0].startswith("kanji:") and warnings[1].startswith("strokes:")
+
+
+def test_invalid_notes_models_duplicate_cards_and_unknown_types_are_reported():
+    class Note(dict):
+        def cards(self):
+            return self["cards"]
+
+    card = SimpleNamespace(id=1, type=2, ivl=30, reps=5, lapses=1, queue=0)
+    unknown = SimpleNamespace(id=2, type=99, ivl=0)
+    notes = {
+        1: Note(Character="abc", cards=[]),
+        2: Note(Character="日", cards=[card, card, unknown]),
+    }
+    models = [
+        {"id": 1, "name": "Broken", MODEL_MARKER: "kanji-recognition", "flds": []},
+        {
+            "id": 2,
+            "name": "Valid",
+            MODEL_MARKER: "kanji-recognition",
+            "flds": [{"name": "Character"}],
+        },
+    ]
+    collection = SimpleNamespace(
+        models=SimpleNamespace(all=lambda: models),
+        find_notes=lambda query: [1, 2],
+        get_note=notes.__getitem__,
+    )
+    result = read_progress(collection)
+    assert len(result.cards) == 1
+    assert len(result.warnings) == 3
+    assert "missing Character" in result.warnings[0]
+    assert "invalid Character" in result.warnings[1]
+    assert "unsupported card type" in result.warnings[2]

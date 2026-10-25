@@ -18,7 +18,7 @@ def test_generator_creates_reproducible_independent_seed_manifest_and_lock(
     (manifests / "kanjidic2.json").write_bytes(original.read_bytes())
     (root / "datasets").mkdir()
     lock = root / "datasets/bundled-lock.json"
-    lock.write_text('{"schema_version": 1, "datasets": {}}')
+    lock.write_text('{"schema_version": 1, "datasets": {}}', encoding="utf-8")
     monkeypatch.setattr(generate_target_lists, "ROOT", root)
     source = Path(__file__).parent / "fixtures/kanjidic2.xml"
     before = source.read_bytes()
@@ -34,12 +34,12 @@ def test_generator_creates_reproducible_independent_seed_manifest_and_lock(
     seed = root / f"dist/targets/{dataset_id}.json"
     bundle = root / f"src/katanki/dictionaries/bundled/{dataset_id}.json"
     assert seed.read_bytes() == bundle.read_bytes() == payload
-    metadata = json.loads((manifests / f"{dataset_id}.json").read_text())
+    metadata = json.loads((manifests / f"{dataset_id}.json").read_text(encoding="utf-8"))
     assert metadata["format"] == "target_lists_json"
     assert metadata["capabilities"] == ["target_lists"]
     assert metadata["bundled"]["entries"] == 2
     assert metadata["bundled"]["sha256"] == sha256(payload).hexdigest()
-    assert json.loads(lock.read_text())["local_datasets"][dataset_id] == {
+    assert json.loads(lock.read_text(encoding="utf-8"))["local_datasets"][dataset_id] == {
         "path": f"dist/targets/{dataset_id}.json",
         "sha256": sha256(payload).hexdigest(),
     }
