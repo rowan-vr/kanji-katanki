@@ -23,6 +23,12 @@ ATTRIBUTION = (
 
 
 def generate(source: Path, output: Path, *, version: str, bundle: bool = False) -> TargetList:
+    output = output.resolve()
+    output_root = ROOT.resolve() / "dist" / "targets"
+    if not output.is_relative_to(output_root) or output.suffix != ".json":
+        raise ValueError(
+            "Output must be a JSON file within the repository's dist/targets directory."
+        )
     revision(version)
     lock_path = ROOT / "datasets/sources/jlpt-openjlpt.json"
     lock_bytes = lock_path.read_bytes()
@@ -129,7 +135,12 @@ def generate(source: Path, output: Path, *, version: str, bundle: bool = False) 
 if __name__ == "__main__":
     parser = argparse.ArgumentParser(description=__doc__)
     parser.add_argument("--source", type=Path, default=ROOT / "data/upstream/openjlpt")
-    parser.add_argument("--output", type=Path, default=ROOT / f"dist/targets/{DATASET_ID}.json")
+    parser.add_argument(
+        "--output",
+        type=Path,
+        default=ROOT / f"dist/targets/{DATASET_ID}.json",
+        help="JSON output file within this repository's dist/targets directory",
+    )
     parser.add_argument("--version", required=True)
     parser.add_argument("--bundle", action="store_true")
     parser.add_argument(

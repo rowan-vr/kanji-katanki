@@ -35,7 +35,7 @@ def source(tmp_path, monkeypatch):
         encoding="utf-8",
     )
     monkeypatch.setattr(generator, "ROOT", root)
-    return inputs, root / "targets.json", path
+    return inputs, root / "dist/targets/targets.json", path
 
 
 def test_generator_preserves_modern_levels_order_provenance_and_portability(source):
@@ -50,6 +50,35 @@ def test_generator_preserves_modern_levels_order_provenance_and_portability(sour
     before = output.read_bytes()
     generator.generate(inputs, output, version="2026-10-25")
     assert output.read_bytes() == before
+
+
+@pytest.mark.parametrize(
+    "relative_path",
+    ["../../outside.json", "../targets-other/outside.json", "output.txt"],
+)
+def test_generator_rejects_unsafe_output_without_writing(source, relative_path):
+    inputs, output, _ = source
+    destination = output.parent / relative_path
+    destination.parent.mkdir(parents=True, exist_ok=True)
+    destination.write_bytes(b"preserve existing content")
+    with pytest.raises(ValueError, match="Output must be a JSON file"):
+        generator.generate(inputs, destination, version="2026-10-25")
+    assert destination.read_bytes() == b"preserve existing content"
+    assert not output.exists()
+
+
+def test_generator_rejects_output_symlink_escape(source, tmp_path):
+    inputs, output, _ = source
+    outside = tmp_path / "outside.json"
+    outside.write_bytes(b"preserve existing content")
+    output.parent.mkdir(parents=True)
+    try:
+        output.symlink_to(outside)
+    except OSError:
+        pytest.skip("Symlinks are unavailable on this platform")
+    with pytest.raises(ValueError, match="Output must be a JSON file"):
+        generator.generate(inputs, output, version="2026-10-25")
+    assert outside.read_bytes() == b"preserve existing content"
 
 
 @pytest.mark.parametrize("change", ["checksum", "wrong-level", "duplicate", "invalid-kanji"])
