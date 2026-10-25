@@ -5,7 +5,7 @@ from dataclasses import asdict, dataclass
 from ..common.models import ScanSelection
 
 CONFIG_KEY = "katanki_settings"
-VERSION = 7
+VERSION = 8
 
 
 @dataclass(frozen=True)
@@ -141,8 +141,17 @@ class Settings:
     dictionaries: tuple[DictionaryChoice, ...] = ()
     cards: tuple[CardSettings, ...] = ()
     refresh: RefreshSettings = RefreshSettings()
+    statistics_selection: tuple[tuple[str, str | None], ...] = ()
 
     def __post_init__(self):
+        if not isinstance(self.statistics_selection, tuple) or any(
+            not isinstance(item, tuple)
+            or len(item) != 2
+            or not isinstance(item[0], str)
+            or (item[1] is not None and not isinstance(item[1], str))
+            for item in self.statistics_selection
+        ):
+            raise ValueError("Invalid statistics list/group selection.")
         if not isinstance(self.refresh, RefreshSettings):
             raise ValueError("Invalid refresh settings.")
         if not self.generation:
@@ -192,6 +201,7 @@ class Settings:
         return {
             "version": VERSION,
             "refresh": asdict(self.refresh),
+            "statistics_selection": [list(item) for item in self.statistics_selection],
             "dictionaries": [asdict(choice) for choice in self.dictionaries],
             "cards": {
                 category: asdict(self.card_settings(category)) for category in GENERATION_CATEGORIES
@@ -217,7 +227,7 @@ def from_dict(data) -> Settings:
         return Settings()
     if not isinstance(data, dict) or type(data.get("version")) is not int:
         raise ValueError("Invalid Katanki settings format. Saved settings were preserved.")
-    if data["version"] not in (1, 2, 3, 4, 5, 6, VERSION):
+    if data["version"] not in (1, 2, 3, 4, 5, 6, 7, VERSION):
         raise ValueError("Unsupported Katanki settings version. Saved settings were preserved.")
     if data["version"] == 1:
         legacy = data.get("source")
@@ -317,6 +327,9 @@ def from_dict(data) -> Settings:
     refresh = data.get("refresh", {}) if data["version"] >= 6 else {}
     if not isinstance(refresh, dict):
         raise ValueError("Invalid refresh settings.")
+    selection = data.get("statistics_selection", []) if data["version"] >= 8 else []
+    if not isinstance(selection, list) or any(not isinstance(item, list) for item in selection):
+        raise ValueError("Invalid statistics list/group selection.")
     return Settings(
         tuple(rules),
         destination,
@@ -332,6 +345,7 @@ def from_dict(data) -> Settings:
             refresh.get("update_examples", True),
             refresh.get("update_dictionary_data", False),
         ),
+        tuple(tuple(item) for item in selection),
     )
 
 

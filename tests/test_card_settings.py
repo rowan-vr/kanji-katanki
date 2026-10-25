@@ -39,7 +39,7 @@ def test_older_settings_migrate_with_card_defaults_without_modifying_input(versi
     assert saved == original
     assert restored.destination_deck_id == 40
     assert restored.include_primitives is True
-    assert restored.to_dict()["version"] == 7
+    assert restored.to_dict()["version"] == 8
     for category in GENERATION_CATEGORIES:
         assert restored.card_settings(category) == CardSettings(
             front_furigana=category == "production"

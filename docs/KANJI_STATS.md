@@ -93,23 +93,28 @@ Implemented boundaries:
   no separate list download/update mechanism. Independent list packs retain their
   pinned contents when dictionary sources are regenerated.
 
-Still to implement:
+Personal import and selection are delivered:
 
-- `src/katanki/anki/target_lists.py`: profile-aware personal import storage.
-- `src/katanki/ui/target_lists.py`: list selection, provenance, personal import preview,
-  counts, validation results, and explicit replacement of an installed list.
-  Source management already lives in Statistics → Lists; arbitrary personal-list
-  storage and group selection still need their own controls within that page.
-- Personal lists will live under profile-keyed
-  add-on `user_files`, outside directories replaced by add-on updates. Persist
-  selected list/group IDs through the existing versioned settings machinery.
+- `src/katanki/anki/target_lists.py`: profile-aware personal import storage,
+  canonical JSON export, explicit replacement and removal.
+- `src/katanki/ui/target_lists.py`: **Settings → Statistics → Personal lists**,
+  with import review, group/unique counts, provenance, validation warnings and
+  explicit replacement showing added/removed members. Source dataset management
+  remains in **Statistics → Lists**; group selection lives in the dashboard.
+- Personal lists live under profile-keyed add-on `user_files`, outside files
+  replaced by add-on updates. Profile identity uses the collection directory;
+  moving a profile to another directory requires exporting/importing its lists.
+  Settings version 8 persists selected list/group IDs. Personal lists join the
+  same registry as bundled lists and remain usable without dictionary coverage.
 
 The registry rejects ID collisions rather than silently replacing bundled data.
-Personal imports will validate fully before atomic installation. Reimporting identical content
+Personal imports validate fully before atomic installation. Reimporting identical content
 is a no-op; changed content with the same ID gets a preview of added/removed
 members and requires an explicit replacement action. Lists do not create notes,
 change scheduling, or delete notes when targets are removed. Profile-specific
-files do not automatically sync across devices; document that limitation.
+files do not automatically sync across devices; export/import JSON to transfer them.
+Import, replacement and removal apply immediately after confirmation. Cancel in
+Settings does not undo these file operations; the Personal lists page states this.
 
 ## First sources and delivery slices
 
@@ -133,10 +138,10 @@ files do not automatically sync across devices; document that limitation.
    Runtime loading reads only the canonical list; dictionary updates, disabling
    dictionaries, or changing dictionary coverage do not change target membership.
    Regeneration is an explicit maintainer action, independent of dictionary refresh.
-3. **Personal import and selection.** Add JSON file import/export and the minimal
-   target-list management UI. Preview groups, total unique targets, source/version,
-   and validation warnings before installing. Verify restart/profile isolation,
-   safe replacement, and offline packaged availability. A later plain-text/CSV
+3. **Personal import and selection — delivered.** JSON file import/export and
+   target-list management preview groups, total unique targets, source/version,
+   and validation warnings before installing. Restart/profile isolation,
+   safe replacement and offline packaging are verified. A later plain-text/CSV
    adapter can create the same canonical model without expanding the core format.
 4. **Modern JLPT source investigation.** Compare candidate N5–N1 datasets for
    provenance, license, update stability, overlaps, and coverage; pin one known
@@ -150,8 +155,24 @@ Acceptance for the current scope: at least one real bundled classification plus
 one imported personal list work through the same registry; group selection gives
 stable, deduplicated targets offline; provenance is visible; import/restart and
 packaging checks pass; collection note/card counts remain unchanged. The current
-change delivers the backend contract, separate built-in dataset and shared pack integration;
-personal import persistence and list/group selection UI remain open.
+change delivers the backend contract, separate built-in datasets, shared pack
+integration, personal import persistence and list/group selection UI.
+
+Personal-list verification (2026-10-25): `tests/test_personal_target_lists.py`
+checks canonical export, profile isolation, atomic installation failures,
+identical-content no-op, stale previews and explicit replacement. Dashboard tests
+cover personal-list registration and persisted group selection.
+`scripts/smoke_personal_target_lists.py` passes against real Anki/Qt with a
+disposable collection: import and replacement cancellation/confirmation, member
+diffs, plain-text provenance, export, removal cancellation/confirmation, reopened
+storage, profile isolation, rejected imports and unchanged notes/cards/revlog.
+`uv run python scripts/build_addon.py --offline` passes; private `user_files`
+contents are excluded from the add-on package. On Linux desktops using KDE/fcitx,
+the standalone headless smoke command is:
+
+```bash
+QT_QPA_PLATFORM=offscreen QT_QPA_PLATFORMTHEME= QT_IM_MODULE=none /usr/bin/python scripts/smoke_personal_target_lists.py
+```
 
 ## Where statistics should appear
 

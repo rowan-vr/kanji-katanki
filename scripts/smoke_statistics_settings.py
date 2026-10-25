@@ -45,7 +45,10 @@ def main():
                 dialog = SettingsDialog(mw)
                 assert dialog.tabs.tabText(4) == "Statistics"
                 stats = dialog.statistics_panel
-                assert stats.tabs.count() == 1 and stats.tabs.tabText(0) == "Lists"
+                assert [stats.tabs.tabText(i) for i in range(stats.tabs.count())] == [
+                    "Lists",
+                    "Personal lists",
+                ]
                 dictionaries = dialog.dictionary_panel
                 assert set(dictionaries.panels) == {"kanjidic2", "kanjivg", "jitendex"}
                 assert set(stats.lists.panels) == {"school-grades", "joyo"}

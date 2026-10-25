@@ -131,6 +131,16 @@ dictionary/stroke data. **Refresh** reloads the snapshot; collection changes mar
 it as stale. **Manage lists** opens settings. The dashboard never changes cards or
 scheduling. Historical progress charts and primitive statistics remain planned.
 
+Manage your own lists under **Settings → Statistics → Personal lists**. Import a
+versioned JSON list to preview its groups, unique kanji, provenance, and validation
+warnings before saving. Replacing a list shows added and removed kanji and needs
+explicit confirmation. Export creates a JSON backup; Remove deletes only the list.
+These actions apply immediately, including when Settings is later cancelled.
+Personal lists stay local to the current profile and do not sync; export/import
+to transfer them. Imported lists appear in the dashboard, and selected list/group
+IDs are remembered. See the [target-list format](docs/KANJI_STATS.md#target-list-contract)
+for an example JSON file. Importing a list does not create cards.
+
 Use **Katanki → Settings… → Discovery → Test discovery** to inspect vocabulary
 and kanji candidates without saving settings or generating cards.
 See [dataset setup and fixtures](docs/DATASETS.md) for dictionary preparation.

@@ -3,6 +3,7 @@
 from aqt.qt import QLabel, QTabWidget, QVBoxLayout, QWidget
 
 from .datasets import DatasetSettingsPanel
+from .target_lists import PersonalTargetListsPanel
 
 
 class StatisticsSettingsPanel(QWidget):
@@ -19,6 +20,8 @@ class StatisticsSettingsPanel(QWidget):
         self.tabs.setObjectName("katanki_statistics_settings_tabs")
         self.lists = DatasetSettingsPanel(owner, choices, target_lists=True)
         self.tabs.addTab(self.lists, "Lists")
+        self.personal_lists = PersonalTargetListsPanel(owner)
+        self.tabs.addTab(self.personal_lists, "Personal lists")
         layout.addWidget(self.tabs)
 
     def choices(self):
