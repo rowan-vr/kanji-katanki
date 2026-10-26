@@ -88,7 +88,9 @@ def register() -> None:
     configure_storage(Path(__file__).resolve().parents[1] / "user_files" / "dictionaries")
     gui_hooks.profile_did_open.append(_check_dictionary_updates)
     from .automatic_refresh import register as register_automatic_refresh
+    from .onboarding import register as register_onboarding
 
+    register_onboarding(mw, gui_hooks)
     register_automatic_refresh(mw, gui_hooks)
     menu = QMenu("Katanki", mw.menuBar())
     menu.setObjectName(MENU_NAME)
