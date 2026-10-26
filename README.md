@@ -137,6 +137,36 @@ charts for recognition or writing, with exact daily values and selectable period
 History uses current Katanki kanji cards across the collection; cumulative reviewed
 does not imply mastery. See the [history policy](docs/KANJI_STATS.md#list-based-creation-and-history).
 
+To convert cards from Kanji GOD or another add-on, open **Katanki → Migrate Existing
+Cards…**. Choose a source deck under Recognition and/or Production, then its
+note type and character field. Leave a category on **Skip this category**
+to exclude it. Choices become available in order; Preview becomes available once
+all selected sources are complete. Common character-field names are selected automatically.
+All cards matching the selected deck and note type are included.
+
+The character field must contain one kanji or radical. Parts are identified within
+the same recognition/writing sources, without a separate Parts mapping. Recognized
+kanji take precedence over component use; Unicode radicals and supported component
+characters become parts. Missing dictionary data alone does not imply a part.
+Part writing needs a source Name, Meaning, Meanings, Keyword or Mnemonic field
+for its clue. Preview shows kanji/part destinations and learning direction in a
+table, with skipped-card details separately. Duplicate identities,
+ambiguous fields, unavailable content and cards in filtered decks are skipped.
+Return filtered cards to their home decks before trying again.
+
+**Convert … cards** creates a collection backup and moves the original
+cards into Katanki note types. Card IDs, review history, scheduling (including
+suspension/burial and FSRS data), flags, tags and deck membership are preserved.
+Note IDs can change. Original source fields are not copied into an archive field;
+use the automatic pre-conversion backup to recover them if needed. Existing
+`MigrationSource` fields are removed from target note types during conversion.
+Unmapped sibling cards keep their source note; empty source notes are removed.
+Progress shows the current stage and card counts during scanning, content preparation,
+conversion and verification. Conversion is
+one Anki Undo operation, and failures roll back the operation. There are no separate
+old cards to delete or suspend after conversion. Unencoded Parts keys and cloze
+note types are not supported by this migration screen.
+
 Manage your own lists under **Settings → Statistics → Personal lists**. Import a
 versioned JSON list to preview its groups, unique kanji, provenance, and validation
 warnings before saving. Replacing a list shows added and removed kanji and needs

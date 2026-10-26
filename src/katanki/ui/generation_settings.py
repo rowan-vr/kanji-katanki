@@ -29,7 +29,7 @@ class GenerationSettingsPanel(QWidget):
         form = QFormLayout()
         form.setVerticalSpacing(12)
         self.deck = QComboBox()
-        self.deck.addItem("Choose a deck when generating", None)
+        self.deck.addItem("No deck — automatic generation disabled", None)
         for deck in mw.col.decks.all_names_and_ids():
             self.deck.addItem(deck.name, deck.id)
         if settings.target_deck_id is not None:
@@ -38,6 +38,8 @@ class GenerationSettingsPanel(QWidget):
                 self.deck.addItem("Missing deck — choose a replacement", settings.target_deck_id)
                 index = self.deck.count() - 1
             self.deck.setCurrentIndex(index)
+        self.deck.currentIndexChanged.connect(self._update_generation)
+        self._update_generation()
         form.addRow("Target deck", self.deck)
         self.tags = QLineEdit(" ".join(settings.default_tags))
         self.tags.setPlaceholderText("katanki Japanese::Kanji")
@@ -59,6 +61,12 @@ class GenerationSettingsPanel(QWidget):
         hint.setWordWrap(True)
         layout.addWidget(hint)
         layout.addStretch()
+
+    def _update_generation(self):
+        has_deck = self.deck.currentData() is not None
+        if not has_deck:
+            self.automatic.setChecked(False)
+        self.automatic.setEnabled(has_deck)
 
     def settings(self):
         return GenerationSettings(

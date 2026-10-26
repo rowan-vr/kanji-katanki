@@ -52,6 +52,19 @@ def settings() -> None:
         showWarning("Katanki could not open settings. See Anki's console for details.")
 
 
+def migrate_cards() -> None:
+    try:
+        if mw is None or mw.col is None:
+            showWarning("Open an Anki profile before migrating cards.")
+            return
+        from ..ui.migration import open_migration
+
+        open_migration(mw)
+    except Exception:
+        logger.exception("Katanki card migration failed")
+        showWarning("Katanki could not open card migration. See Anki’s console for details.")
+
+
 def statistics() -> None:
     try:
         if mw is None or mw.col is None:
@@ -85,6 +98,9 @@ def register() -> None:
     manual_action = QAction("New Kanji Cards", menu)
     manual_action.triggered.connect(new_kanji_cards)
     menu.addAction(manual_action)
+    migration_action = QAction("Migrate Existing Cards…", menu)
+    migration_action.triggered.connect(migrate_cards)
+    menu.addAction(migration_action)
     statistics_action = QAction("Statistics", menu)
     statistics_action.triggered.connect(statistics)
     menu.addAction(statistics_action)
