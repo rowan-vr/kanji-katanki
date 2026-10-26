@@ -144,6 +144,14 @@ class SettingsDialog(QDialog):
         refresh_layout.addWidget(explanation)
         refresh_layout.addStretch()
         self.tabs.addTab(refresh_panel, "Refresh")
+        setup = QPushButton("Restart setup…")
+        setup.setToolTip("Restart onboarding and discard unsaved settings changes")
+        setup.clicked.connect(self._restart_setup)
+        setup_row = QHBoxLayout()
+        setup_row.addWidget(setup)
+        setup_row.addStretch()
+        refresh_layout.addLayout(setup_row)
+        self.setup_button = setup
         self.buttons = QDialogButtonBox(
             QDialogButtonBox.StandardButton.Save | QDialogButtonBox.StandardButton.Cancel
         )
@@ -151,8 +159,19 @@ class SettingsDialog(QDialog):
         self.buttons.rejected.connect(self.reject)
         layout.addWidget(self.buttons)
 
+    def _restart_setup(self):
+        if self.busy:
+            return
+        from .onboarding import open_onboarding
+
+        self.reject()
+        QTimer.singleShot(
+            0, lambda: open_onboarding(self.mw) if self.mw.col is self.collection else None
+        )
+
     def _set_testing(self, busy):
         self.busy = busy
+        self.setup_button.setEnabled(not busy)
         self.sources.setEnabled(not busy)
         self.test_button.setEnabled(not busy)
         self.buttons.setEnabled(not busy)

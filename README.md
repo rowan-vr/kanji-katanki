@@ -2,8 +2,16 @@
 
 Offline-first kanji learning for desktop Anki. **Phase 3: saved settings and refresh.**
 
-Configure vocabulary sources, generation categories, decks/tags, and dictionaries
-under **Katanki → Settings…**. Then choose **Katanki → Refresh and generate Kanji Cards**
+On first opening a profile, Katanki guides you through vocabulary sources, optional
+automatic generation and destination decks, and basic card appearance. Finish setup
+to discover your first cards, migrate existing kanji cards through the migration
+review, or defer vocabulary setup until you have a deck.
+Restart this flow with **Katanki → Settings… → Refresh → Restart setup…**; unsaved settings
+are discarded. Cancelling or closing setup leaves preferences unchanged, shows where to restart
+it, and marks it as seen so it will not open automatically again. This is saved per collection.
+
+Advanced options remain under **Katanki → Settings…**.
+Choose **Katanki → Refresh and generate Kanji Cards**
 to scan saved sources. Refresh overwrites managed examples when enabled, preserving
 review progress.
 Only new eligible cards open a single creation review, with category tabs, green
