@@ -5,7 +5,7 @@
       "version": "2026.10.03.0",
       "revision": 202610030000,
       "format_version": 1,
-      "url": "https://github.com/rowan-vr/kanji-katanki/releases/download/datasets-2026-10-23-jitendex/jitendex.zip",
+      "url": "https://github.com/rowan-vr/kanji-katanki/releases/download/datasets-2025-10-25/jitendex.zip",
       "sha256": "ed0c9952761fdbbaf01571eba56ad9269283d59d0d4c19ae6dbd714df3efcaab",
       "bytes": 38884072
     },
@@ -13,7 +13,7 @@
       "version": "2026-10-23",
       "revision": 20261023,
       "format_version": 1,
-      "url": "https://github.com/rowan-vr/kanji-katanki/releases/download/datasets-2026-10-23-jitendex/kanjidic2.zip",
+      "url": "https://github.com/rowan-vr/kanji-katanki/releases/download/datasets-2025-10-25/kanjidic2.zip",
       "sha256": "3c7e7d489154d3a72bc5b7dac9b3f659c791066424faf77cbfa72569ad706d4a",
       "bytes": 439456
     },
@@ -21,7 +21,7 @@
       "version": "r20260714",
       "revision": 20260714,
       "format_version": 1,
-      "url": "https://github.com/rowan-vr/kanji-katanki/releases/download/datasets-2026-10-23-jitendex/kanjivg.zip",
+      "url": "https://github.com/rowan-vr/kanji-katanki/releases/download/datasets-2025-10-25/kanjivg.zip",
       "sha256": "85635ccdc45bdaf8ac6d86e239537a7156bdef4c0cee773bd1c01f80a1efe527",
       "bytes": 4770196
     },
@@ -29,7 +29,7 @@
       "version": "2026-10-25",
       "revision": 20261025,
       "format_version": 1,
-      "url": "https://github.com/rowan-vr/kanji-katanki/releases/download/datasets-target-lists-2026-10-25/school-grades.zip",
+      "url": "https://github.com/rowan-vr/kanji-katanki/releases/download/datasets-2025-10-25/school-grades.zip",
       "sha256": "55abc3646e3c605b3e7cfdcc3068c231a601dee82c5f3732c8093d0e30531333",
       "bytes": 55871
     },
@@ -37,7 +37,7 @@
       "version": "2026-10-25",
       "revision": 20261025,
       "format_version": 1,
-      "url": "https://github.com/rowan-vr/kanji-katanki/releases/download/datasets-target-lists-2026-10-25/joyo.zip",
+      "url": "https://github.com/rowan-vr/kanji-katanki/releases/download/datasets-2025-10-25/joyo.zip",
       "sha256": "2f97215f5a766aa071a4f39ea2db53314e9e02687caebc394f759f44adcdd88f",
       "bytes": 58486
     },
@@ -45,7 +45,7 @@
       "version": "2026-10-25",
       "revision": 20261025,
       "format_version": 1,
-      "url": "https://github.com/rowan-vr/kanji-katanki/releases/download/datasets-jlpt-2026-10-25/jlpt-openjlpt.zip",
+      "url": "https://github.com/rowan-vr/kanji-katanki/releases/download/datasets-2025-10-25/jlpt-openjlpt.zip",
       "sha256": "8d3d33d5d70c3ea572fdc7e8e6164cd49f83c314131181d5dc4c93ea40448f0d",
       "bytes": 69224
     }
