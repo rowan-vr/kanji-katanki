@@ -217,3 +217,168 @@ def test_kanji_and_parts_detected_from_character_in_both_directions(
 def test_old_parts_category_is_not_a_source_mapping(collection, source):
     with pytest.raises(ValueError, match="category"):
         migration._scan(collection, (replace(source, category="parts"),))
+
+
+@pytest.fixture
+def conversion(monkeypatch):
+    """A collection double retaining card ownership, scheduling and history."""
+    import sys
+
+    from katanki.generation.cards import CardContent, note_type_spec
+
+    monkeypatch.setitem(sys.modules, "anki.collection", SimpleNamespace(OpChanges=lambda: "noop"))
+    identity = Identity("kanji-recognition", "景")
+    model = {
+        "id": 20,
+        migration.MODEL_MARKER: identity.note_type,
+        "tmpls": [{"ord": 0}],
+        "flds": [{"name": name} for name in note_type_spec(identity.note_type).fields],
+    }
+    card = SimpleNamespace(id=100, nid=200, ord=1, did=7)
+    backend = Mock()
+    backend.SerializeToString.return_value = b"original-card"
+    card._to_backend_card = Mock(return_value=backend)
+    old = Mock(id=200, guid="source", mid=10, tags=["user"])
+    old.items.return_value = [("Kanji", "景")]
+    old.cards.return_value = []
+
+    class NewNote(dict):
+        id = 300
+        tags = []
+
+        def cards(self):
+            return [SimpleNamespace(id=101)]
+
+    new = NewNote()
+    col = Mock()
+    col.models.all.return_value = [model]
+    col.get_card.return_value = card
+    col.get_note.return_value = old
+    col.new_note.return_value = new
+    col.db.all.return_value = [(1, 100, 2)]
+    col.add_custom_undo_entry.return_value = 99
+    settings = Settings()
+    monkeypatch.setattr(migration, "load_settings", lambda _: settings)
+    monkeypatch.setattr(migration, "owned_identities", lambda *_, **__: {})
+    monkeypatch.setattr(migration, "_validate_prompts", Mock())
+    monkeypatch.setattr(migration, "_scan", lambda *_, **__: ([(card, old, identity)], []))
+    item = migration.MigrationItem(
+        card.id,
+        old.id,
+        identity,
+        CardContent(identity, "景"),
+        b"original-card",
+        migration._note_snapshot(old),
+        ((1, 100, 2),),
+    )
+    plan = migration.MigrationPlan((), (item,), (), settings, migration._models_snapshot(col))
+    return SimpleNamespace(col=col, card=card, old=old, new=new, model=model, plan=plan)
+
+
+def test_conversion_transfers_original_card_and_preserves_history(conversion):
+    fixture = conversion
+    progress = Mock()
+    migration.apply_migration(fixture.col, fixture.plan, progress=progress)
+    assert (fixture.card.id, fixture.card.nid, fixture.card.ord, fixture.card.did) == (
+        100,
+        300,
+        0,
+        7,
+    )
+    assert fixture.new.tags == ["user"]
+    assert fixture.new["Character"] == "景"
+    fixture.col.update_card.assert_called_once_with(fixture.card)
+    fixture.col.remove_cards_and_orphaned_notes.assert_called_once_with([101])
+    fixture.col.remove_notes.assert_called_once_with([200])
+    fixture.col.db.execute.assert_not_called()
+    fixture.col.undo.assert_not_called()
+    assert "Verifying" in progress.call_args_list[-2].args[0]
+
+
+def test_conversion_keeps_source_note_with_unmapped_sibling(conversion):
+    conversion.old.cards.return_value = [SimpleNamespace(id=102)]
+    migration.apply_migration(conversion.col, conversion.plan)
+    conversion.col.remove_notes.assert_not_called()
+
+
+@pytest.mark.parametrize("change", ["settings", "models", "card", "note", "history", "ownership"])
+def test_conversion_rejects_stale_approval_before_writes(conversion, monkeypatch, change):
+    fixture = conversion
+    if change == "settings":
+        monkeypatch.setattr(migration, "load_settings", lambda _: Settings(destination_deck_id=3))
+    elif change == "models":
+        fixture.model["name"] = "Changed"
+    elif change == "card":
+        fixture.card._to_backend_card.return_value.SerializeToString.return_value = b"changed"
+    elif change == "note":
+        fixture.old.tags.append("edited")
+    elif change == "history":
+        fixture.col.db.all.return_value = []
+    else:
+        monkeypatch.setattr(
+            migration, "owned_identities", lambda *_, **__: {fixture.plan.items[0].identity: (99,)}
+        )
+    with pytest.raises(ValueError, match="changed"):
+        migration.apply_migration(fixture.col, fixture.plan)
+    fixture.col.add_custom_undo_entry.assert_not_called()
+    fixture.col.update_card.assert_not_called()
+
+
+@pytest.mark.parametrize("problem", ["duplicates", "templates", "fields"])
+def test_conversion_rejects_invalid_target_models(conversion, problem):
+    fixture = conversion
+    if problem == "duplicates":
+        fixture.col.models.all.return_value.append(dict(fixture.model))
+    elif problem == "templates":
+        fixture.model["tmpls"] = [{"ord": 1}]
+    else:
+        fixture.model["flds"] = []
+    plan = replace(fixture.plan, models_snapshot=migration._models_snapshot(fixture.col))
+    with pytest.raises(ValueError):
+        migration.apply_migration(fixture.col, plan)
+    fixture.col.add_custom_undo_entry.assert_not_called()
+
+
+def test_conversion_removes_legacy_archive_field_under_undo(conversion):
+    fixture = conversion
+    legacy = {"name": "MigrationSource"}
+    fixture.model["flds"].append(legacy)
+    plan = replace(fixture.plan, models_snapshot=migration._models_snapshot(fixture.col))
+    migration.apply_migration(fixture.col, plan)
+    fixture.col.models.remove_field.assert_called_once_with(fixture.model, legacy)
+    fixture.col.models.update_dict.assert_called_once_with(fixture.model)
+
+
+def test_conversion_creates_target_model_when_missing(conversion):
+    fixture = conversion
+    fixture.col.models.all.return_value = []
+    fixture.col.models.new.return_value = {}
+    fixture.col.models.new_template.return_value = {}
+    fixture.col.models.add_dict.return_value = SimpleNamespace(id=20)
+    fixture.col.models.get.return_value = fixture.model
+    plan = replace(fixture.plan, models_snapshot=migration._models_snapshot(fixture.col))
+    migration.apply_migration(fixture.col, plan)
+    fixture.col.models.add_dict.assert_called_once()
+    assert fixture.col.models.add_field.call_count == len(fixture.model["flds"])
+    assert fixture.card.nid == fixture.new.id
+
+
+@pytest.mark.parametrize("failure", ["transfer", "schedule", "history"])
+def test_conversion_rolls_back_after_partial_writes(conversion, monkeypatch, failure):
+    fixture = conversion
+    if failure == "transfer":
+        fixture.col.update_card.side_effect = RuntimeError("transfer failed")
+    elif failure == "schedule":
+        monkeypatch.setattr(migration, "_schedule", Mock(side_effect=[b"before", b"after"]))
+    else:
+        fixture.col.db.all.side_effect = [[(1, 100, 2)], []]
+    with pytest.raises(RuntimeError):
+        migration.apply_migration(fixture.col, fixture.plan)
+    fixture.col.undo.assert_called_once()
+    fixture.col.merge_undo_entries.assert_called_with(99)
+
+
+def test_empty_conversion_is_noop(conversion):
+    result = migration.apply_migration(conversion.col, replace(conversion.plan, items=()))
+    assert result == "noop"
+    conversion.col.add_custom_undo_entry.assert_not_called()
