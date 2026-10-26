@@ -31,6 +31,8 @@ class ProgressSnapshot:
     notes: tuple[tuple[str, str, int], ...] = ()
     warnings: tuple[str, ...] = ()
 
+    discovered_decks: tuple[tuple[int, str, tuple[str, ...]], ...] = ()
+
     def state(self, character: str, mode: str) -> str:
         return min(
             (

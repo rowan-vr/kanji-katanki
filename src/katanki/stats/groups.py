@@ -44,6 +44,26 @@ def coverage_sections(
                 tuple(dict.fromkeys(card.character for card in progress.cards)),
             )
         )
+    if progress is not None:
+        parent = ("@discovered", None)
+        sections.append(
+            CoverageSection(
+                parent,
+                "All discovered kanji",
+                tuple(
+                    dict.fromkeys(
+                        char
+                        for _, _, characters in progress.discovered_decks
+                        for char in characters
+                    )
+                ),
+            )
+        )
+        sections.extend(
+            CoverageSection(("@discovered", str(deck_id)), name, characters, parent)
+            for deck_id, name, characters in progress.discovered_decks
+            if characters
+        )
     for target in registry.lists:
         parent = (target.id, None)
         sections.append(CoverageSection(parent, target.title, target.characters()))

@@ -120,7 +120,10 @@ character details. The grid defaults to learning-state order (mature, young,
 relearning, learning, new, missing); switch to dataset list order with
 **Sort**. **All kanji with cards** is a dynamic list of unique kanji with Katanki
 recognition or writing cards, including kanji outside enabled target lists. It
-refreshes with the snapshot and keeps the same membership in both modes. Colours and the legend distinguish grey missing cards, red new cards,
+refreshes with the snapshot and keeps the same membership in both modes.
+**All discovered kanji** scans the saved Discovery sources and has a sublist for
+each source deck, including child decks. It includes ignored kanji and kanji
+without Katanki cards. Both dynamic lists update with **Refresh**. Colours and the legend distinguish grey missing cards, red new cards,
 orange learning, purple relearning, turquoise young and green mature. Counts use Katanki's own kanji cards across the collection;
 vocabulary exposure does not imply recognition or writing mastery. A mature card
 is in review with an interval of at least 21 days. For mixed matching cards,
@@ -129,7 +132,7 @@ remain distinct from new cards. Suspended/buried cards retain their learning sta
 Click a kanji for matching Anki cards, recorded-answer pass rate and offline
 dictionary/stroke data. **Refresh** reloads the snapshot; collection changes mark
 it as stale. **Manage lists** opens settings. The dashboard never changes cards or
-scheduling. Historical progress charts and primitive statistics remain planned.
+scheduling.
 
 Manage your own lists under **Settings → Statistics → Personal lists**. Import a
 versioned JSON list to preview its groups, unique kanji, provenance, and validation

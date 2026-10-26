@@ -201,3 +201,55 @@ def test_invalid_notes_models_duplicate_cards_and_unknown_types_are_reported():
     assert "missing Character" in result.warnings[0]
     assert "invalid Character" in result.warnings[1]
     assert "unsupported card type" in result.warnings[2]
+
+
+def test_discovered_scope_includes_missing_ignored_and_overlapping_decks():
+    from katanki.stats.groups import coverage_sections
+    from katanki.stats.targets import TargetRegistry
+
+    progress = ProgressSnapshot(
+        (evidence("日"),),
+        discovered_decks=(
+            (1, "Vocabulary", ("日", "月")),
+            (2, "Other", ("月", "火")),
+            (3, "Empty", ()),
+        ),
+    )
+    sections = {s.key: s for s in coverage_sections(TargetRegistry(()), progress)}
+    parent = sections[("@discovered", None)]
+    assert parent.characters == ("日", "月", "火")
+    assert ("@discovered", "3") not in sections
+    assert sections[("@discovered", "2")].parent == parent.key
+    assert sections[("@discovered", "2")].characters == ("月", "火")
+    assert progress.payload(parent.characters)["counts"]["recognition"]["missing"] == 2
+
+
+def test_discovery_scans_selected_fields_per_exact_deck():
+    from katanki.anki.statistics import read_discovered_decks
+    from katanki.config import SourceRule
+
+    class Note(dict):
+        def cards(self):
+            return self["cards"]
+
+    notes = {
+        1: Note(Word="日月", Extra="水", cards=[SimpleNamespace(did=1, odid=0, type=0)]),
+        2: Note(Word="火月", Extra="木", cards=[SimpleNamespace(did=2, odid=0, type=2)]),
+        3: Note(Word="金", Extra="土", cards=[SimpleNamespace(did=99, odid=2, type=2)]),
+    }
+    collection = SimpleNamespace(
+        decks=SimpleNamespace(
+            all_names_and_ids=lambda: [
+                SimpleNamespace(id=1, name="Words"),
+                SimpleNamespace(id=2, name="Words::Child"),
+            ]
+        ),
+        models=SimpleNamespace(
+            all=lambda: [],
+            get=lambda _: {"flds": [{"name": "Word"}, {"name": "Extra"}]},
+        ),
+        find_notes=lambda _: [1, 2, 3],
+        get_note=notes.__getitem__,
+    )
+    result = read_discovered_decks(collection, (SourceRule("Words", 10, ("Word",)),))
+    assert result == ((1, "Words", ("日", "月")), (2, "Words::Child", ("月", "火", "金")))
