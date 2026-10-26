@@ -1,13 +1,18 @@
 """Read-only snapshots of owned kanji cards, independent of vocabulary exposure."""
 
+from dataclasses import replace
+
 from ..common.characters import is_kanji
+from ..common.models import ScanSelection
 from ..config import load_settings
 from ..dictionaries.adapters.kanjidic2_xml import KanjidicXml
 from ..dictionaries.adapters.kanjivg_svg import KanjiVgSvg
 from ..dictionaries.preferences import dictionary_sources
 from ..dictionaries.registry import bundled_path, list_datasets, verify_bundle
+from ..generation.discovery import scan_notes
 from ..stats.progress import CardEvidence, ProgressSnapshot, card_state
 from ..stats.sources import load_target_registry
+from .collection import resolve_sources, selected_notes
 from .identities import MODEL_MARKER
 from .target_lists import store_for_collection
 
@@ -58,6 +63,26 @@ def read_progress(collection) -> ProgressSnapshot:
     return ProgressSnapshot(tuple(cards), tuple(notes), tuple(warnings))
 
 
+def read_discovered_decks(collection, sources):
+    """Scan configured fields before ignored identities or card ownership are considered."""
+    if not sources:
+        return ()
+    selections = resolve_sources(collection, sources)
+    decks = {deck.id: deck.name for deck in collection.decks.all_names_and_ids()}
+    result = []
+    for deck_id in sorted(
+        {did for source in selections for did in source.deck_ids}, key=lambda did: (decks[did], did)
+    ):
+        rules = tuple(
+            ScanSelection((deck_id,), source.note_type_id, source.fields)
+            for source in selections
+            if deck_id in source.deck_ids
+        )
+        scan = scan_notes(selected_notes(collection, rules, exact_deck_id=deck_id))
+        result.append((deck_id, decks[deck_id], scan.candidates))
+    return tuple(result)
+
+
 def dashboard_snapshot(collection):
     settings = load_settings(collection)
     registry = load_target_registry(choices=settings.dictionaries)
@@ -72,11 +97,18 @@ def dashboard_snapshot(collection):
         except (OSError, ValueError) as error:
             personal_warnings.append(f"Personal target lists unavailable: {error}")
     progress = read_progress(collection)
+    try:
+        discovered = read_discovered_decks(collection, getattr(settings, "sources", ()))
+        if discovered:
+            progress = replace(progress, discovered_decks=discovered)
+    except (ValueError, OSError) as error:
+        personal_warnings.append(f"Discovery sources unavailable: {error}")
     targets = tuple(
         dict.fromkeys(
             [
                 *registry.targets(tuple((target.id, None) for target in registry.lists)),
                 *(card.character for card in progress.cards),
+                *(char for _, _, chars in progress.discovered_decks for char in chars),
             ]
         )
     )

@@ -65,19 +65,6 @@ def statistics() -> None:
         showWarning("Katanki could not open statistics. See Anki's console for details.")
 
 
-def primitive_statistics() -> None:
-    try:
-        if mw is None or mw.col is None:
-            showWarning("Open an Anki profile before viewing Parts statistics.")
-            return
-        from ..ui.primitive_statistics import open_primitive_statistics
-
-        open_primitive_statistics(mw)
-    except Exception:
-        logger.exception("Katanki Parts statistics failed")
-        showWarning("Katanki could not open Parts statistics. See Anki's console for details.")
-
-
 def register() -> None:
     if mw is None or mw.menuBar().findChild(QMenu, MENU_NAME) is not None:
         return
@@ -101,9 +88,6 @@ def register() -> None:
     statistics_action = QAction("Statistics", menu)
     statistics_action.triggered.connect(statistics)
     menu.addAction(statistics_action)
-    parts_action = QAction("Parts statistics", menu)
-    parts_action.triggered.connect(primitive_statistics)
-    menu.addAction(parts_action)
     menu.addSeparator()
     settings_action = QAction("Settings…", menu)
     settings_action.triggered.connect(settings)

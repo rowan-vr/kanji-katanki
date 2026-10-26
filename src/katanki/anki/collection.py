@@ -52,7 +52,10 @@ def resolve_sources(collection, rules: tuple[SourceRule, ...]) -> tuple[ScanSele
 
 
 def selected_notes(
-    collection, selection: ScanSelection | tuple[ScanSelection, ...]
+    collection,
+    selection: ScanSelection | tuple[ScanSelection, ...],
+    *,
+    exact_deck_id: int | None = None,
 ) -> Iterator[NoteText]:
     selections = (selection,) if isinstance(selection, ScanSelection) else selection
     if not selections:
@@ -74,6 +77,12 @@ def selected_notes(
         decks = " or ".join(f"did:{deck_id}" for deck_id in source.deck_ids)
         query = f"({decks}) mid:{source.note_type_id}"
         for note_id in sorted(set(collection.find_notes(query))):
+            if exact_deck_id is not None:
+                note = collection.get_note(note_id)
+                if not any(
+                    (getattr(card, "odid", 0) or card.did) == exact_deck_id for card in note.cards()
+                ):
+                    continue
             fields_by_note.setdefault(note_id, {}).update(dict.fromkeys(source.fields))
     for note_id, fields in sorted(fields_by_note.items()):
         note = collection.get_note(note_id)
