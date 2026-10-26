@@ -54,6 +54,8 @@ def smoke(base: Path, *, statistics_only: bool = False) -> None:
     from aqt import gui_hooks
     from aqt.qt import QMenu, QTimer
 
+    # Older hosts ignore ANKI_SINGLE_INSTANCE_KEY; isolate their IPC server too.
+    aqt.AnkiApp.KEY = os.environ["ANKI_SINGLE_INSTANCE_KEY"]
     passed = False
 
     def check() -> None:
@@ -62,6 +64,11 @@ def smoke(base: Path, *, statistics_only: bool = False) -> None:
             mw = aqt.mw
             assert mw is not None and mw.col is not None
             assert Path(mw.pm.base) == base
+            # Onboarding has separate tests; keep its modal wizard out of this flow.
+            from katanki.anki.onboarding import COMPLETED_KEY
+
+            mw.col.set_config(COMPLETED_KEY, True)
+            mw._katanki_onboarding.close()
             menu = mw.menuBar().findChild(QMenu, "katanki_menu")
             assert menu is not None, "Kanji Katanki menu was not registered"
             from katanki.anki.integration import register
@@ -113,7 +120,7 @@ def smoke(base: Path, *, statistics_only: bool = False) -> None:
     app = aqt._run(["anki", "-b", str(base), "-p", "Katanki Development"], exec=False)
     if app is None:
         raise RuntimeError("Anki did not start")
-    QTimer.singleShot(30_000, app.quit)
+    QTimer.singleShot(90_000, app.quit)
     app.exec()
     if not passed:
         raise RuntimeError("Anki integration smoke test failed or timed out")

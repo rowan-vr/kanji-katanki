@@ -40,6 +40,16 @@ Linux, Anki 25.07, Python 3.13.17, Qt offscreen, disposable collections:
 - The packaged `scripts/anki_dev.py --smoke` check did not complete. Startup
   and menu registration succeeded, but the full UI flow remains unverified.
   Follow-up runs encountered Anki's single-instance handling.
+  The helper now stops the onboarding prompt in the disposable profile, isolates
+  the IPC key on older hosts, and allows 90 seconds before closing Anki. A rerun
+  still exceeded the outer 120-second limit and was force-stopped; the cause of
+  the remaining stall is unresolved. Onboarding and packaging tests passed (18).
+  A later run completed dictionary/settings checks and reached a stale refresh
+  assertion: it expected a creation review with no destination deck configured.
+  The refresh fixture now supplies a recognition deck. Focused refresh,
+  generation-settings and onboarding tests passed (28). The next packaged run
+  stalled during dictionary checks and was stopped. A subsequent smoke run passed,
+  as confirmed by the maintainer.
 
 Use 25.07 as a compatibility test candidate; these checks do not establish a
 complete supported-version range or Windows/macOS compatibility.
