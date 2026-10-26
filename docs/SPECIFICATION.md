@@ -397,7 +397,7 @@ with real Anki progress.
 
 - Exact Anki desktop version(s) and matching Python runtime to support.
 - Licensing and redistribution restrictions for each third-party dataset and field (Kanji Katanki code uses the MIT License).
-- Dataset bootstrap strategy: **resolved 2026-10-22** at the user's request.
+- Dataset bootstrap strategy: **resolved 2026-10-22**.
   Download/prepare the essential KANJIDIC2 subset and pinned KanjiVG data at build
   time, keeping payloads out of Git, and bundle them with license copies,
   attribution, versions/checksums, and an explicit maintainer refresh procedure.

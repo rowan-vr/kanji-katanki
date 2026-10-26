@@ -26,7 +26,8 @@ def prepare(base: Path) -> None:
     pm = ProfileManager(base)
     pm.setupMeta()
     pm.meta.update({"defaultLang": "en_US", "firstRun": False, "updates": False})
-    pm.set_check_for_addon_updates(False)
+    if hasattr(pm, "set_check_for_addon_updates"):
+        pm.set_check_for_addon_updates(False)
     pm.create("Katanki Development")
     pm.load("Katanki Development")
     pm.profile["autoSync"] = False

@@ -71,7 +71,7 @@ and leave the collection unchanged. Covers FR-01 and the initial dictionary work
   Evidence: [classification](../src/katanki/generation/discovery/report.py).
 - [x] Manually review the “no dictionary loaded” state and results shown as
   “not classified”.
-  Evidence: user confirmed review on 2026-10-22; exact host/runtime versions
+  Evidence: manual review confirmed on 2026-10-22; exact host/runtime versions
   were not separately reported.
 - [x] Validate dataset manifests and expose normalized dictionary interfaces.
   Evidence: [registry](../src/katanki/dictionaries/registry.py),
@@ -101,8 +101,8 @@ and leave the collection unchanged. Covers FR-01 and the initial dictionary work
   Linux Anki 26.09.3 / Python 3.14.8, Qt offscreen. Exact notes/cards/revlog
   snapshots matched across repeated scans and the packaged UI operation.
 
-Manual check, 2026-10-22: the user confirmed the refreshed development add-on
-works in their Anki installation after following the manual test instructions.
+Manual check, 2026-10-22: the refreshed development add-on worked after
+following the manual test instructions.
 Individual test outcomes and exact host/runtime versions were not separately
 reported; this supplements the versioned automated host evidence above.
 
@@ -111,7 +111,7 @@ synthetic dictionary/stroke fixtures and a separate official-upstream parser che
 The ownership counts deferred to Phase 2 are now implemented and host-verified.
 Runtime dataset download/update UI, persistent caches, and provider switching remain
 later-phase work. Bundling and a maintainer-only refresh tool were pulled forward
-at the user's request, with documented redistribution terms and offline tests. See [verification details](DATASETS.md#verification-recorded-on-2026-10-22).
+with documented redistribution terms and offline tests. See [verification details](DATASETS.md#verification-recorded-on-2026-10-22).
 
 ## Phase 2 — Primitives and safe card generation
 
@@ -207,7 +207,7 @@ tracking or direct collection-database writes.
 ## Phase 3 — UX, saved settings, and refresh
 
 Deliverable: once Phase 2 generation works, make everyday use a single refresh
-using the user's saved configuration.
+using the saved configuration.
 
 - [x] Configure vocabulary sources (decks, note types, and fields) in the add-on
   settings and persist them across Anki restarts.
@@ -395,7 +395,7 @@ behavior including the revised replacement/migration dialog (2026-10-23).
 
 Acceptance: after configuring sources and preferences once, pressing refresh runs
 all configured steps without repeating setup. Automatic refresh uses the same
-workflow and respects the user's update choices.
+workflow and respects the saved update choices.
 
 ## Phase 4 — Statistics and modern interface
 
@@ -718,7 +718,7 @@ accounts, telemetry, or network-required reviews.
 - [ ] Additional dictionary providers, capability/fallback selection, and supported
   provider switching without silently rewriting cards.
 - [ ] On-demand dataset packs and/or per-character stroke downloads.
-  Deferred at the user's request, 2026-10-22. Evaluate source granularity (whole
+  Deferred 2026-10-22. Evaluate source granularity (whole
   dictionary archives versus individual SVGs or prepared packs), explicit download
   controls, version/checksum/license tracking, bounded local caching, cancellation,
   retry, and prefetch. Reuse cached data offline and keep review flows usable without
@@ -735,7 +735,7 @@ accounts, telemetry, or network-required reviews.
 
 ## Decision log — unresolved
 
-Resolved 2026-10-22 by the user: recognition and production use separate note
+Decision, 2026-10-22: recognition and production use separate note
 types so production can be selected for a smaller set of characters. Deduplicate
 within each Katanki note type using the character/component field; no stored
 synthetic identity or configuration scope. Core planning and detection tests cover

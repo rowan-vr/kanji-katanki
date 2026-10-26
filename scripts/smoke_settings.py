@@ -31,6 +31,8 @@ def exercise_settings_dialog(mw, selection):
     dialog.sources.restore(rules)
     assert dialog.tabs.tabText(0) == "Discovery"
     dialog.deck.setCurrentIndex(dialog.deck.findData(selection.deck_ids[0]))
+    parts_deck = dialog.generation_panels["parts"].deck
+    parts_deck.setCurrentIndex(parts_deck.findData(selection.deck_ids[0]))
     dialog.primitives.setChecked(True)
     assert [dialog.generation_tabs.tabText(i) for i in range(3)] == [
         "Recognition",

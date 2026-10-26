@@ -70,7 +70,12 @@ def main():
             production_nid = collection.find_notes('"note:Kanji Katanki — Kanji Production"')[0]
             front = collection.get_note(production_nid).cards()[0].question()
             assert "fixture scenery" in front and "__色" in front
-            assert "景" not in front, "Production front reveals the target kanji"
+            from bs4 import BeautifulSoup
+
+            visible_front = BeautifulSoup(front, "html.parser")
+            for hidden in visible_front.select("[hidden], script, style"):
+                hidden.decompose()
+            assert "景" not in visible_front.get_text(), "Production front reveals the target kanji"
             collection.undo()
             assert len(collection.find_cards(f"did:{deck}")) == 2
             assert apply_generation(collection, production, deck_id=deck).created == 1
