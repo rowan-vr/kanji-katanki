@@ -132,7 +132,10 @@ remain distinct from new cards. Suspended/buried cards retain their learning sta
 Click a kanji for matching Anki cards, recorded-answer pass rate and offline
 dictionary/stroke data. **Refresh** reloads the snapshot; collection changes mark
 it as stale. **Manage lists** opens settings. The dashboard never changes cards or
-scheduling.
+scheduling. **History…** opens cumulative unique-kanji review and daily retention
+charts for recognition or writing, with exact daily values and selectable periods.
+History uses current Katanki kanji cards across the collection; cumulative reviewed
+does not imply mastery. See the [history policy](docs/KANJI_STATS.md#list-based-creation-and-history).
 
 Manage your own lists under **Settings → Statistics → Personal lists**. Import a
 versioned JSON list to preview its groups, unique kanji, provenance, and validation

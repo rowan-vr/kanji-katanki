@@ -1,8 +1,10 @@
 # Phase 4: target lists and kanji statistics
 
 Planning baseline: 2026-10-24, branch `feat/phase-4-kanji-stats`.
-The target-list foundation and first dashboard are delivered. Primitive statistics,
-historical progress/retention charts, and creation from lists remain later slices.
+Phase 4 completed 2026-10-26. Target lists, personal-list management, the native
+dashboard, unofficial JLPT coverage, list-based creation and historical
+progress/retention charts are delivered. Separate Parts/primitive statistics are
+outside the completed scope.
 
 ## Target-list contract
 
@@ -248,8 +250,9 @@ Details show both modes, matching-card browser actions, dictionary readings and
 meanings, and sanitized offline SVG/playback when available. Pass rate means all
 recorded answers across matching cards, excluding rating-zero manual operations;
 it is not Anki's first-answer-per-day True Retention metric. Deleted cards do not
-contribute evidence. Historical charts and primitive classification are not yet
-implemented. Missing/disabled dictionaries never remove valid targets.
+contribute evidence. Historical charts are available through **History…** (see
+below). Separate Parts/primitive statistics are outside this dashboard’s scope.
+Missing/disabled dictionaries never remove valid targets.
 
 The interface uses native Qt widgets in `ui/dashboard.py` and
 `ui/statistics_widgets.py`: a list/group tree, progress bars, a model/view kanji
@@ -270,3 +273,25 @@ notes/cards/revlog. `scripts/smoke_statistics.py` checks native widgets at deskt
 and compact widths in light/dark modes, including grade coverage, search, details
 and stroke playback. `scripts/anki_dev.py --statistics-smoke` verifies the packaged
 window and lifecycle in an isolated profile. No Node build or web assets are needed.
+
+## List-based creation and history
+
+New kanji cards accepts selected target lists/groups and shows live previews,
+using the configured generation options, duplicate checks and ignores. Creation
+still requires approval in the creation review window. Importing or selecting a
+list alone does not create cards. Verification: `scripts/smoke_list_creation.py`
+and `tests/test_creation_review.py`.
+
+**Statistics → History…** displays cumulative unique kanji reviewed and daily
+retention, with independent recognition/writing modes, 90-day, 365-day and
+all-available-history periods, and an exact daily-values table. Days use local
+calendar midnight. Retention counts the first eligible scheduled review per
+kanji/day with a previous interval of at least one day; Hard/Good/Easy pass.
+Learning, relearning, filtered/cram and manual entries are excluded. Days without
+eligible tests appear as gaps.
+
+History covers the entire collection’s current Katanki kanji cards, independently
+of dashboard target selection. Deleted cards/logs and past character/note-type
+changes cannot be reconstructed. Cumulative reviewed means ever answered in the
+available history, not historical mastery. Verification: `tests/test_history.py`,
+`tests/test_history_ui.py` and `scripts/smoke_history.py`.

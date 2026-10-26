@@ -3,8 +3,8 @@
 Progress tracker based on [the implementation specification](SPECIFICATION.md).
 The specification defines requirements; this file tracks delivery and verification.
 
-Last known: **2026-10-25**. Phase 3 is complete. Current milestone:
-**Phase 4 — statistics and modern interface**.
+Last known: **2026-10-26**. Phases 3 and 4 are complete. Current milestone:
+**Phase 5 — public beta**.
 Phase 1 ownership-count integration is delivered. Production uses kanji meanings
 and blanked examples copied from selected source vocabulary. Minimum
 supported versions remain an open decision; the verified local baseline is Linux
@@ -401,11 +401,12 @@ workflow and respects the user's update choices.
 Deliverable: polished, portable review cards and a dashboard driven by actual
 Anki progress. Covers FR-03, FR-05 and the detail-view portion of FR-04.
 
-Delivered slice (2026-10-25): reusable target datasets and the native Qt
-statistics dashboard. See the [target-list and statistics plan](KANJI_STATS.md)
+Completed 2026-10-26: portable card layouts, reusable target datasets, the native Qt
+statistics dashboard, list-based creation, and historical progress/retention charts. See the [target-list and statistics plan](KANJI_STATS.md)
 for the canonical format, source provenance, dashboard and Anki progress policy.
 Personal-list management and persisted group selection are also delivered.
-Creation from lists and historical statistics remain.
+Statistics cover kanji recognition/writing; a separate Parts/primitive dashboard
+is outside the completed scope.
 
 - [x] Implement the versioned target-list contract, validation, registry, and
   ordered unique group selection independently of Anki and dictionary coverage.
@@ -513,9 +514,12 @@ Creation from lists and historical statistics remain.
   to both sides, Recognition to back only. Offline readings appear below kanji
   groups, aligned using kana boundaries, with safe grouped fallback and adjusted
   chip spacing. Masked clues retain alignment. Unit/JavaScript checks pass.
-- [ ] Allow automatic card creation from selected statistics/classification lists
+- [x] Allow automatic card creation from selected statistics/classification lists
   (for example JLPT levels), reusing configured generation, duplicate checks,
   ignores, and creation review.
+  Delivered through New kanji cards with list/group selection and live previews;
+  creation requires review approval. Evidence: `scripts/smoke_list_creation.py`
+  and `tests/test_creation_review.py`.
 - [x] Read existing card states and review history from Anki for the dashboard.
   Anki continues to control scheduling and due dates.
   Delivered 2026-10-25: **Katanki → Statistics**, a modeless singleton with
@@ -523,13 +527,20 @@ Creation from lists and historical statistics remain.
   searchable grid and details. `anki/statistics.py` reads owned kanji notes/cards;
   details read native review logs and exclude manual reschedules from answered
   totals. Collection changes flag the timestamped snapshot for Refresh.
-- [ ] Aggregate unique kanji/primitive states: unseen, learning, young, mature,
+- [x] Aggregate unique kanji states: missing/new, learning, young, mature,
   and relearning; include retention and progress history.
   Unique kanji counts and current states are delivered. Conservative duplicate
   aggregation gives relearning priority, then new → learning → young → mature.
   Review interval ≥21 days defines mature; queue suspension/burial are separate
   flags. Detail pass rate is all recorded answers, not Anki's True Retention.
-  Primitive statistics, retention charts and historical progress remain open.
+  **Statistics → History…** provides cumulative unique kanji reviewed and daily
+  retention, independently for recognition/writing, with 90-day, 365-day and
+  all-history views plus exact daily values. Retention uses the first eligible
+  scheduled review per kanji/local day, excluding learning, relearning,
+  filtered/cram and manual entries. Historical coverage is limited to available
+  logs for current Katanki kanji cards; cumulative reviewed does not imply mastery.
+  Evidence: `tests/test_history.py`, `tests/test_history_ui.py` and
+  `scripts/smoke_history.py`. Separate Parts statistics are outside this scope.
 - [x] Separate recognition and writing evidence; distinguish missing production
   notes from failed writing cards.
 - [x] Select and validate an unofficial JLPT source; expose provenance/version and

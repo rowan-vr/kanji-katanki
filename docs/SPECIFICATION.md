@@ -305,6 +305,9 @@ once, then run all configured steps with a refresh button.
 
 ### Phase 4 — Statistics and modern interface
 
+Completed 2026-10-26. Separate Parts/primitive statistics are outside this phase’s
+delivered kanji dashboard scope.
+
 **Deliverable:** Polished, portable review cards and a Kanji GOD-style dashboard
 with real Anki progress.
 
@@ -324,11 +327,11 @@ with real Anki progress.
   manifests, release packs, updates and offline fallback; personal JSON uses the
   same reader. Separate elementary-school-grade and full Jōyō datasets are
   explicitly generated from KANJIDIC2 and versioned independently of runtime dictionaries.
-- [ ] Personal target-list import/selection UI and persistent storage.
-- [ ] Sourced/versioned unofficial JLPT dataset using the shared target-list format.
-- [ ] Coverage graphs and recognition/writing mode toggle.
-  Current list-state distribution and mode toggle are delivered; historical
-  progress and JLPT coverage charts remain open.
+- [x] Personal target-list import/selection UI and persistent storage.
+- [x] Sourced/versioned unofficial JLPT dataset using the shared target-list format.
+- [x] Coverage graphs and recognition/writing mode toggle, including JLPT coverage.
+- [x] Historical cumulative unique-kanji review and daily retention charts.
+- [x] Creation from selected target lists/groups with live previews and creation review.
 - [x] Searchable kanji explorer + detail pane.
 - [x] Native Qt statistics dashboard with per-list and per-grade coverage.
 - [x] Tests for counts, duplicate suppression, mixed progress and missing writing cards.
