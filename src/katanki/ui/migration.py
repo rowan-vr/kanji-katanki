@@ -16,6 +16,7 @@ from aqt.qt import (
     QPushButton,
     QTableWidget,
     QTableWidgetItem,
+    QTimer,
     QVBoxLayout,
     QWidget,
 )
@@ -340,10 +341,18 @@ class MigrationDialog(QDialog):
                 "is needed. Use Anki Undo to revert migration.",
                 parent=self,
             )
+            self.accept()
+            QTimer.singleShot(0, self._refresh_after_migration)
 
         CollectionOp(parent=self.mw, op=convert).success(complete).failure(
             self.failed
         ).with_backend_progress(self._popup_progress).run_in_background()
+
+    def _refresh_after_migration(self):
+        if self.mw.col is self.collection:
+            from .refresh import open_refresh
+
+            open_refresh(self.mw)
 
     def failed(self, error):
         self.plan = None

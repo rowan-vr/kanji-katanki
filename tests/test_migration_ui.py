@@ -140,3 +140,39 @@ def test_progress_throttles_intermediate_updates_but_keeps_completion(migration_
     assert dialog._progress_state == ("Converting cards (10 of 10)", 10, 10)
     dialog._busy(False)
     dialog.reject()
+
+
+def test_successful_migration_closes_dialog_and_queues_refresh(migration_ui, monkeypatch):
+    ui = migration_ui
+    monkeypatch.setattr(ui.module, "showInfo", Mock())
+    queued = []
+    monkeypatch.setattr(ui.module.QTimer, "singleShot", lambda _, callback: queued.append(callback))
+    refresh = ModuleType("katanki.ui.refresh")
+    refresh.open_refresh = Mock()
+    monkeypatch.setitem(sys.modules, refresh.__name__, refresh)
+    ui.host.window.pm = SimpleNamespace(backupFolder=lambda: "/tmp/backups")
+    dialog = ui.module.MigrationDialog(ui.host.window)
+    dialog.plan = SimpleNamespace(items=(object(),))
+
+    dialog.apply()
+    refresh.open_refresh.assert_not_called()
+    ui.module.CollectionOp.return_value.success.call_args.args[0](None)
+
+    assert dialog.result() == ui.host.qt.QDialog.DialogCode.Accepted
+    assert dialog.plan is None and not dialog.busy
+    assert len(queued) == 1
+    refresh.open_refresh.assert_not_called()
+    queued.pop()()
+    refresh.open_refresh.assert_called_once_with(ui.host.window)
+
+
+def test_post_migration_refresh_skips_changed_profile(migration_ui, monkeypatch):
+    ui = migration_ui
+    refresh = ModuleType("katanki.ui.refresh")
+    refresh.open_refresh = Mock()
+    monkeypatch.setitem(sys.modules, refresh.__name__, refresh)
+    dialog = ui.module.MigrationDialog(ui.host.window)
+    ui.host.window.col = None
+    dialog._refresh_after_migration()
+    refresh.open_refresh.assert_not_called()
+    dialog.reject()
