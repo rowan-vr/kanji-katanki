@@ -164,7 +164,8 @@ Unmapped sibling cards keep their source note; empty source notes are removed.
 Progress shows the current stage and card counts during scanning, content preparation,
 conversion and verification. Conversion is
 one Anki Undo operation, and failures roll back the operation. There are no separate
-old cards to delete or suspend after conversion. Unencoded Parts keys and cloze
+old cards to delete or suspend after conversion. After success, the migration window
+closes and Refresh runs with your saved update preferences to update examples and card data. Unencoded Parts keys and cloze
 note types are not supported by this migration screen.
 
 Manage your own lists under **Settings → Statistics → Personal lists**. Import a

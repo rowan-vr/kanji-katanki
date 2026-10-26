@@ -230,6 +230,7 @@ def main():
             with (
                 patch("katanki.ui.migration.QueryOp", InlineOperation),
                 patch("katanki.ui.migration.CollectionOp", InlineOperation),
+                patch("katanki.ui.migration.MigrationDialog._refresh_after_migration") as refresh,
                 patch("katanki.ui.migration.showInfo") as info,
                 patch("katanki.ui.migration.showWarning") as warning,
             ):
@@ -251,6 +252,8 @@ def main():
                 dialog.apply()
                 warning.assert_not_called()
                 info.assert_called_once()
+                app.processEvents()
+                refresh.assert_called_once()
                 assert not dialog.apply_button.isEnabled()
                 assert col.get_note(col.get_card(ids[0]).nid).note_type()[MODEL_MARKER] == (
                     "kanji-recognition"
