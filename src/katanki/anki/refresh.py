@@ -143,7 +143,10 @@ def _prepare_report(collection, settings, report, *, examples=None, categories=N
         return (
             mode in categories
             if categories is not None
-            else settings.generation_settings(mode).auto_generate
+            else (
+                settings.generation_settings(mode).auto_generate
+                and settings.generation_settings(mode).target_deck_id is not None
+            )
         )
 
     def selected(mode):

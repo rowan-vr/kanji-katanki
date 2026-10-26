@@ -150,15 +150,19 @@ def test_stale_snapshot_is_not_written(setup):
     assert result.updated == 0 and "changed since preview" in result.conflicts[0]
 
 
-def test_source_removal_clears_recognition_but_keeps_production_clues(setup):
+def test_source_removal_clears_examples_without_production_conflict(setup):
     collection, notes = setup
     add(notes)
     add(notes, nid=2, mode="production")
     empty = replace(report(()), entries=(), scan=ScanResult(0, ()))
     plan = refresh.plan_example_refresh(collection, empty, Settings())
-    assert len(plan.updates) == 1
-    assert dict(plan.updates[0].after)["VocabExamples"] == ""
-    assert "empty production clues" in plan.conflicts[0]
+    assert len(plan.updates) == 2
+    assert all(dict(update.after)["VocabExamples"] == "" for update in plan.updates)
+    assert (
+        dict(next(update for update in plan.updates if update.note_id == 2).after)["Prompt"]
+        == "time"
+    )
+    assert not plan.conflicts
 
 
 def test_production_ignores_deferred_user_examples(setup):
@@ -581,3 +585,19 @@ def test_reviewed_only_refresh_tracks_stage_changes_without_changing_identity(se
     assert "時間" in fields["VocabExamples"]
     assert "時計" not in fields["VocabExamples"]
     assert plan.updates[0].note_id == 1
+
+
+def test_empty_production_prompt_refreshes_without_conflict(setup):
+    collection, notes = setup
+    note = add(notes, mode="production")
+    note["Meanings"] = ""
+    empty = replace(report(()), entries=(), scan=ScanResult(0, ()))
+
+    plan = refresh.plan_example_refresh(collection, empty, Settings())
+
+    assert not plan.conflicts
+    assert dict(plan.updates[0].after)["Prompt"] == ""
+    result = refresh.apply_example_refresh(collection, plan)
+    assert result.updated == 1
+    assert not result.conflicts
+    assert notes[1]["Prompt"] == ""

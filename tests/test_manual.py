@@ -260,3 +260,30 @@ def test_list_amount_skips_existing_and_retains_dependencies(monkeypatch, limit,
         item.unit.identity for item in result.preview.plan.items if item.outcome == "create"
     )
     assert creating == (primitive, *(Identity("kanji-recognition", char) for char in expected))
+
+
+@pytest.mark.parametrize("deck_id", [None, 42])
+def test_refresh_skips_generation_without_deck_but_keeps_existing_updates(monkeypatch, deck_id):
+    from test_generation import report
+
+    from katanki.config import GenerationSettings
+
+    collection = Mock()
+    monkeypatch.setattr(refresh, "analyze", lambda *args: report())
+    monkeypatch.setattr(refresh, "resolve_sources", lambda *args: ())
+    monkeypatch.setattr(refresh, "load_ignored", lambda _: frozenset())
+    examples = Mock()
+    planner = Mock(return_value=examples)
+    monkeypatch.setattr(refresh, "plan_example_refresh", planner)
+    preview = Mock()
+    monkeypatch.setattr(refresh, "preview_generation", preview)
+    settings = Settings(generation=(GenerationSettings(True, deck_id),) * 3)
+
+    result = refresh.prepare_refresh(collection, settings)
+
+    assert result.examples is examples
+    planner.assert_called_once_with(collection, result.report, settings)
+    choices = preview.call_args.kwargs
+    assert bool(choices["recognition"]) is (deck_id is not None)
+    assert bool(choices["production"]) is (deck_id is not None)
+    assert choices["include_primitives"] is (deck_id is not None)

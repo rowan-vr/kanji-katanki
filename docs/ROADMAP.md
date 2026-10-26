@@ -587,6 +587,26 @@ Acceptance: polished cards work on desktop and mobile and remain studyable
 offline after export/import without the add-on or source decks. Dashboard counts
 match Anki evidence and never imply writing mastery from recognition alone.
 
+## Pre-beta addition — Existing-card migration
+
+- [x] Reviewed conversion from user-selected source decks, note types
+  and character fields for recognition and production. Parts are identified from
+  the character within either source, including writing with source name/meaning clues.
+  Two visible source panels use skip choices, progressive controls, inline guidance
+  and a destination review table; there is no separate category enable checkbox.
+  Original card IDs, scheduling, FSRS data, review logs, flags, tags and decks survive.
+  Cards transfer to Katanki notes; note IDs may change. Preserve unmapped sibling
+  cards, and remove only empty source notes after transfer. No source archive field
+  is stored; old MigrationSource fields are removed from target note types during
+  conversion. Stage labels and card counts report scanning, content preparation,
+  conversion and verification in Anki’s progress popup.
+  Automatic collection backup, stale-preview rejection, grouped Undo and failure
+  rollback are delivered. Duplicates, ambiguous fields, filtered cards and missing
+  dictionary content are skipped; cloze/unencoded Parts mappings are unsupported.
+  Evidence: `tests/test_migration.py` and real-Anki/Qt
+  `scripts/smoke_migration.py` cover preflight, split modes, history/scheduling,
+  backups, archive-field removal, progress, Undo, rollback, sibling preservation and Parts.
+
 ## Phase 5 — Public beta
 
 Deliverable: a documented, self-contained release for ordinary desktop Anki users.
@@ -662,9 +682,9 @@ accounts, telemetry, or network-required reviews.
   Deferred 2026-10-24: new note types omit the field; existing field contents are
   preserved but ignored by stock cards and refreshed production prompts.
 
-- [ ] FR-07: explicit Migaku Kanji GOD import with backup, dry-run mappings,
-  unmappable-data warnings, confirmation, and copied-profile tests; preserve
-  scheduling/history only where a safe mapping is proven.
+- [x] FR-07: generic existing-card migration, including user-mapped Migaku Kanji GOD
+  cards. Delivered before beta; see the existing-card migration addition above.
+  Cloze and unencoded Parts keys remain outside the supported mappings.
 - [ ] Personal-list editor under Settings → Statistics → Personal lists. Create
   and edit list names and ordered groups, paste kanji with validation and
   deduplication, and show per-group and unique-list counts. Keep source/provenance

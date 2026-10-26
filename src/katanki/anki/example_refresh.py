@@ -175,9 +175,6 @@ def plan_example_refresh(collection, report, settings):
                 if settings.refresh.update_dictionary_data
                 else " ".join(lines(note["Meanings"]))
             )
-            if not meaning or (options.show_examples and not shown):
-                conflicts.append(f"{label}: empty production clues; current clues preserved.")
-                continue
             prompt = (
                 "\n".join((meaning, "", *(word.replace(identity.key, "__") for word in shown)))
                 if shown
@@ -238,7 +235,7 @@ def plan_example_refresh(collection, report, settings):
             key = normalize_prompt(
                 " ".join(lines(dict(update.after).get("Prompt", dict(update.before)["Prompt"])))
             )
-            if occupied.get(key, set()) - {update.note_id} or len(proposed[key]) > 1:
+            if key and (occupied.get(key, set()) - {update.note_id} or len(proposed[key]) > 1):
                 conflicts.append(
                     f"{update.identity.key}: ambiguous production clues; current clues preserved."
                 )
@@ -293,7 +290,7 @@ def apply_example_refresh(collection, plan, *, migrate=False):
             key = normalize_prompt(
                 " ".join(lines(dict(update.after).get("Prompt", dict(update.before)["Prompt"])))
             )
-            if occupied.get(key, set()) - {update.note_id} or len(proposed[key]) > 1:
+            if key and (occupied.get(key, set()) - {update.note_id} or len(proposed[key]) > 1):
                 conflicts.append(
                     f"{update.identity.key}: production clues now conflict; preserved."
                 )

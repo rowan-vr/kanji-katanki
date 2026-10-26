@@ -17,7 +17,7 @@ Kanji Katanki is a modular, offline-first, open-source **desktop Anki add-on** f
 7. **Clear package boundaries.** Top-level feature packages are `common`, `dictionaries`, `generation`, `statistics`, `anki`, and `ui`. **No miscellaneous `modules/` directory.**
 8. **Safe-by-default.** POC operations are read-only; write operations introduced later must have preview, user confirmation, idempotency and error handling. Test in a separate Anki profile.
 9. **Public-user experience.** Installed users should not need Python, uv, Node.js or a separate environment. Ship a self-contained `.ankiaddon` package.
-10. **Keep the POC small.** No external plugin SDK, AI features, handwriting recognition, telemetry, cloud services, or Kanji GOD migration in v0.1.
+10. **Keep the POC small.** No external plugin SDK, AI features, handwriting recognition, telemetry, or cloud services.
 
 ## 2. Stack and runtime
 
@@ -224,9 +224,15 @@ A manifest might have `id`, `category`, `format`, `source`, `capabilities`, `lic
 - No telemetry, accounts, cloud services or network-required review flows by default.
 - Ship a self-contained `.ankiaddon` on AnkiWeb/GitHub; cross-platform smoke tests and documentation.
 
-### FR-07 — Legacy import (post-beta)
+### FR-07 — Existing-card migration (delivered before beta)
 
-- Optional explicit migration or recognition of existing Migaku Kanji GOD notes; migrate scheduling/review history only with a proven safe mapping.
+- Explicit, reviewed conversion of existing cards (including Migaku Kanji GOD) via
+  deck/note-type/character-field mappings for recognition and production.
+  Identify kanji and parts from their characters within either direction; show the
+  destinations before applying. Part writing requires a source name/meaning clue. Keep original card IDs and scheduling/history;
+  preserve tags/flags/decks, back up before applying, report stage/count progress and support
+  Undo/rollback. Note IDs may change; unmapped sibling cards remain untouched.
+  Cloze note types and unencoded Parts keys are unsupported.
 - Never auto-convert existing notes. Always require backup, dry-run mapping, warning for unmappable data, confirmation and tests on a copied Anki profile.
 
 ## 6. Development phases & acceptance criteria
@@ -354,7 +360,7 @@ with real Anki progress.
   clues after editor changes. Preserve existing `UserExamples` data while deferred;
   new note types omit the field and stock review/refresh ignores its contents.
 
-- [ ] Migaku Kanji GOD migration with safe progress preservation.
+- [x] Migaku Kanji GOD migration with safe progress preservation, delivered before beta.
 - [ ] Personal-list editor: create/edit list names and ordered groups, paste kanji
   with validation/deduplication and group/unique counts, and keep provenance in
   expandable Source details. Reuse profile-local storage and canonical JSON

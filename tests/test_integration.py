@@ -73,6 +73,7 @@ def test_repeated_registration_does_not_add_a_second_menu(host):
     qt.QAction.assert_any_call("New Kanji Cards", menu)
     qt.QAction.assert_any_call("Refresh and generate Kanji Cards", menu)
     qt.QAction.assert_any_call("Statistics", menu)
+    qt.QAction.assert_any_call("Migrate Existing Cards…", menu)
     assert all(call.args[0] != "Analyze Collection" for call in qt.QAction.call_args_list)
     aqt.mw.menuBar().addMenu.assert_called_once_with(menu)
     qt.QAction.return_value.triggered.connect.assert_any_call(integration.refresh_and_generate)
@@ -145,4 +146,17 @@ def test_statistics_command_requires_profile(host):
     integration, aqt, _, utils = host
     aqt.mw.col = None
     integration.statistics()
+    utils.showWarning.assert_called_once()
+
+
+def test_migration_command_delegates_and_requires_profile(host, monkeypatch):
+    integration, aqt, _, utils = host
+    migration = ModuleType("katanki.ui.migration")
+    migration.open_migration = Mock()
+    monkeypatch.setitem(sys.modules, migration.__name__, migration)
+    integration.migrate_cards()
+    migration.open_migration.assert_called_once_with(aqt.mw)
+    aqt.mw.col = None
+    integration.migrate_cards()
+    migration.open_migration.assert_called_once()
     utils.showWarning.assert_called_once()
