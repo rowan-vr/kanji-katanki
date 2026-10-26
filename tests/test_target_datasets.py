@@ -232,7 +232,8 @@ def test_small_target_release_preparation_and_dictionary_refresh_preserve_list(
     monkeypatch.setattr(dataset_packs, "list_datasets", lambda: (manifest,))
     monkeypatch.setattr(dataset_packs, "BUNDLED", bundled)
     monkeypatch.setattr(dataset_packs, "CACHE", tmp_path / "cache")
-    output = tmp_path / "release"
+    monkeypatch.setattr(dataset_packs, "ROOT", tmp_path)
+    output = tmp_path / "dist" / "release"
     catalog = dataset_packs.prepare("datasets-synthetic-targets", output)
     assert set(catalog["datasets"]) == {manifest.id}
     assert (output / f"{manifest.id}.zip").is_file()

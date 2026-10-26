@@ -132,6 +132,11 @@ def exercise_settings_dialog(mw, selection):
     errors = []
     completed = False
 
+    def check_results():
+        assert dialog.test_result.scanned_notes == 2
+        assert set(dialog.test_result.candidates) == set("景色龘")
+        assert not dialog.busy
+
     def close_results():
         nonlocal completed
         result_dialog = next(
@@ -146,9 +151,7 @@ def exercise_settings_dialog(mw, selection):
         )
         if result_dialog:
             try:
-                assert dialog.test_result.scanned_notes == 2
-                assert set(dialog.test_result.candidates) == set("景色龘")
-                assert not dialog.busy
+                check_results()
                 completed = True
             except Exception as error:
                 errors.append(error)

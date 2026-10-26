@@ -164,3 +164,27 @@ def test_all_defaults_restore_from_one_release_lock_without_upstream_fallback(
         dataset_packs.restore()
     network.assert_not_called()
     assert (bundled / "jitendex.zip").is_file()
+
+
+@pytest.mark.parametrize("destination", ["../outside", "nested/../../outside", "/tmp/outside"])
+def test_prepare_rejects_output_outside_dist(tmp_path, monkeypatch, destination):
+    monkeypatch.setattr(dataset_packs, "ROOT", tmp_path)
+    output = tmp_path / "dist" / destination
+    with pytest.raises(ValueError, match="inside the repository dist"):
+        dataset_packs.prepare("datasets-test", output)
+    assert not (tmp_path / "dist").exists()
+
+
+def test_prepare_rejects_output_symlink_escape(tmp_path, monkeypatch):
+    monkeypatch.setattr(dataset_packs, "ROOT", tmp_path)
+    dist = tmp_path / "dist"
+    dist.mkdir()
+    outside = tmp_path / "outside"
+    outside.mkdir()
+    try:
+        (dist / "linked").symlink_to(outside, target_is_directory=True)
+    except OSError:
+        pytest.skip("Directory symlinks are unavailable")
+    with pytest.raises(ValueError, match="inside the repository dist"):
+        dataset_packs.prepare("datasets-test", dist / "linked" / "packs")
+    assert not (outside / "packs").exists()

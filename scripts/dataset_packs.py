@@ -32,6 +32,10 @@ LOCK = ROOT / "datasets" / "bundled-lock.json"
 def prepare(tag: str, output: Path, *, refresh: bool = False) -> dict:
     if not re.fullmatch(r"datasets-[A-Za-z0-9._-]+", tag):
         raise ValueError("Use a datasets- release tag with no slashes or whitespace.")
+    output = output.resolve()
+    output_root = (ROOT / "dist").resolve()
+    if not output.is_relative_to(output_root):
+        raise ValueError("Dataset pack output must be inside the repository dist directory.")
     from scripts.build_addon import verify_bundled_assets
     from scripts.bundle_datasets import prepare_from_sources
 
@@ -194,7 +198,12 @@ if __name__ == "__main__":
     parser.add_argument(
         "--tag", required=True, help="New, never previously published datasets- tag"
     )
-    parser.add_argument("--output", type=Path, default=ROOT / "dist" / "datasets")
+    parser.add_argument(
+        "--output",
+        type=Path,
+        default=ROOT / "dist" / "datasets",
+        help="Output directory inside the repository dist directory",
+    )
     parser.add_argument(
         "--refresh", action="store_true", help="Fetch current official upstream data"
     )

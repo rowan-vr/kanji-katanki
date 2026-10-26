@@ -48,60 +48,62 @@ def exercise_refresh(mw, action):
         reviewed = False
         count = 0
 
-        def drive():
+        def check_dialogs(dialogs):
             nonlocal reviewed, count
+            if errors:
+                raise errors[0]
+            assert len(dialogs) <= 1, "Refresh opened duplicate review windows"
+            if dialogs and not reviewed:
+                reviewed = True
+                dialog = dialogs[0]
+                if expected_tabs is not None:
+                    assert list(dialog.tiles) == expected_tabs
+                assert all(
+                    item.background().color().name() == "#286442" for item in dialog.items.values()
+                )
+                count = len(dialog.preview.creations)
+                if mode == "choose_targets":
+                    assert not dialog.create_button.isEnabled()
+                    for category, combo in dialog.decks.items():
+                        combo.setCurrentIndex(
+                            combo.findData(decks[0 if category == "recognition" else 1])
+                        )
+                assert count and dialog.create_button.isEnabled()
+                tile = next(iter(dialog.items.values()))
+                dialog._show_card(tile)
+                assert dialog.card_details.text().startswith(tile.text())
+                screenshot = os.environ.get("KATANKI_REVIEW_SCREENSHOT")
+                if screenshot and not Path(screenshot).exists():
+                    render_loop = QEventLoop()
+                    QTimer.singleShot(350, render_loop.quit)
+                    render_loop.exec()
+                    dialog.grab().save(screenshot)
+                if mode == "ignore":
+                    tile = dialog.items[ignored_identity]
+                    view = dialog.tiles["production"]
+                    dialog.tabs.setCurrentIndex(1)
+                    view.scrollToItem(tile)
+                    dialog._right_click(view, view.visualItemRect(tile).center())
+                    assert ignored_identity in load_ignored(mw.col)
+                    assert tile.background().color().name() == "#454b55"
+                    assert Identity("kanji-recognition", "時") not in load_ignored(mw.col)
+                    dialog.reject()
+                elif mode in ("create", "choose_targets"):
+                    dialog.create_button.click()
+                else:
+                    dialog.reject()
+            elif not getattr(mw, "_katanki_refresh_running", False):
+                timer.stop()
+                loop.quit()
+
+        def drive():
             dialogs = [
                 widget
                 for widget in mw.app.topLevelWidgets()
                 if isinstance(widget, generation.CreationReviewDialog) and widget.isVisible()
             ]
             try:
-                if errors:
-                    raise errors[0]
-                assert len(dialogs) <= 1, "Refresh opened duplicate review windows"
-                if dialogs and not reviewed:
-                    reviewed = True
-                    dialog = dialogs[0]
-                    if expected_tabs is not None:
-                        assert list(dialog.tiles) == expected_tabs
-                    assert all(
-                        item.background().color().name() == "#286442"
-                        for item in dialog.items.values()
-                    )
-                    count = len(dialog.preview.creations)
-                    if mode == "choose_targets":
-                        assert not dialog.create_button.isEnabled()
-                        for category, combo in dialog.decks.items():
-                            combo.setCurrentIndex(
-                                combo.findData(decks[0 if category == "recognition" else 1])
-                            )
-                    assert count and dialog.create_button.isEnabled()
-                    tile = next(iter(dialog.items.values()))
-                    dialog._show_card(tile)
-                    assert dialog.card_details.text().startswith(tile.text())
-                    screenshot = os.environ.get("KATANKI_REVIEW_SCREENSHOT")
-                    if screenshot and not Path(screenshot).exists():
-                        render_loop = QEventLoop()
-                        QTimer.singleShot(350, render_loop.quit)
-                        render_loop.exec()
-                        dialog.grab().save(screenshot)
-                    if mode == "ignore":
-                        tile = dialog.items[ignored_identity]
-                        view = dialog.tiles["production"]
-                        dialog.tabs.setCurrentIndex(1)
-                        view.scrollToItem(tile)
-                        dialog._right_click(view, view.visualItemRect(tile).center())
-                        assert ignored_identity in load_ignored(mw.col)
-                        assert tile.background().color().name() == "#454b55"
-                        assert Identity("kanji-recognition", "時") not in load_ignored(mw.col)
-                        dialog.reject()
-                    elif mode in ("create", "choose_targets"):
-                        dialog.create_button.click()
-                    else:
-                        dialog.reject()
-                elif not getattr(mw, "_katanki_refresh_running", False):
-                    timer.stop()
-                    loop.quit()
+                check_dialogs(dialogs)
             except Exception as error:
                 errors.append(error)
                 timer.stop()
