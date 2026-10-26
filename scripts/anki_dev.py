@@ -70,6 +70,7 @@ def smoke(base: Path, *, statistics_only: bool = False) -> None:
             assert [item.text() for item in menu.actions() if not item.isSeparator()] == [
                 "Refresh and generate Kanji Cards",
                 "New Kanji Cards",
+                "Migrate Existing Cards…",
                 "Statistics",
                 "Settings…",
             ], "Repeated registration duplicated a command"

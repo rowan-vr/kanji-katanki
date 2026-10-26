@@ -683,6 +683,9 @@ Covers FR-06 and production readiness of the dictionary subsystem.
   maintainer update procedure. See [notices](../THIRD_PARTY_NOTICES.md).
   Future datasets/fields and later card exports still require their own review.
 - [ ] Finish user documentation, screenshots, changelog, and backup guidance.
+  AnkiWeb description, upload checklist, screenshots and initial
+  changelog are prepared in `docs/ANKIWEB_DESCRIPTION.html`,
+  `docs/ANKIWEB_RELEASE.md`, `docs/images/` and `CHANGELOG.md`. Publication remains.
 - [ ] Automate `.ankiaddon` releases and publish through AnkiWeb/GitHub.
   The archive builder and GitHub-release asset workflow exist; end-to-end release
   verification and AnkiWeb publication remain pending.
