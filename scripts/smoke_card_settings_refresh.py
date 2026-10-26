@@ -48,14 +48,17 @@ def main():
                         panel.limit.setValue(panel.limit.value() + 1)
                     answered, errors = [], []
 
+                    def check_popup(popup, choice, original):
+                        assert popup.text() == "Your card settings have been saved."
+                        assert choice in ("Do later", "Refresh now")
+                        assert load_settings(mw.col).cards != original.cards
+
                     def respond(choice=choice, original=original, answered=answered, errors=errors):
                         popup = app.activeModalWidget()
                         if not isinstance(popup, QMessageBox):
                             return
                         try:
-                            assert popup.text() == "Your card settings have been saved."
-                            assert choice in ("Do later", "Refresh now")
-                            assert load_settings(mw.col).cards != original.cards
+                            check_popup(popup, choice, original)
                             next(b for b in popup.buttons() if b.text() == choice).click()
                             answered.append(choice)
                         except Exception as error:

@@ -272,6 +272,8 @@ uv run python scripts/dataset_packs.py --refresh --tag datasets-YYYY-MM-DD-uniqu
 
 This explicit refresh fetches official sources, normalizes defaults, updates the
 source lock/manifests, and writes packs plus review metadata to `dist/datasets/`.
+A custom `--output` directory must resolve inside the repository `dist/` directory;
+paths that escape it, including through symlinks, are rejected before preparation.
 Choose a new tag every time; never replace a published asset. To change KanjiVG,
 edit the pinned URL and `kanjivg_release` in `bundled/SOURCES.json` first. The raw
 source lock is preparation provenance, not the normal build's download target.
