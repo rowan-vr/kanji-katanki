@@ -4,7 +4,8 @@ Progress tracker based on [the implementation specification](SPECIFICATION.md).
 The specification defines requirements; this file tracks delivery and verification.
 
 Last known: **2026-10-26**. Phases 3 and 4 are complete. Current milestone:
-**Phase 5 — public beta**.
+**Phase 5 — public beta**. Existing-card migration and restartable first-run
+setup are delivered; cross-platform and end-to-end release verification remain.
 Phase 1 ownership-count integration is delivered. Production uses kanji meanings
 and blanked examples copied from selected source vocabulary. Minimum
 supported versions remain an open decision; the verified local baseline is Linux
@@ -599,19 +600,33 @@ match Anki evidence and never imply writing mastery from recognition alone.
   cards, and remove only empty source notes after transfer. No source archive field
   is stored; old MigrationSource fields are removed from target note types during
   conversion. Stage labels and card counts report scanning, content preparation,
-  conversion and verification in Anki’s progress popup.
+  conversion and verification in Anki’s progress popup, including long-running
+  dictionary loading and backup stages. Successful conversion opens Refresh to
+  regenerate managed card content from the saved settings.
   Automatic collection backup, stale-preview rejection, grouped Undo and failure
   rollback are delivered. Duplicates, ambiguous fields, filtered cards and missing
   dictionary content are skipped; cloze/unencoded Parts mappings are unsupported.
-  Evidence: `tests/test_migration.py` and real-Anki/Qt
-  `scripts/smoke_migration.py` cover preflight, split modes, history/scheduling,
-  backups, archive-field removal, progress, Undo, rollback, sibling preservation and Parts.
+  Evidence: `tests/test_migration.py`, `tests/test_migration_ui.py` and real-Anki/Qt
+  `scripts/smoke_migration.py` cover preflight, source selection, split modes,
+  history/scheduling, backups, archive-field removal, stage/count progress,
+  stale approvals, invalid target models, Undo, partial-failure rollback,
+  sibling preservation, automatic parts detection and post-migration Refresh.
 
 ## Phase 5 — Public beta
 
 Deliverable: a documented, self-contained release for ordinary desktop Anki users.
 Covers FR-06 and production readiness of the dictionary subsystem.
 
+- [x] Provide restartable first-run setup for ordinary users.
+  A collection-local setup wizard opens once Anki reaches an idle deck list.
+  It guides source selection, generation destinations, automatic refresh and card
+  display choices, then routes to migration or discovery. Dismissing discards
+  unsaved choices and explains how to restart from **Settings → Refresh**;
+  completing setup preserves advanced preferences. Profile switches and active
+  dialogs/operations defer or cancel the pending prompt safely.
+  Evidence: `tests/test_onboarding.py` covers scheduling, idle/profile guards,
+  dismissal/restart guidance, saved settings/defaults, source/destination validation
+  and migration/discovery routing.
 - [ ] Verify the saved settings, defaults, and configuration migrations delivered
   in Phase 3 are ready for public release.
 - [ ] Decide dataset bootstrap strategy and provide setup/install/update/status UI.
@@ -655,7 +670,9 @@ Covers FR-06 and production readiness of the dictionary subsystem.
 - [ ] Preserve the last working dataset after failed or interrupted imports.
 - [ ] Verify installed dictionary lookups and review flows work offline.
   Bundled dictionary lookups and SVG previews pass offline unit/packaged-host checks.
-  Generated review flows do not exist yet and remain unverified.
+  Portable generated-card review and clean-profile export/import checks are
+  delivered in Phase 4; the complete public-release installation/update path
+  still needs offline verification.
 - [ ] Handle missing/malformed datasets, version mismatch, and interrupted operations.
 - [ ] Test performance on realistically large collections.
 - [ ] Smoke-test installation and supported host versions on Windows, macOS, Linux.
