@@ -234,6 +234,11 @@ Optionally select a **Reading field** containing the kana reading for each vocab
 word. Generated examples and Refresh prefer this reading over the dictionary
 reading; blank readings fall back to the dictionary. Use this with single-word
 expression fields.
+
+On the back, tap or click an example word to open its offline dictionary meaning.
+Tap outside the popup, use its close button, or press Escape to dismiss it.
+Refresh existing notes to add definitions and update unmodified stock layouts.
+
 For example:
 
 | Deck or pattern | Note type | Field |

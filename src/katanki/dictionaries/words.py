@@ -10,11 +10,22 @@ ATTRIBUTION = (
 
 
 class WordSuggestions:
-    def __init__(self, rows):
+    def __init__(self, rows, definitions=()):
+        self.definition_entries = list(definitions)
+        self.by_word = {}
+        for word, reading, senses in definitions:
+            self.by_word.setdefault(word, {})[reading] = tuple(senses)
         self.by_character = {}
         for word, reading, _score in sorted(rows, key=lambda row: (-row[2], len(row[0]), *row[:2])):
             for character in set(word):
                 self.by_character.setdefault(character, []).append((word, reading))
+
+    def definitions(self, word, reading=""):
+        entries = self.by_word.get(word, {})
+        if reading:
+            return entries.get(reading, ())
+        # Without a reading, only use an unambiguous dictionary entry.
+        return next(iter(entries.values())) if len(entries) == 1 else ()
 
     def readings(self, character):
         result = {}

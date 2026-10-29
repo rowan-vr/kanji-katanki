@@ -79,10 +79,13 @@ class CardContent:
     front_furigana: bool | None = None
     back_furigana: bool = True
 
+    example_meanings: tuple[tuple[str, tuple[str, ...]], ...] = ()
+
     def fields(self) -> dict[str, str]:
         spec = note_type_spec(self.identity.note_type)
         statuses = dict(self.example_statuses)
         readings = dict(self.example_readings)
+        meanings = dict(self.example_meanings)
         front = set(self.front_examples) if self.front_examples is not None else set(self.examples)
         back = set(self.back_examples) if self.back_examples is not None else set(self.examples)
         values = {
@@ -104,6 +107,8 @@ class CardContent:
                 )
                 + '" data-reading="'
                 + escape(readings.get(word, ""), quote=True)
+                + '" data-meaning="'
+                + escape("\n".join(meanings.get(word, ())), quote=True)
                 + '" data-front-furigana="'
                 + str(
                     self.front_furigana

@@ -96,4 +96,4 @@ def test_old_entry_wide_filter_cache_is_rebuilt_for_sense_aware_suggestions(cach
     adapter._suggestion_cache.clear()
     assert adapter.JitendexYomitan(source).lookup("景") == ("景観",)
     assert convert.call_count == 2
-    assert json.loads(path.read_text(encoding="utf-8"))["format"] == 2
+    assert json.loads(path.read_text(encoding="utf-8"))["format"] == suggestion_cache.FORMAT

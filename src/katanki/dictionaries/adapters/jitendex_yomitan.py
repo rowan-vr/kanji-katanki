@@ -61,6 +61,31 @@ def has_current_sense(definitions):
     return False
 
 
+def definition_senses(definitions):
+    """Extract glossary text only; never retain dictionary markup or links."""
+
+    def text(value):
+        if isinstance(value, str):
+            return value
+        if isinstance(value, list):
+            return "".join(text(item) for item in value)
+        if isinstance(value, dict):
+            return text(value.get("content", ""))
+        return ""
+
+    senses = []
+    for node in nodes(definitions, skip=("extra-info",)):
+        if node.get("data", {}).get("content") == "glossary":
+            items = node.get("content", [])
+            items = items if isinstance(items, list) else [items]
+            gloss = "; ".join(text(item).strip() for item in items if text(item).strip())
+            if gloss:
+                senses.append(gloss)
+    if not senses:
+        senses = [item.strip() for item in definitions if isinstance(item, str) and item.strip()]
+    return tuple(dict.fromkeys(senses))
+
+
 def eligible(row):
     word, reading, tags, _, score, definitions, _, _ = row
     if score < 100 or "★" not in tags:
@@ -110,6 +135,7 @@ def convert(source, *, progress=None):
         with _open(source) as archive:
             index = _index(archive)
             words, count, banks = set(), 0, 0
+            definitions = {}
             names = sorted(
                 name for name in archive.namelist() if re.fullmatch(r"term_bank_[0-9]+\.json", name)
             )
@@ -134,11 +160,24 @@ def convert(source, *, progress=None):
                     ):
                         raise ValueError("Invalid Jitendex term row.")
                     count += 1
+                    if extract_candidates(row[0]):
+                        senses = definition_senses(row[5])
+                        if senses:
+                            pair = (row[0], row[1])
+                            definitions.setdefault(pair, []).extend(senses)
                     if eligible(row):
                         words.add((row[0], row[1], row[4]))
             if not banks or not count:
                 raise ValueError("Jitendex contains no term entries.")
-        data = {"format": 1, "version": index["revision"], "words": sorted(words)}
+        data = {
+            "format": 1,
+            "version": index["revision"],
+            "words": sorted(words),
+            "definitions": [
+                [word, reading, list(dict.fromkeys(senses))]
+                for (word, reading), senses in sorted(definitions.items())
+            ],
+        }
         index["term_count"] = count
         return (json.dumps(data, ensure_ascii=False, separators=(",", ":")) + "\n").encode(), index
     except (BadZipFile, KeyError, TypeError, AttributeError, RecursionError) as error:
@@ -174,7 +213,8 @@ def _suggestions(path, size, modified, progress=None):
         payload, _ = convert(source, progress=progress)
         if progress:
             progress("Indexing Jitendex example words…")
-        result = WordSuggestions(json.loads(payload)["words"])
+        data = json.loads(payload)
+        result = WordSuggestions(data["words"], data["definitions"])
         if cache_path is not None:
             if progress:
                 progress("Saving Jitendex index for next time…")
@@ -214,3 +254,9 @@ class JitendexYomitan:
 
     def lookup_words(self, character):
         return self.lookup(character)
+
+    def definitions(self, word, reading=""):
+        stat = self.source.stat()
+        return _suggestions(
+            str(self.source.resolve()), stat.st_size, stat.st_mtime_ns, self.progress
+        ).definitions(word, reading)

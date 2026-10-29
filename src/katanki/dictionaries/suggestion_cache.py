@@ -10,7 +10,7 @@ from . import updates
 from .words import WordSuggestions
 
 # Bump when word eligibility, ordering, or the stored lookup structure changes.
-FORMAT = 2
+FORMAT = 3
 MAX_CACHE = 128 * 1024 * 1024
 logger = logging.getLogger(__name__)
 
@@ -54,7 +54,18 @@ def load(path, digest):
             for key, rows in index.items()
         ):
             return None
-        result = WordSuggestions(())
+        definitions = data["definitions"]
+        if not isinstance(definitions, list) or any(
+            not isinstance(row, list)
+            or len(row) != 3
+            or not isinstance(row[0], str)
+            or not isinstance(row[1], str)
+            or not isinstance(row[2], list)
+            or any(not isinstance(sense, str) for sense in row[2])
+            for row in definitions
+        ):
+            return None
+        result = WordSuggestions((), definitions)
         result.by_character = index
         return result
     except (OSError, ValueError, KeyError, TypeError, RecursionError):
@@ -65,7 +76,12 @@ def save(path, digest, suggestions):
     temporary = None
     try:
         payload = json.dumps(
-            {"format": FORMAT, "source_sha256": digest, "index": suggestions.by_character},
+            {
+                "format": FORMAT,
+                "source_sha256": digest,
+                "index": suggestions.by_character,
+                "definitions": suggestions.definition_entries,
+            },
             ensure_ascii=False,
             separators=(",", ":"),
         ).encode()
