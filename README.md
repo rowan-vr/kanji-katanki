@@ -230,6 +230,10 @@ are blocked; add distinguishing source vocabulary (or mnemonic names for
 components). Prerequisites generate recognition only. Examples are copied when
 creating notes and remain available after source deletion. Use **Katanki → Settings… → Discovery** to add multiple vocabulary sources.
 Each source selects a deck or wildcard pattern, a note type, and one or more fields.
+Optionally select a **Reading field** containing the kana reading for each vocabulary
+word. Generated examples and Refresh prefer this reading over the dictionary
+reading; blank readings fall back to the dictionary. Use this with single-word
+expression fields.
 For example:
 
 | Deck or pattern | Note type | Field |

@@ -128,3 +128,11 @@ def test_statistics_selection_roundtrip_and_legacy_default():
     for invalid in ["joyo", ["joyo"], [["joyo", 42]], [["joyo", None, "extra"]]]:
         with pytest.raises(ValueError, match="statistics"):
             from_dict({"version": 8, "statistics_selection": invalid})
+
+
+def test_optional_reading_field_round_trip_and_legacy_default():
+    settings = Settings((SourceRule("*", 30, ("Expression",), reading_field="Reading"),))
+    assert from_dict(settings.to_dict()) == settings
+    saved = settings.to_dict()
+    del saved["sources"][0]["reading_field"]
+    assert from_dict(saved).sources[0].reading_field is None

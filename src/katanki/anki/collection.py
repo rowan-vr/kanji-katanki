@@ -45,7 +45,7 @@ def resolve_sources(collection, rules: tuple[SourceRule, ...]) -> tuple[ScanSele
             )
         if not ids:
             raise ValueError(f"No decks match {rule.deck_pattern!r}. Review Discovery settings.")
-        selections.append(ScanSelection(ids, rule.note_type_id, rule.fields))
+        selections.append(ScanSelection(ids, rule.note_type_id, rule.fields, rule.reading_field))
     if not selections:
         raise ValueError("Add at least one vocabulary source in Discovery settings.")
     return tuple(selections)
@@ -66,7 +66,10 @@ def selected_notes(
         if model is None:
             raise ValueError("The selected note type no longer exists. Review Discovery settings.")
         known_fields = {field["name"] for field in model["flds"]}
-        if not set(source.fields) <= known_fields:
+        selected_fields = set(source.fields)
+        if source.reading_field:
+            selected_fields.add(source.reading_field)
+        if not selected_fields <= known_fields:
             raise ValueError("The selected fields no longer exist. Review Discovery settings.")
     deck_ids = {deck.id for deck in collection.decks.all_names_and_ids()}
     for source in selections:
@@ -83,7 +86,10 @@ def selected_notes(
                     (getattr(card, "odid", 0) or card.did) == exact_deck_id for card in note.cards()
                 ):
                     continue
-            fields_by_note.setdefault(note_id, {}).update(dict.fromkeys(source.fields))
+            fields = fields_by_note.setdefault(note_id, {})
+            for field in source.fields:
+                if field not in fields or source.reading_field:
+                    fields[field] = source.reading_field
     for note_id, fields in sorted(fields_by_note.items()):
         note = collection.get_note(note_id)
         # Card type remains meaningful for suspended/buried cards too; queue is
@@ -95,5 +101,10 @@ def selected_notes(
         ]
         status = min(statuses, key=WORD_STATUS_ORDER.__getitem__, default="missing")
         yield NoteText(
-            tuple(note[field] for field in fields), tuple(getattr(note, "tags", ())), status
+            tuple(note[field] for field in fields),
+            tuple(getattr(note, "tags", ())),
+            status,
+            tuple(note[reading] if reading else "" for reading in fields.values())
+            if any(fields.values())
+            else (),
         )

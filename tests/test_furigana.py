@@ -102,3 +102,43 @@ process.stdout.write(JSON.stringify(results));
     script = SCRIPT + harness.replace("CASES", json.dumps(cases, ensure_ascii=False))
     result = subprocess.run([node], input=script, encoding="utf-8", capture_output=True, check=True)
     assert json.loads(result.stdout) == [case[3] for case in cases]
+
+
+def test_source_reading_overrides_dictionary_in_preview():
+    from katanki.common.models import DiscoveryReport, KanjiEntry, NoteText
+    from katanki.generation.discovery import scan_notes
+    from katanki.generation.preview import build_preview
+
+    scan = scan_notes(
+        [
+            NoteText(("今日",), field_readings=("<b>こんにち</b>",)),
+            NoteText(("今日",)),
+            NoteText(("日本",), field_readings=("",)),
+        ]
+    )
+    report = DiscoveryReport(scan, (KanjiEntry("日", (), (), ("day",)),), (), (), True, ())
+    preview = build_preview(
+        report,
+        (),
+        recognition=("日",),
+        production=("日",),
+        include_primitives=False,
+        word_suggestions=WordSuggestions((("今日", "きょう", 10), ("日本", "にほん", 10))),
+    )
+    for card in preview.contents:
+        assert dict(card.example_readings)["今日"] == "こんにち"
+        assert dict(card.example_readings)["日本"] == "にほん"
+
+
+def test_reading_field_does_not_supply_discovery_candidates_or_tags():
+    from katanki.common.models import NoteText
+    from katanki.generation.discovery import scan_notes
+
+    scan = scan_notes(
+        [
+            NoteText(("今日",), field_readings=("きょう",)),
+            NoteText(("日本 景色",), field_readings=("ambiguous",)),
+        ]
+    )
+    assert scan.vocabulary_readings == (("今日", "きょう"),)
+    assert "きょう" not in scan.vocabulary
