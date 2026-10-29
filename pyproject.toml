@@ -1,6 +1,6 @@
 [project]
 name = "kanji-katanki"
-version = "0.1.0"
+version = "0.2.0"
 description = "Kanji Katanki: offline-first kanji learning add-on for desktop Anki"
 license = "MIT"
 license-files = ["LICENSE"]
