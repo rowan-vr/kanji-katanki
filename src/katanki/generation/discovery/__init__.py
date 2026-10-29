@@ -77,16 +77,22 @@ def scan_notes(notes: Iterable[NoteText]) -> ScanResult:
     vocabulary: set[str] = set()
     tags_by_character = {}
     statuses = {}
+    readings = {}
     count = 0
     for note in notes:
         count += 1
-        for field in note.fields:
+        for index, field in enumerate(note.fields):
             characters = extract_candidates(field)
             candidates.update(characters)
             for character in characters:
                 tags_by_character.setdefault(character, set()).update(note.tags)
             words = extract_vocabulary(field)
             vocabulary.update(words)
+            # A separate reading describes a single expression, not a sentence/list.
+            if len(words) == 1 and index < len(note.field_readings):
+                reading = visible_text(note.field_readings[index]).strip()
+                if reading:
+                    readings.setdefault(next(iter(words)), reading)
             for word in words:
                 status = note.word_status
                 if WORD_STATUS_ORDER.get(status, 4) < WORD_STATUS_ORDER.get(statuses.get(word), 4):
@@ -99,4 +105,5 @@ def scan_notes(notes: Iterable[NoteText]) -> ScanResult:
             (key, tuple(sorted(tags))) for key, tags in sorted(tags_by_character.items()) if tags
         ),
         tuple(sorted(statuses.items())),
+        tuple(sorted(readings.items())),
     )

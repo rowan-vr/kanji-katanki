@@ -96,6 +96,14 @@ class SourceRow(QFrame):
         layout.addWidget(self.types, 1, 1)
         self.fields = FieldSelector()
         layout.addWidget(self.fields, 1, 2)
+        self.reading = QComboBox()
+        self.reading.setAccessibleName("Optional source reading field")
+        self.reading.setToolTip(
+            "Use this field for example word readings. Leave unset to use the dictionary. "
+            "Choose a kana reading field for source notes containing one word."
+        )
+        layout.addWidget(QLabel("Reading field (optional)"), 2, 2)
+        layout.addWidget(self.reading, 3, 2)
         button = QPushButton("Remove")
         button.setToolTip("Remove this vocabulary source")
         button.clicked.connect(lambda: remove(self))
@@ -122,18 +130,26 @@ class SourceRow(QFrame):
                 (entry[2] for entry in self.note_types if entry[0] == rule.note_type_id), ()
             )
             self.fields.set_fields(fields, rule.fields)
+            if rule.reading_field and self.reading.findData(rule.reading_field) < 0:
+                self.reading.addItem(f"Missing field ({rule.reading_field})", rule.reading_field)
+            self.reading.setCurrentIndex(self.reading.findData(rule.reading_field))
 
     def _fields_changed(self, index=0):
         fields = next(
             (entry[2] for entry in self.note_types if entry[0] == self.types.currentData()), ()
         )
         self.fields.set_fields(fields)
+        self.reading.clear()
+        self.reading.addItem("Dictionary reading", None)
+        for field in fields:
+            self.reading.addItem(field, field)
 
     def rule(self):
         model_id = self.types.currentData()
         fields = self.fields.selected_fields()
         known = next((entry[2] for entry in self.note_types if entry[0] == model_id), None)
-        if known is None or not set(fields) <= set(known):
+        reading = self.reading.currentData()
+        if known is None or not set(fields) <= set(known) or (reading and reading not in known):
             raise ValueError("A source note type or field is missing. Choose its replacement.")
         # Preserve IDs for catalog choices. Typed text is a name/pattern, never a query.
         deck_id = self.deck.currentData()
@@ -141,8 +157,8 @@ class SourceRow(QFrame):
         if deck_id is not None and text == self.deck.itemText(self.deck.currentIndex()):
             if deck_id not in self.deck_names:
                 raise ValueError("A source deck is missing. Choose its replacement.")
-            return SourceRule("", model_id, fields, (deck_id,))
-        return SourceRule(text, model_id, fields)
+            return SourceRule("", model_id, fields, (deck_id,), reading)
+        return SourceRule(text, model_id, fields, reading_field=reading)
 
 
 class SourceSelector(QWidget):
@@ -191,7 +207,11 @@ class SourceSelector(QWidget):
             # Version 1 allowed several explicit decks in one source.
             if rule.deck_ids:
                 for deck_id in rule.deck_ids:
-                    self.add_rule(SourceRule("", rule.note_type_id, rule.fields, (deck_id,)))
+                    self.add_rule(
+                        SourceRule(
+                            "", rule.note_type_id, rule.fields, (deck_id,), rule.reading_field
+                        )
+                    )
             else:
                 self.add_rule(rule)
         if not self.rows:

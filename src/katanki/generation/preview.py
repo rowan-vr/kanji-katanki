@@ -138,6 +138,11 @@ def build_preview(
             if options.front_furigana or options.furigana
             else {}
         )
+        example_readings.update(
+            (word, reading)
+            for word, reading in report.scan.vocabulary_readings
+            if word in discovered
+        )
         examples = tuple(dict.fromkeys((*discovered, *defaults)))
         front_examples = (
             examples if options.front_source == "discovered_and_default" else discovered

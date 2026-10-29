@@ -15,13 +15,14 @@ class SourceRule:
     fields: tuple[str, ...]
     # Preserve stable IDs from version 1 and explicit deck choices, including renames.
     deck_ids: tuple[int, ...] = ()
+    reading_field: str | None = None
 
     def __post_init__(self):
         if not isinstance(self.deck_pattern, str) or (
             not self.deck_pattern.strip() and not self.deck_ids
         ):
             raise ValueError("Enter a deck name or pattern (* for all decks).")
-        ScanSelection(self.deck_ids or (1,), self.note_type_id, self.fields)
+        ScanSelection(self.deck_ids or (1,), self.note_type_id, self.fields, self.reading_field)
 
 
 GENERATION_CATEGORIES = ("recognition", "production", "parts")
@@ -249,6 +250,7 @@ def from_dict(data) -> Settings:
                 entry.get("note_type_id"),
                 tuple(fields),
                 tuple(decks),
+                entry.get("reading_field"),
             )
         )
     destination = data.get("destination_deck_id")

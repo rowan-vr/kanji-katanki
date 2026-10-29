@@ -19,8 +19,13 @@ class ScanSelection:
     deck_ids: tuple[int, ...]
     note_type_id: int
     fields: tuple[str, ...]
+    reading_field: str | None = None
 
     def __post_init__(self):
+        if self.reading_field is not None and (
+            not isinstance(self.reading_field, str) or not self.reading_field.strip()
+        ):
+            raise ValueError("Reading field names must not be empty.")
         if not self.deck_ids or not self.fields:
             raise ValueError("Select at least one deck and one field.")
         if any(type(value) is not int or value <= 0 for value in self.deck_ids):
@@ -37,6 +42,7 @@ class NoteText:
     tags: tuple[str, ...] = ()
     # Read-only snapshot; no source IDs or live card links are retained.
     word_status: str = "missing"
+    field_readings: tuple[str, ...] = ()
 
 
 @dataclass(frozen=True)
@@ -46,6 +52,7 @@ class ScanResult:
     vocabulary: tuple[str, ...] = ()
     character_tags: tuple[tuple[str, tuple[str, ...]], ...] = ()
     vocabulary_statuses: tuple[tuple[str, str], ...] = ()
+    vocabulary_readings: tuple[tuple[str, str], ...] = ()
 
 
 @dataclass(frozen=True)

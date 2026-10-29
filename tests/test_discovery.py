@@ -216,3 +216,16 @@ def test_duplicate_words_across_notes_keep_the_strongest_study_stage():
         ]
     )
     assert dict(scan.vocabulary_statuses) == {"時計": "relearning", "時間": "learned"}
+
+
+def test_adapter_pairs_expression_with_optional_reading():
+    collection = Mock()
+    collection.models.get.return_value = {"flds": [{"name": "Expression"}, {"name": "Reading"}]}
+    collection.decks.all_names_and_ids.return_value = [SimpleNamespace(id=10)]
+    collection.find_notes.return_value = [1]
+    collection.get_note.return_value = {"Expression": "今日", "Reading": "こんにち"}
+    result = list(selected_notes(collection, ScanSelection((10,), 20, ("Expression",), "Reading")))
+    assert result == [NoteText(("今日",), field_readings=("こんにち",))]
+    collection.models.get.return_value = {"flds": [{"name": "Expression"}]}
+    with pytest.raises(ValueError, match="fields no longer exist"):
+        list(selected_notes(collection, ScanSelection((10,), 20, ("Expression",), "Reading")))
