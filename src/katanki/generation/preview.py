@@ -135,7 +135,7 @@ def build_preview(
         )
         example_readings = (
             getattr(word_suggestions, "readings", lambda key: {})(key)
-            if options.front_furigana or options.furigana
+            if word_suggestions is not None
             else {}
         )
         example_readings.update(
@@ -144,6 +144,15 @@ def build_preview(
             if word in discovered
         )
         examples = tuple(dict.fromkeys((*discovered, *defaults)))
+        example_meanings = tuple(
+            (
+                word,
+                getattr(word_suggestions, "definitions", lambda *args: ())(
+                    word, example_readings.get(word, "")
+                ),
+            )
+            for word in examples
+        )
         front_examples = (
             examples if options.front_source == "discovered_and_default" else discovered
         )
@@ -178,7 +187,7 @@ def build_preview(
                 report.attribution
                 + (
                     (getattr(word_suggestions, "attribution", ATTRIBUTION),)
-                    if defaults or example_readings
+                    if defaults or example_readings or any(senses for _, senses in example_meanings)
                     else ()
                 ),
                 examples,
@@ -195,6 +204,7 @@ def build_preview(
                 tuple(example_readings.items()),
                 options.front_furigana,
                 options.furigana,
+                example_meanings,
             )
             if visual is None:
                 warnings.append(f"{key}: stroke diagram unavailable.")

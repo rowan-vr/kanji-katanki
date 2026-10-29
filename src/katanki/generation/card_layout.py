@@ -1,6 +1,8 @@
 """Self-contained review layouts: no host bridge, external assets or network."""
 
 from .furigana import SCRIPT as FURIGANA_SCRIPT
+from .word_popup import CSS as WORD_POPUP_CSS
+from .word_popup import SCRIPT as WORD_POPUP_SCRIPT
 
 EXAMPLES = r"""<div class="katanki-examples" data-kind="{{CardKind}}">
 <div class="managed-examples" hidden>{{VocabExamples}}</div>
@@ -46,12 +48,31 @@ EXAMPLES = r"""<div class="katanki-examples" data-kind="{{CardKind}}">
     return order[a.status] - order[b.status] || a.index - b.index;
   });
   if (front && limit > 0) entries = entries.slice(0, limit);
+  /* WORD_POPUP */
   var more = root.querySelector('.more-words');
   var extra = root.querySelector('.more-word-output');
   entries.forEach(function(entry, index) {
+    var interactive = !front && !parts;
     var line = document.createElement('div');
     line.className = front ? 'clue-chip'
       : 'word-chip ' + (parts ? 'related-chip' : 'word-' + entry.status);
+    if (interactive) {
+      line.setAttribute('role', 'button');
+      line.tabIndex = 0;
+      line.className += ' word-definition';
+      line.setAttribute('aria-haspopup', 'dialog');
+      line.setAttribute('aria-expanded', 'false');
+      bindWordTap(line, function(event) {
+        openDefinition(line, entry.word);
+      });
+      line.addEventListener('keydown', function(event) {
+        if (event.key === 'Enter' || event.key === ' ') {
+          event.preventDefault();
+          event.stopPropagation();
+          openDefinition(line, entry.word);
+        }
+      });
+    }
     line.dataset.status = entry.status;
     line.title = front ? entry.word : parts ? 'Related kanji' : labels[entry.status];
     line.setAttribute('aria-label', entry.word + ': ' + line.title);
@@ -78,7 +99,9 @@ EXAMPLES = r"""<div class="katanki-examples" data-kind="{{CardKind}}">
 })();
 </script>"""
 
-EXAMPLES = EXAMPLES.replace("/* FURIGANA */", FURIGANA_SCRIPT)
+EXAMPLES = EXAMPLES.replace("/* FURIGANA */", FURIGANA_SCRIPT).replace(
+    "/* WORD_POPUP */", WORD_POPUP_SCRIPT
+)
 
 STROKE_SCRIPT = r"""<script>
 function katankiNumbers(button) {
@@ -356,3 +379,5 @@ CSS += """
   .word-grid .word-relearning.has-furigana {padding-bottom: 15px; padding-top: 6px;}
 }
 """
+
+CSS += WORD_POPUP_CSS

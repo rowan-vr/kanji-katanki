@@ -79,3 +79,62 @@ USER_EXAMPLES_PAIRS = {
         "2fe293930b62008da49597a7126140a9b267aaf0e1a252c169daa2f326ce39bd",
     ),
 }
+
+PRE_MEANINGS_PAIRS = {
+    "kanji-recognition": (
+        "30274420492d7078e42465fe30e441d84441ee72b26fb6778456dc1a118d7a16",
+        "b24c611c13ddab44c74aa40368cf34a6f0b641f04e721257f923b57ec7f35ee4",
+    ),
+    "kanji-production": (
+        "c73ef2bb7e369d75d6f218669643a88b6e6e51faf0cd0e3cea2cbe358116e262",
+        "5f7cf781b7ea7e3b1ab093066418264fc090b710ed2271a9359191a40045ef65",
+    ),
+    "primitive-recognition": (
+        "da9bb6c8096eefdb5092eb1856bba0379a49c922e24863b392ed32046e557564",
+        "2919950c093aa23fa6019e045ee87f19944695d99808f6b8168c07b1d5d13c75",
+    ),
+    "primitive-production": (
+        "e4c4253b03e173413821891d839a02d5d4911070f999df3b8aa17668e301fcc6",
+        "0bb6a2d8ff6b69d6d5df62744f95aab7e34da023b3fa24227c9e73d32850cc2f",
+    ),
+}
+PRE_MEANINGS_STYLE = "c3e33d7f2d98caf841a98966024760cea77de35b4917dbe44e457ea8dfaf413c"
+
+NATIVE_BUTTON_POPUP_PAIRS = {
+    "kanji-recognition": (
+        "9a97971854da450cf173fe589b8a4d8830c496667efcb4075f332a51bae8da0b",
+        "651dc0cda7b1b69ea66a81ca60aa1ea0b881adc714d262eea0c9e7b3259e77a0",
+    ),
+    "kanji-production": (
+        "c73ef2bb7e369d75d6f218669643a88b6e6e51faf0cd0e3cea2cbe358116e262",
+        "c434dad6f20c54ff4f4497937970f5664ee6407a799e4710fc3cfab22d369c5e",
+    ),
+    "primitive-recognition": (
+        "da9bb6c8096eefdb5092eb1856bba0379a49c922e24863b392ed32046e557564",
+        "9f827069ca12c0aba9ef096309391c7d74f5c9cf18b3a295d4eb0176c58e3a1b",
+    ),
+    "primitive-production": (
+        "e4c4253b03e173413821891d839a02d5d4911070f999df3b8aa17668e301fcc6",
+        "95368a1872da9d2b9f944cf7730dc70142b607c7df7de00f9745fa319893b88d",
+    ),
+}
+NATIVE_BUTTON_POPUP_STYLE = "7e4e846b15e616c4eb59fd090f350cce3c5ebdfc4be0b0f035c6ff5b0d03b20b"
+
+CLICK_ONLY_POPUP_PAIRS = {
+    "kanji-recognition": (
+        "a092bc65247f6bf3f2865e27739d64efc550891adbc2a25fdc31b2803a9971a1",
+        "cbbdf607e73abd48cad4944ba697a5e0a5a7e01c74bda55aee6ef6eab836650c",
+    ),
+    "kanji-production": (
+        "c73ef2bb7e369d75d6f218669643a88b6e6e51faf0cd0e3cea2cbe358116e262",
+        "d2cadd1297705c49ec4d6a510462cb887b733a815c386c3fc08c20f56f782c7f",
+    ),
+    "primitive-recognition": (
+        "da9bb6c8096eefdb5092eb1856bba0379a49c922e24863b392ed32046e557564",
+        "db93366cdc1400ba68ecdbe3653efb0ff70c6a78e79c679d36a37117228ef47f",
+    ),
+    "primitive-production": (
+        "e4c4253b03e173413821891d839a02d5d4911070f999df3b8aa17668e301fcc6",
+        "b244b1162a9238df0127b6e1bc0f7d6f0d4b67eba77f755524f4b4f6a5ae244e",
+    ),
+}

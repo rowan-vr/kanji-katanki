@@ -149,7 +149,11 @@ def plan_example_refresh(collection, report, settings):
         desired["Attribution"] = note["Attribution"]
         if (
             settings.refresh.update_examples
-            and any(word not in content.discovered_examples for word in content.examples)
+            and (
+                any(word not in content.discovered_examples for word in content.examples)
+                or content.example_readings
+                or any(senses for _, senses in content.example_meanings)
+            )
             and identity.kind == "kanji"
         ):
             attribution = escape(getattr(word_provider, "attribution", ATTRIBUTION))

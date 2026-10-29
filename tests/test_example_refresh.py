@@ -601,3 +601,20 @@ def test_empty_production_prompt_refreshes_without_conflict(setup):
     assert result.updated == 1
     assert not result.conflicts
     assert notes[1]["Prompt"] == ""
+
+
+def test_refresh_adds_offline_meanings_and_dictionary_attribution_to_source_examples(
+    setup, monkeypatch
+):
+    from katanki.dictionaries.words import WordSuggestions
+
+    collection, notes = setup
+    add(notes)
+    provider = WordSuggestions([], [("時計", "とけい", ["clock; watch"])])
+    monkeypatch.setattr(refresh, "selected_words", lambda choices: provider)
+    plan = refresh.plan_example_refresh(collection, report(), Settings())
+    assert len(plan.updates) == 1
+    refresh.apply_example_refresh(collection, plan)
+    assert 'data-meaning="clock; watch"' in notes[1]["VocabExamples"]
+    assert "Jitendex" in notes[1]["Attribution"]
+    assert not refresh.plan_example_refresh(collection, report(), Settings()).updates
