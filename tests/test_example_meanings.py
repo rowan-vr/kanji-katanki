@@ -180,7 +180,7 @@ if (activations !== 1) throw Error('cancelled gesture opened popup');
 
 """
     script = harness.replace("SCRIPT", SCRIPT).replace("WIDTH", str(width))
-    subprocess.run([node], input=script, text=True, capture_output=True, check=True)
+    subprocess.run([node], input=script, encoding="utf-8", capture_output=True, check=True)
 
 
 def previous_click_layout(template):
