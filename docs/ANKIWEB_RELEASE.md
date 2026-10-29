@@ -1,4 +1,4 @@
-# AnkiWeb upload — 0.1.0 public beta
+# AnkiWeb upload — 0.2.0 public beta
 
 ## Upload fields
 
@@ -16,6 +16,14 @@
 Upload through https://ankiweb.net/shared/upload while signed into the intended
 publisher account. Review the rendered description before submitting. The archive
 is approximately 43 MiB; acceptance by AnkiWeb has not yet been verified.
+
+## Updating to 0.2.0
+
+This release adds optional source readings and offline dictionary meaning popups
+for example words. See [CHANGELOG.md](../CHANGELOG.md) for the release notes.
+After updating, run **Katanki → Refresh** to add meanings and update unmodified
+stock card layouts, then sync desktop and phone to use the popups during mobile review.
+Custom card templates remain unchanged.
 
 ## Preparation recorded on 2026-10-26
 

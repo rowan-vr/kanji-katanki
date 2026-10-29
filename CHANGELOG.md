@@ -1,5 +1,14 @@
 # Changelog
 
+## 0.2.0 — Example readings and dictionary meanings
+
+- Select an optional source reading field for vocabulary examples, with dictionary fallback.
+- Tap or click example words on card backs to see offline dictionary meanings.
+- Match definitions by spelling and reading, including source-provided readings.
+- Keep study-status colours and support mobile taps without triggering answer gestures.
+- Refresh existing notes to add meanings and upgrade unmodified stock card layouts.
+- Fix Windows encoding in popup tests and isolate packaged Anki smoke runs.
+
 ## 0.1.0 — Initial public beta
 
 - Generate independent kanji recognition, writing, and Parts cards from vocabulary.
