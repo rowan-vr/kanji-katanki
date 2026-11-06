@@ -1,4 +1,4 @@
-# AnkiWeb upload — 0.2.0 public beta
+# AnkiWeb upload — 0.3.0 public beta
 
 ## Upload fields
 
@@ -16,6 +16,15 @@
 Upload through https://ankiweb.net/shared/upload while signed into the intended
 publisher account. Review the rendered description before submitting. The archive
 is approximately 43 MiB; acceptance by AnkiWeb has not yet been verified.
+
+## Updating to 0.3.0
+
+This release adds component meaning popups on card backs, showing each
+component's KANJIDIC meaning (including radical forms such as 氵) and the kanji
+that contain it. See [CHANGELOG.md](../CHANGELOG.md) for the release notes.
+After updating, run **Katanki → Refresh** to add component details and update
+unmodified stock card layouts, then sync desktop and phone. Saved component lists
+and custom card templates remain unchanged.
 
 ## Updating to 0.2.0
 
