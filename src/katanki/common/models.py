@@ -103,3 +103,9 @@ class DiscoveryReport:
     existing_owned: int | None = None
     missing_owned: int | None = None
     attribution: tuple[str, ...] = ()
+    # Dictionary entries for single-character graphical components that are not
+    # themselves discovered kanji, such as radical forms like 氵 or 扌.
+    component_entries: tuple[KanjiEntry, ...] = ()
+    # Every dictionary kanji containing each encoded component of the scanned
+    # kanji, simplest first, for optional additions beyond the user's own kanji.
+    component_kanji: tuple[tuple[str, tuple[KanjiEntry, ...]], ...] = ()

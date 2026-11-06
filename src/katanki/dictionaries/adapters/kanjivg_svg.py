@@ -13,6 +13,8 @@ from .xml_data import parse_xml, read_xml
 SVG = "http://www.w3.org/2000/svg"
 KVG = "http://kanjivg.tagaini.net"
 PATH_DATA = re.compile(r"[MmZzLlHhVvCcSsQqTtAaEe0-9+.,\s-]+")
+CANONICAL_NAME = re.compile(r"[0-9a-f]{5}\.svg")
+ELEMENT = re.compile(rb'kvg:element="([^"<>&]{1,8})"')
 
 
 class KanjiVgSvg:
@@ -30,6 +32,7 @@ class KanjiVgSvg:
                 raise ValueError("Invalid KanjiVG ZIP archive.") from error
         self.directory = directory
         self.hashes: dict[str, str] = {}
+        self._component_index: dict[str, tuple[str, ...]] | None = None
 
     def lookup_strokes(self, character: str) -> StrokeEntry | None:
         if len(character) != 1:
@@ -78,6 +81,41 @@ class KanjiVgSvg:
         )
         self.hashes[character] = sha256(data).hexdigest()
         return StrokeEntry(character, svg, components, component_entries, prerequisites)
+
+    def component_index(self) -> dict[str, tuple[str, ...]]:
+        """Map each encoded component to every canonical character that contains it.
+
+        A lightweight attribute scan, without rendering; computed once per provider.
+        """
+        if self._component_index is not None:
+            return self._component_index
+        limit = 1024 * 1024
+        if self.directory.is_dir():
+            members = (
+                (path.name, path)
+                for path in self.directory.iterdir()
+                if CANONICAL_NAME.fullmatch(path.name) and path.stat().st_size <= limit
+            )
+            read = Path.read_bytes
+        else:
+            archive = self.archive
+            if archive is None:
+                raise ValueError("KanjiVG archive has been closed.")
+            members = (
+                (info.filename, info)
+                for info in archive.infolist()
+                if CANONICAL_NAME.fullmatch(info.filename) and info.file_size <= limit
+            )
+            read = archive.read
+        index = {}
+        for name, member in members:
+            character = chr(int(name[:5], 16))
+            for raw in set(ELEMENT.findall(read(member))):
+                element = unicodedata.normalize("NFC", raw.decode("utf-8", "replace"))
+                if element != character:
+                    index.setdefault(element, []).append(character)
+        self._component_index = {key: tuple(sorted(chars)) for key, chars in index.items()}
+        return self._component_index
 
     def close(self):
         if self.archive is not None:

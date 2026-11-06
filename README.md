@@ -238,6 +238,15 @@ expression fields.
 On the back, tap or click an example word to open its offline dictionary meaning.
 Tap outside the popup, use its close button, or press Escape to dismiss it.
 Refresh existing notes to add definitions and update unmodified stock layouts.
+Tap or click a component under **Components** to see its KANJIDIC meaning,
+including radical forms such as 氵 or 扌, and your discovered kanji that also
+contain it, each with its meaning. **Also show other dictionary kanji** (on by
+default) fills the rest of the list with other KANJIDIC kanji containing it, simplest
+first, shown separately in muted text. **Kanji per component** in each card category's
+settings limits the whole list (default 10; 0 shows all your kanji plus up to 50
+dictionary kanji). Unencoded parts stay plain text.
+Refresh adds component details to existing notes without changing their saved
+component list; with dictionary data updates enabled, the list itself is also updated.
 
 For example:
 

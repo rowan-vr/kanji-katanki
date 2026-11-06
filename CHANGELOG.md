@@ -1,5 +1,12 @@
 # Changelog
 
+## Unreleased
+
+- Tap or click a component on card backs to see its meaning and the discovered kanji that use it
+  (Kanji per component setting, default 10).
+- Optionally fill that list with other dictionary kanji containing the component (on by default).
+- Refresh adds component details to existing notes and upgrades stock layouts.
+
 ## 0.2.0 — Example readings and dictionary meanings
 
 - Select an optional source reading field for vocabulary examples, with dictionary fallback.

@@ -53,6 +53,8 @@ def panel_factory(monkeypatch):
             auto_refresh=False,
             furigana=True,
             include_new=False,
+            component_kanji_limit=0,
+            component_dictionary_kanji=False,
         ),
     ),
 )
@@ -133,3 +135,17 @@ def test_review_filter_can_be_changed_and_reopened(panel_factory, category):
     assert not saved.include_new
     reopened = panel_factory(category, saved)
     assert reopened.word_status.currentData() is False
+
+
+@pytest.mark.parametrize("category", ("recognition", "production", "parts"))
+def test_component_kanji_limit_saves_and_reopens(panel_factory, category):
+    panel = panel_factory(category, CardSettings())
+    assert panel.component_limit.value() == 10
+    assert not panel.component_limit.isHidden()
+    panel.component_limit.setValue(3)
+    assert panel.settings().component_kanji_limit == 3
+    assert panel_factory(category, panel.settings()).component_limit.value() == 3
+    assert panel.component_dictionary.isChecked()
+    panel.component_dictionary.setChecked(False)
+    reopened = panel_factory(category, panel.settings())
+    assert not reopened.component_dictionary.isChecked()

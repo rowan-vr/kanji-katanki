@@ -114,3 +114,32 @@ def test_example_limits_default_and_roundtrip_independently():
     assert settings.card_settings("production").example_limit == 5
     assert settings.card_settings("parts").example_limit == 0
     assert from_dict(json.loads(json.dumps(settings.to_dict()))) == settings
+
+
+@pytest.mark.parametrize("limit", [-1, True, "10", 1.5, None, 2_147_483_648])
+def test_invalid_component_kanji_limits_fail_without_writes(limit):
+    collection = Mock()
+    collection.get_config.return_value = {
+        "version": 5,
+        "cards": {"parts": {"component_kanji_limit": limit}},
+    }
+    with pytest.raises(ValueError):
+        load_settings(collection)
+    collection.set_config.assert_not_called()
+
+
+def test_component_kanji_limits_default_to_ten_and_roundtrip_independently():
+    settings = from_dict({"version": 5, "cards": {"production": {"component_kanji_limit": 0}}})
+    assert settings.card_settings("recognition").component_kanji_limit == 10
+    assert settings.card_settings("production").component_kanji_limit == 0
+    assert settings.card_settings("parts").component_kanji_limit == 10
+    assert from_dict(json.loads(json.dumps(settings.to_dict()))) == settings
+
+
+def test_component_dictionary_kanji_defaults_on_and_roundtrips():
+    settings = from_dict({"version": 5, "cards": {"parts": {"component_dictionary_kanji": False}}})
+    assert settings.card_settings("recognition").component_dictionary_kanji is True
+    assert settings.card_settings("parts").component_dictionary_kanji is False
+    assert from_dict(json.loads(json.dumps(settings.to_dict()))) == settings
+    with pytest.raises(ValueError):
+        from_dict({"version": 5, "cards": {"parts": {"component_dictionary_kanji": "yes"}}})

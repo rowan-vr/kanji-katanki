@@ -7,8 +7,15 @@ from html import escape
 from ..dictionaries.manager import DictionaryManager
 from ..dictionaries.preferences import dictionary_sources
 from ..dictionaries.words import ATTRIBUTION, WordSuggestions, selected_words
-from ..generation.cards import CardContent, normalize_prompt, note_type_spec
+from ..generation.cards import (
+    CardContent,
+    component_keys,
+    components_html,
+    normalize_prompt,
+    note_type_spec,
+)
 from ..generation.destinations import creation_options
+from ..generation.discovery.report import lookup_component_entries, lookup_component_kanji
 from ..generation.examples import (
     STATE_FIELD,
     encode_state,
@@ -72,14 +79,27 @@ def plan_example_refresh(collection, report, settings):
                 if entry:
                     entries[identity.key] = entry
     strokes = {visual.character: visual for visual in report.strokes}
-    if settings.refresh.update_dictionary_data:
+    component_entries = ()
+    component_kanji = report.component_kanji
+    # Example refresh also needs strokes, to add component details to owned notes.
+    if settings.refresh.update_dictionary_data or settings.refresh.update_examples:
         with DictionaryManager(dictionary_sources(settings.dictionaries)) as manager:
             for identity in owned:
                 if identity.kind == "kanji" and identity.key not in strokes:
                     visual = manager.lookup_strokes(identity.key)
                     if visual:
                         strokes[identity.key] = visual
-    expanded = replace(report, entries=tuple(entries.values()), strokes=tuple(strokes.values()))
+            component_entries = lookup_component_entries(
+                manager, strokes.values(), (*entries.values(), *report.component_entries)
+            )
+            component_kanji = lookup_component_kanji(manager, manager, strokes.values())
+    expanded = replace(
+        report,
+        entries=tuple(entries.values()),
+        strokes=tuple(strokes.values()),
+        component_entries=report.component_entries + component_entries,
+        component_kanji=component_kanji,
+    )
     word_provider = (
         selected_words(settings.dictionaries)
         if settings.refresh.update_examples
@@ -100,6 +120,9 @@ def plan_example_refresh(collection, report, settings):
         },
     )
     contents = {content.identity: content for content in preview.contents}
+    component_details = {
+        content.identity: content.component_details for content in contents.values()
+    }
     tag_options = {
         option.identity: option.tags
         for option in creation_options(preview, report, settings, None, allow_missing_decks=True)
@@ -188,6 +211,15 @@ def plan_example_refresh(collection, report, settings):
         # These fields belong to Katanki. Refresh regenerates them even when
         # Anki's HTML editor or a manual edit changed the recorded values.
         after = dict(desired) if settings.refresh.update_examples else {}
+        if (
+            settings.refresh.update_examples
+            and not settings.refresh.update_dictionary_data
+            and "Components" in note
+        ):
+            # Keep the saved component list; only add or refresh its tappable details.
+            current = component_keys(note["Components"])
+            if current:
+                after["Components"] = components_html(current, component_details.get(identity, ()))
         if settings.refresh.update_dictionary_data:
             fields = content.fields()
             for name in ("Meanings", "Readings", "Components", "Strokes"):

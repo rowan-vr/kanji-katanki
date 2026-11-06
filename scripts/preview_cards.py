@@ -42,6 +42,15 @@ def sample_cards():
         meanings=("scenery", "view"),
         readings=("ケイ",),
         components=("日", "京"),
+        component_details=(
+            (
+                "日",
+                "day, sun, Japan",
+                (("明", "bright, light"), ("時", "time, hour")),
+                (("早", "early, fast"), ("音", "sound, noise"), ("春", "springtime, spring")),
+            ),
+            ("京", "capital, 10**16", (("涼", "refreshing, nice and cool"),), (("鯨", "whale"),)),
+        ),
         svg=visual.svg if visual else b"",
         prompt="scenery, view\n\n__色\n風__",
         examples=tuple(dict.fromkeys((*discovered, *defaults))),
@@ -60,7 +69,7 @@ def sample_cards():
         attribution=(
             "KanjiVG © Ulrich Apel and contributors · CC BY-SA 3.0. "
             "SVG sanitized for embedding. https://kanjivg.tagaini.net/",
-            "Example word statuses are illustrative.",
+            "Example word statuses and component details are illustrative.",
         ),
     )
     for mode in ("recognition", "production"):

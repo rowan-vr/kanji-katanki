@@ -54,6 +54,7 @@ def setup(monkeypatch):
     manager.__enter__ = Mock(return_value=manager)
     manager.__exit__ = Mock(return_value=False)
     manager.lookup_strokes.return_value = None
+    manager.component_index.return_value = {}
     monkeypatch.setattr(
         refresh, "selected_words", lambda choices: SimpleNamespace(lookup=lambda key: ())
     )
@@ -255,6 +256,54 @@ def test_dictionary_refresh_without_example_updates(setup):
     assert notes[1]["UserExamples"] == "keep this"
     assert notes[1]["VocabExamples"] == note["VocabExamples"]
     assert not refresh.plan_example_refresh(collection, report(), settings).updates
+
+
+def test_dictionary_refresh_adds_component_details_for_owned_kanji(setup):
+    from katanki.common.models import StrokeEntry
+
+    collection, notes = setup
+    manager = refresh.DictionaryManager()
+    manager.lookup_strokes.side_effect = lambda char: StrokeEntry(char, b"<svg/>", ("日", "寺"))
+    manager.lookup_kanji.side_effect = lambda char: KanjiEntry(char, (), (), (f"{char} meaning",))
+    manager.component_index.return_value = {"日": ("明", "時")}
+    add(notes)
+    # The owned kanji is outside this scan, so refresh loads its strokes and components.
+    discovery = replace(report(), entries=(), scan=ScanResult(1, (), ()))
+    settings = Settings(refresh=RefreshSettings(update_examples=False, update_dictionary_data=True))
+    refresh.apply_example_refresh(
+        collection, refresh.plan_example_refresh(collection, discovery, settings)
+    )
+    assert notes[1]["Components"] == (
+        '<span data-meaning="日 meaning" data-kanji="" data-more="明\t明 meaning">日</span>, '
+        '<span data-meaning="寺 meaning" data-kanji="">寺</span>'
+    )
+    assert not refresh.plan_example_refresh(collection, discovery, settings).updates
+
+
+def test_example_refresh_adds_component_details_without_changing_the_list(setup):
+    from katanki.common.models import StrokeEntry
+
+    collection, notes = setup
+    manager = refresh.DictionaryManager()
+    manager.lookup_strokes.side_effect = lambda char: StrokeEntry(
+        char, b"<svg/>", ("日", "寺", "土")
+    )
+    manager.lookup_kanji.side_effect = lambda char: KanjiEntry(char, (), (), (f"{char} meaning",))
+    note = add(notes)
+    note["Components"] = "日, 寺"
+    note["Meanings"] = "my meaning"
+    # Default settings: example updates on, dictionary data updates off.
+    discovery = replace(report(), entries=(), scan=ScanResult(1, (), ()))
+    settings = Settings()
+    refresh.apply_example_refresh(
+        collection, refresh.plan_example_refresh(collection, discovery, settings)
+    )
+    assert notes[1]["Components"] == (
+        '<span data-meaning="日 meaning" data-kanji="">日</span>, '
+        '<span data-meaning="寺 meaning" data-kanji="">寺</span>'
+    )
+    assert notes[1]["Meanings"] == "my meaning"
+    assert not refresh.plan_example_refresh(collection, discovery, settings).updates
 
 
 def test_tag_refresh_preserves_tags_and_rejects_stale_tags(setup):
