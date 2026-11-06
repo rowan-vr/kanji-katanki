@@ -65,6 +65,10 @@ class CardSettings:
     front_example_source: str | None = None
 
     front_furigana: bool = False
+    # Kanji listed in a component's popup on the back; 0 lists all of them.
+    component_kanji_limit: int = 10
+    # Fill that list with other dictionary kanji after the user's own kanji.
+    component_dictionary_kanji: bool = True
 
     @property
     def front_source(self):
@@ -80,11 +84,19 @@ class CardSettings:
                 self.auto_refresh,
                 self.include_new,
                 self.show_name,
+                self.component_dictionary_kanji,
             )
         ):
             raise ValueError("Card switches must be enabled or disabled.")
         if type(self.example_limit) is not int or not 0 <= self.example_limit <= 2_147_483_647:
             raise ValueError("Example limit must be a nonnegative whole number (0 means all).")
+        if (
+            type(self.component_kanji_limit) is not int
+            or not 0 <= self.component_kanji_limit <= 2_147_483_647
+        ):
+            raise ValueError(
+                "Component kanji limit must be a nonnegative whole number (0 means all)."
+            )
         if self.example_source not in ("discovered", "discovered_and_default"):
             raise ValueError("Choose discovered words or discovered and default words.")
         if self.front_example_source is not None and self.front_example_source not in (
@@ -323,6 +335,8 @@ def from_dict(data) -> Settings:
                     entry.get("example_limit", 5),
                     entry.get("front_example_source"),
                     entry.get("front_furigana", category == "production"),
+                    entry.get("component_kanji_limit", 10),
+                    entry.get("component_dictionary_kanji", True),
                 )
             )
         cards = tuple(parsed)

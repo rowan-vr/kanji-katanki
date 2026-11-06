@@ -104,6 +104,11 @@ class DictionaryManager:
         provider = self.providers.get("strokes")
         return provider.lookup_strokes(character) if provider else None
 
+    def component_index(self):
+        provider = self.providers.get("strokes")
+        index = getattr(provider, "component_index", None)
+        return index() if index else {}
+
     def source_details(self) -> tuple[str, ...]:
         lines = list(self.provenance)
         provider = self.providers.get("strokes")

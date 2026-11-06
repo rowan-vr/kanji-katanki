@@ -183,10 +183,18 @@ if (activations !== 1) throw Error('cancelled gesture opened popup');
     subprocess.run([node], input=script, encoding="utf-8", capture_output=True, check=True)
 
 
+def without_component_popup(template):
+    """Reconstruct the 0.2.0 layout before tappable components were added."""
+    from katanki.generation.component_popup import SCRIPT as COMPONENT_SCRIPT
+
+    return template.replace(COMPONENT_SCRIPT + "\n", "", 1)
+
+
 def previous_click_layout(template):
     """Reconstruct the released popup before touch handlers were added."""
     import re
 
+    template = without_component_popup(template)
     template = re.sub(
         r"  function bindWordTap\(element, activate\) \{.*?(?=  var meaningNodes)",
         "",
@@ -215,6 +223,7 @@ def test_installed_native_button_popup_upgrades_templates_and_styles(key):
     from copy import deepcopy
     from hashlib import sha256
 
+    from katanki.generation.component_popup import CSS as COMPONENT_CSS
     from katanki.generation.layout_fingerprints import (
         NATIVE_BUTTON_POPUP_PAIRS,
         NATIVE_BUTTON_POPUP_STYLE,
@@ -246,7 +255,7 @@ def test_installed_native_button_popup_upgrades_templates_and_styles(key):
     front, back = (
         native_buttons(previous_click_layout(value)) for value in (spec.front, spec.back)
     )
-    old_css = CSS.replace(
+    old_css = CSS.removesuffix(COMPONENT_CSS).replace(
         ".word-chip.word-definition {cursor: pointer;}",
         ".word-chip.word-definition {font-family: inherit; min-height: 44px;\n"
         "  cursor: pointer; appearance: none;}",

@@ -138,3 +138,44 @@ CLICK_ONLY_POPUP_PAIRS = {
         "b244b1162a9238df0127b6e1bc0f7d6f0d4b67eba77f755524f4b4f6a5ae244e",
     ),
 }
+
+PRE_COMPONENT_POPUP_PAIRS = {
+    "kanji-recognition": (
+        "08deca6728c618a96bb1c322338acddb4f5936e6a8e92153aec752f50ec2e204",
+        "e291b7655a3bec8a1303ee93449817aa95932ddab790950a26845dc9af8b0a2e",
+    ),
+    "kanji-production": (
+        "c73ef2bb7e369d75d6f218669643a88b6e6e51faf0cd0e3cea2cbe358116e262",
+        "23f57dc61b579123b7e05b197f169336daf799c3a6caa24613e516ac0beaa94e",
+    ),
+    "primitive-recognition": (
+        "da9bb6c8096eefdb5092eb1856bba0379a49c922e24863b392ed32046e557564",
+        "94e2f157ea6d886a2e6b1e2fcbf56ecefe06d4433f2e0ffa38b7e373bcfa74de",
+    ),
+    "primitive-production": (
+        "e4c4253b03e173413821891d839a02d5d4911070f999df3b8aa17668e301fcc6",
+        "2b82ef7de8a50959ebb16b8a5b0aad3983b7b427fbfbc3d8862952822122986a",
+    ),
+}
+PRE_COMPONENT_POPUP_STYLE = "fa1e76cba1303922b835a9e7bddaf661d900fef767a0ee2d8f8f05cff25273f9"
+
+# Unreleased development build of the component popup without dictionary kanji.
+DEV_COMPONENT_POPUP_PAIRS = {
+    "kanji-recognition": (
+        "08deca6728c618a96bb1c322338acddb4f5936e6a8e92153aec752f50ec2e204",
+        "bc2b6e3e23a9e99b66403dbce28eb83240c67a0495cd1ae313e890c4f114baa8",
+    ),
+    "kanji-production": (
+        "c73ef2bb7e369d75d6f218669643a88b6e6e51faf0cd0e3cea2cbe358116e262",
+        "fb66d94285d5d9069a96a9983244683123ae0c66c8f39ac215918483cc915ef8",
+    ),
+    "primitive-recognition": (
+        "da9bb6c8096eefdb5092eb1856bba0379a49c922e24863b392ed32046e557564",
+        "207f406916362427995b95a43c5ab82a77141dfbbc7903b3dd3054e6a9b7d843",
+    ),
+    "primitive-production": (
+        "e4c4253b03e173413821891d839a02d5d4911070f999df3b8aa17668e301fcc6",
+        "8d5dd094efc74ab39c2210991d4c96085b9bc9ccd2b61ba5cc6573af64e1eaa8",
+    ),
+}
+DEV_COMPONENT_POPUP_STYLE = "ddd788e636b916bbdbccba3dbab5726e43f2d37072df93c33e9fd92105fa5c0e"

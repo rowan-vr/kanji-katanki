@@ -1,5 +1,7 @@
 """Self-contained review layouts: no host bridge, external assets or network."""
 
+from .component_popup import CSS as COMPONENT_POPUP_CSS
+from .component_popup import SCRIPT as COMPONENT_POPUP_SCRIPT
 from .furigana import SCRIPT as FURIGANA_SCRIPT
 from .word_popup import CSS as WORD_POPUP_CSS
 from .word_popup import SCRIPT as WORD_POPUP_SCRIPT
@@ -169,6 +171,9 @@ BACK = (
 <h2>Components</h2>
 <div class="components" lang="ja">{{Components}}</div>
 </section>
+"""
+    + COMPONENT_POPUP_SCRIPT
+    + """
 </div>
 <section class="words-section panel">
 <div class="section-heading"><h2>{{WordsLabel}}</h2><span class="word-count"></span></div>
@@ -381,3 +386,4 @@ CSS += """
 """
 
 CSS += WORD_POPUP_CSS
+CSS += COMPONENT_POPUP_CSS

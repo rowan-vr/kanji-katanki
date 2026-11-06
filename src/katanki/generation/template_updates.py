@@ -7,8 +7,12 @@ from . import legacy_cards, legacy_layout_v1
 from .cards import CSS, note_type_spec
 from .layout_fingerprints import (
     CLICK_ONLY_POPUP_PAIRS,
+    DEV_COMPONENT_POPUP_PAIRS,
+    DEV_COMPONENT_POPUP_STYLE,
     NATIVE_BUTTON_POPUP_PAIRS,
     NATIVE_BUTTON_POPUP_STYLE,
+    PRE_COMPONENT_POPUP_PAIRS,
+    PRE_COMPONENT_POPUP_STYLE,
     PRE_FURIGANA_PAIRS,
     PRE_FURIGANA_STYLE,
     PRE_MEANINGS_PAIRS,
@@ -67,6 +71,8 @@ def upgrade_stock_layout(model, key):
         sha256(template["afmt"].encode()).hexdigest(),
     ) in (
         TEMPLATE_PAIRS.get(key),
+        PRE_COMPONENT_POPUP_PAIRS.get(key),
+        DEV_COMPONENT_POPUP_PAIRS.get(key),
         CLICK_ONLY_POPUP_PAIRS.get(key),
         NATIVE_BUTTON_POPUP_PAIRS.get(key),
         PRE_MEANINGS_PAIRS.get(key),
@@ -87,6 +93,8 @@ def upgrade_stock_layout(model, key):
         legacy_layout_v1.EARLY_CSS,
     ) or sha256(model.get("css", "").encode()).hexdigest() in STYLES | {
         NATIVE_BUTTON_POPUP_STYLE,
+        PRE_COMPONENT_POPUP_STYLE,
+        DEV_COMPONENT_POPUP_STYLE,
         PRE_FURIGANA_STYLE,
         PRE_MEANINGS_STYLE,
         WHOLE_WORD_FURIGANA_STYLE,

@@ -8,7 +8,12 @@ from ..config import CardSettings
 from ..dictionaries.words import ATTRIBUTION, bundled_words
 from .cards import CardContent, normalize_prompt
 from .destinations import CreationOptions
+from .discovery.report import kanji_order
 from .planner import GenerationPlan, Identity, LearningUnit, plan_generation
+
+# With "all kanji", dictionary additions stay bounded so notes do not grow by
+# hundreds of rows for common components such as 口.
+DICTIONARY_KANJI_CAP = 50
 
 
 @dataclass(frozen=True)
@@ -53,6 +58,49 @@ def build_preview(
     units = {}
     contents = {}
     warnings = []
+    component_meanings = {
+        entry.character: entry for entry in (*report.component_entries, *report.entries)
+    }
+
+    component_users = {}
+    for visual in report.strokes:
+        if visual.character in entries:
+            parts = {*visual.components, *(c.key for c in visual.component_entries)}
+            for part in parts:
+                component_users.setdefault(part, []).append(entries[visual.character])
+    for users in component_users.values():
+        users.sort(key=kanji_order)
+    dictionary_users = dict(report.component_kanji)
+
+    def component_details(parts, current, options):
+        """Meaning, the user's other kanji, then optional dictionary kanji per component."""
+        limit = options.component_kanji_limit
+        details = []
+        for part in parts:
+            if len(part) != 1:
+                continue
+            entry = component_meanings.get(part)
+            excluded = {current, part}
+            own = [e for e in component_users.get(part, ()) if e.character not in excluded]
+            if limit:
+                own = own[:limit]
+            more = []
+            if options.component_dictionary_kanji:
+                excluded.update(e.character for e in component_users.get(part, ()))
+                room = limit - len(own) if limit else DICTIONARY_KANJI_CAP
+                more = [e for e in dictionary_users.get(part, ()) if e.character not in excluded]
+                more = more[: max(room, 0)]
+            if entry is None and not own and not more:
+                continue
+            details.append(
+                (
+                    part,
+                    ", ".join(entry.meanings) if entry else "",
+                    tuple((e.character, ", ".join(e.meanings[:3])) for e in own),
+                    tuple((e.character, ", ".join(e.meanings[:3])) for e in more),
+                )
+            )
+        return tuple(details)
 
     def add_component(key, mode="recognition"):
         identity = Identity(f"primitive-{mode}", key)
@@ -95,6 +143,9 @@ def build_preview(
             ),
             example_limit=card_settings.get("parts", CardSettings()).example_limit,
             show_examples=card_settings.get("parts", CardSettings()).show_examples,
+            component_details=component_details(
+                component.prerequisites, key, card_settings.get("parts", CardSettings())
+            ),
         )
         return identity
 
@@ -205,6 +256,7 @@ def build_preview(
                 options.front_furigana,
                 options.furigana,
                 example_meanings,
+                component_details(visual.components if visual else (), key, options),
             )
             if visual is None:
                 warnings.append(f"{key}: stroke diagram unavailable.")

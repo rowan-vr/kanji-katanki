@@ -108,6 +108,22 @@ class CardSettingsPanel(QWidget):
             self.back_source = _word_sources(settings.example_source)
             self.source = self.back_source
             back_form.addRow("Examples on the back", self.back_source)
+        self.component_limit = QSpinBox()
+        self.component_limit.setRange(0, 2_147_483_647)
+        self.component_limit.setSpecialValueText("All matching kanji")
+        self.component_limit.setValue(settings.component_kanji_limit)
+        self.component_limit.setToolTip(
+            "Tap a component on the back to see its meaning and the discovered kanji that "
+            "contain it. Existing cards update during Refresh with dictionary data enabled."
+        )
+        back_form.addRow("Kanji per component", self.component_limit)
+        self.component_dictionary = QCheckBox("Also show other dictionary kanji")
+        self.component_dictionary.setChecked(settings.component_dictionary_kanji)
+        self.component_dictionary.setToolTip(
+            "After your own kanji, fill the component list with other KANJIDIC kanji that "
+            "contain it, simplest first. With All matching kanji, at most 50 are added."
+        )
+        back_form.addRow("", self.component_dictionary)
         back_form.addRow(
             _hint(
                 "All matching examples are available on the back. "
@@ -157,6 +173,8 @@ class CardSettingsPanel(QWidget):
             example_source=self.source.currentData(),
             auto_refresh=self.refresh.isChecked(),
             example_limit=self.limit.value(),
+            component_kanji_limit=self.component_limit.value(),
+            component_dictionary_kanji=self.component_dictionary.isChecked(),
         )
         if self.category == "parts":
             changes["show_name"] = self.name.isChecked()

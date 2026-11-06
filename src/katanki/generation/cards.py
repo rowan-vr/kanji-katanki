@@ -1,8 +1,9 @@
 """Offline card definitions and escaped content, independent of Anki/Qt."""
 
+import re
 import unicodedata
 from dataclasses import dataclass
-from html import escape
+from html import escape, unescape
 
 from ..common.models import WORD_STATUS_ORDER
 from .card_layout import BACK, PARTS_FRONT, PRODUCTION_FRONT, RECOGNITION_FRONT, WORD_LEGEND
@@ -81,6 +82,10 @@ class CardContent:
 
     example_meanings: tuple[tuple[str, tuple[str, ...]], ...] = ()
 
+    # (component, meaning, your kanji using it, other dictionary kanji using it);
+    # each kanji is a (character, meaning) pair.
+    component_details: tuple[tuple, ...] = ()
+
     def fields(self) -> dict[str, str]:
         spec = note_type_spec(self.identity.note_type)
         statuses = dict(self.example_statuses)
@@ -129,12 +134,51 @@ class CardContent:
             "Prompt": "<br>".join(escape(line) for line in self.prompt.split("\n")),
             "Meanings": escape(", ".join(self.meanings)),
             "Readings": escape(", ".join(self.readings)),
-            "Components": escape(", ".join(self.components) or "none listed"),
+            "Components": components_html(self.components, self.component_details),
             "Strokes": self.svg.decode("utf-8") if self.svg else "Stroke data unavailable",
             "Attribution": "<br>".join(dict.fromkeys(escape(line) for line in self.attribution)),
         }
         values[STATE_FIELD] = encode_state(managed_fields(values, self.identity))
         return values
+
+
+def components_html(components, details) -> str:
+    """Comma-separated components; detail spans stay readable in custom templates."""
+    if not components:
+        return "none listed"
+    if not details:
+        return escape(", ".join(components))
+    known = {detail[0]: detail[1:] for detail in details}
+
+    def rows(kanji):
+        return escape("\n".join(c + "\t" + m for c, m in kanji), quote=True)
+
+    parts = []
+    for key in components:
+        if key not in known:
+            parts.append(escape(key))
+            continue
+        meaning, kanji, *more = known[key]
+        more = more[0] if more else ()
+        parts.append(
+            '<span data-meaning="'
+            + escape(meaning, quote=True)
+            + '" data-kanji="'
+            + rows(kanji)
+            + ('" data-more="' + rows(more) if more else "")
+            + '">'
+            + escape(key)
+            + "</span>"
+        )
+    return ", ".join(parts)
+
+
+def component_keys(html: str) -> tuple[str, ...]:
+    """Read the visible component list from plain or detailed Components content."""
+    text = unescape(re.sub(r"<[^>]*>", "", html)).strip()
+    if text == "none listed":
+        return ()
+    return tuple(part.strip() for part in text.split(",") if part.strip())
 
 
 def normalize_prompt(text: str) -> str:
