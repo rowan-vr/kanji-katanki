@@ -1,6 +1,6 @@
 # Changelog
 
-## Unreleased
+## 0.3.0 — Component meanings and related kanji
 
 - Tap or click a component on card backs to see its meaning and the discovered kanji that use it
   (Kanji per component setting, default 10).
