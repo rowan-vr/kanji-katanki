@@ -30,13 +30,16 @@ class RefreshResult:
 
 
 def prepare_refresh(collection, settings):
-    report = analyze(
-        collection,
-        resolve_sources(collection, settings.sources),
-        dictionary_sources(settings.dictionaries),
+    selections = resolve_sources(collection, settings.sources)
+    report = analyze(collection, selections, dictionary_sources(settings.dictionaries))
+    # Suspended vocabulary still supplies examples; it only stops new kanji cards.
+    allowed = (
+        set(scan_notes(selected_notes(collection, selections, ignore_suspended=True)).candidates)
+        if settings.ignore_suspended
+        else None
     )
     examples = plan_example_refresh(collection, report, settings)
-    return _prepare_report(collection, settings, report, examples=examples)
+    return _prepare_report(collection, settings, report, examples=examples, allowed=allowed)
 
 
 def prepare_manual(
@@ -132,12 +135,16 @@ def prepare_targets(
     return replace(result, preview=preview)
 
 
-def _prepare_report(collection, settings, report, *, examples=None, categories=None, progress=None):
+def _prepare_report(
+    collection, settings, report, *, examples=None, categories=None, progress=None, allowed=None
+):
     examples = examples or ExampleRefreshPlan()
     ignored = load_ignored(collection)
     if not report.entries:
         return RefreshResult(report, None, len(ignored), examples)
-    characters = tuple(entry.character for entry in report.entries)
+    characters = tuple(
+        entry.character for entry in report.entries if allowed is None or entry.character in allowed
+    )
 
     def enabled(mode):
         return (
@@ -160,6 +167,7 @@ def _prepare_report(collection, settings, report, *, examples=None, categories=N
             {
                 part.key
                 for visual in report.strokes
+                if allowed is None or visual.character in allowed
                 for part in visual.component_entries
                 if Identity("primitive-recognition", part.key) not in ignored
             }

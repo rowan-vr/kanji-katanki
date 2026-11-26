@@ -287,3 +287,42 @@ def test_refresh_skips_generation_without_deck_but_keeps_existing_updates(monkey
     assert bool(choices["recognition"]) is (deck_id is not None)
     assert bool(choices["production"]) is (deck_id is not None)
     assert choices["include_primitives"] is (deck_id is not None)
+
+
+def test_refresh_ignore_suspended_limits_new_cards_but_not_examples(monkeypatch):
+    from test_generation import report
+
+    from katanki.common.models import NoteText
+    from katanki.config import GenerationSettings
+
+    collection = Mock()
+    discovery = report()
+    monkeypatch.setattr(refresh, "analyze", lambda *args: discovery)
+    monkeypatch.setattr(refresh, "resolve_sources", lambda *args: ())
+    monkeypatch.setattr(refresh, "load_ignored", lambda _: frozenset())
+    # Only 色 appears in a note with an unsuspended card.
+    notes = Mock(return_value=[NoteText(("色",))])
+    monkeypatch.setattr(refresh, "selected_notes", notes)
+    planner = Mock()
+    monkeypatch.setattr(refresh, "plan_example_refresh", planner)
+    preview = Mock()
+    monkeypatch.setattr(refresh, "preview_generation", preview)
+    settings = Settings(generation=(GenerationSettings(True, 42),) * 3, ignore_suspended=True)
+
+    refresh.prepare_refresh(collection, settings)
+
+    assert notes.call_args.kwargs == {"ignore_suspended": True}
+    planner.assert_called_once_with(collection, discovery, settings)
+    choices = preview.call_args.kwargs
+    assert choices["recognition"] == choices["production"] == ("色",)
+    assert choices["primitive_recognition"] == tuple(
+        sorted(
+            {
+                part.key
+                for visual in discovery.strokes
+                if visual.character == "色"
+                for part in visual.component_entries
+            }
+        )
+    )
+    assert "日" not in choices["primitive_recognition"]

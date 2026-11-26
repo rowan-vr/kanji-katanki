@@ -56,6 +56,7 @@ def selected_notes(
     selection: ScanSelection | tuple[ScanSelection, ...],
     *,
     exact_deck_id: int | None = None,
+    ignore_suspended: bool = False,
 ) -> Iterator[NoteText]:
     selections = (selection,) if isinstance(selection, ScanSelection) else selection
     if not selections:
@@ -79,6 +80,9 @@ def selected_notes(
     for source in selections:
         decks = " or ".join(f"did:{deck_id}" for deck_id in source.deck_ids)
         query = f"({decks}) mid:{source.note_type_id}"
+        if ignore_suspended:
+            # Matches notes with at least one unsuspended card.
+            query += " -is:suspended"
         for note_id in sorted(set(collection.find_notes(query))):
             if exact_deck_id is not None:
                 note = collection.get_note(note_id)

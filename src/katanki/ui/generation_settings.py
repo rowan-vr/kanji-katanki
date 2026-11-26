@@ -1,8 +1,39 @@
 """Per-category generation controls for the settings dialog."""
 
-from aqt.qt import QCheckBox, QComboBox, QFormLayout, QLabel, QLineEdit, QVBoxLayout, QWidget
+from aqt.qt import (
+    QCheckBox,
+    QComboBox,
+    QFormLayout,
+    QLabel,
+    QLineEdit,
+    QTabWidget,
+    QVBoxLayout,
+    QWidget,
+)
 
-from ..config import GenerationSettings
+from ..config import GENERATION_CATEGORIES, GenerationSettings
+
+
+class GenerationTab(QWidget):
+    """Shared generation switches above one tab per category."""
+
+    def __init__(self, mw, settings):
+        super().__init__()
+        layout = QVBoxLayout(self)
+        self.ignore_suspended = QCheckBox("Ignore suspended cards")
+        self.ignore_suspended.setToolTip(
+            "Don't create new kanji cards from source notes whose cards are all suspended. "
+            "Their words are still used as examples."
+        )
+        self.ignore_suspended.setChecked(settings.ignore_suspended)
+        layout.addWidget(self.ignore_suspended)
+        self.tabs = QTabWidget()
+        layout.addWidget(self.tabs)
+        self.panels = {}
+        for category in GENERATION_CATEGORIES:
+            panel = GenerationSettingsPanel(mw, category, settings.generation_settings(category))
+            self.panels[category] = panel
+            self.tabs.addTab(panel, category.title())
 
 
 class GenerationSettingsPanel(QWidget):

@@ -136,3 +136,11 @@ def test_optional_reading_field_round_trip_and_legacy_default():
     saved = settings.to_dict()
     del saved["sources"][0]["reading_field"]
     assert from_dict(saved).sources[0].reading_field is None
+
+
+def test_ignore_suspended_round_trip_and_legacy_default():
+    settings = Settings(ignore_suspended=True)
+    assert from_dict(json.loads(json.dumps(settings.to_dict()))) == settings
+    assert from_dict({"version": 8}).ignore_suspended is False
+    with pytest.raises(ValueError, match="suspended"):
+        from_dict({"version": 8, "ignore_suspended": "yes"})

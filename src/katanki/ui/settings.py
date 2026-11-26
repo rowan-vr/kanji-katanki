@@ -23,7 +23,7 @@ from ..dictionaries.preferences import dictionary_sources
 from ..generation.discovery import scan_notes
 from .card_settings import CardSettingsPanel
 from .dictionaries import DictionarySettingsPanel
-from .generation_settings import GenerationSettingsPanel
+from .generation_settings import GenerationTab
 from .ignored import IgnoredCardsPanel
 from .sources import SourceSelector
 from .statistics import StatisticsSettingsPanel
@@ -70,13 +70,11 @@ class SettingsDialog(QDialog):
         self.test_status.setWordWrap(True)
         test_row.addWidget(self.test_status, 1)
         discovery_layout.addLayout(test_row)
-        self.generation_tabs = QTabWidget()
-        self.tabs.addTab(self.generation_tabs, "Generation")
-        self.generation_panels = {}
-        for category in GENERATION_CATEGORIES:
-            panel = GenerationSettingsPanel(mw, category, settings.generation_settings(category))
-            self.generation_panels[category] = panel
-            self.generation_tabs.addTab(panel, category.title())
+        generation = GenerationTab(mw, settings)
+        self.tabs.addTab(generation, "Generation")
+        self.ignore_suspended = generation.ignore_suspended
+        self.generation_tabs = generation.tabs
+        self.generation_panels = generation.panels
         # Retain the existing controls for integration harnesses and legacy defaults.
         self.deck = self.generation_panels["recognition"].deck
         self.primitives = self.generation_panels["parts"].automatic
@@ -242,6 +240,7 @@ class SettingsDialog(QDialog):
                     self.refresh_dictionary.isChecked(),
                 ),
                 load_settings(self.collection).statistics_selection,
+                self.ignore_suspended.isChecked(),
             )
             dictionary_sources(settings.dictionaries)
             dictionary_sources(settings.dictionaries, capability="target_lists")
