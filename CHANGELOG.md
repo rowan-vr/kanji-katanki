@@ -1,5 +1,11 @@
 # Changelog
 
+## 0.4.0 — Ignore suspended source cards
+
+- Optionally skip new kanji cards for kanji found only in fully suspended source notes
+  (Generation → Ignore suspended cards, off by default).
+- Suspended vocabulary still supplies example words and appears in Test discovery.
+
 ## 0.3.0 — Component meanings and related kanji
 
 - Tap or click a component on card backs to see its meaning and the discovered kanji that use it
