@@ -74,8 +74,8 @@ class SettingsDialog(QDialog):
         generation_layout = QVBoxLayout(generation)
         self.ignore_suspended = QCheckBox("Ignore suspended cards")
         self.ignore_suspended.setToolTip(
-            "Skip source notes whose cards are all suspended when discovering kanji. "
-            "Applies to every category and to Test discovery."
+            "Don't create new kanji cards from source notes whose cards are all suspended. "
+            "Their words are still used as examples."
         )
         self.ignore_suspended.setChecked(settings.ignore_suspended)
         generation_layout.addWidget(self.ignore_suspended)
@@ -205,15 +205,10 @@ class SettingsDialog(QDialog):
         self.test_result = None
         self._set_testing(True)
         self.test_status.setText("Scanning current sources…")
-        ignore_suspended = self.ignore_suspended.isChecked()
         QueryOp(
             parent=self.mw,
             op=lambda collection: scan_notes(
-                selected_notes(
-                    collection,
-                    resolve_sources(collection, rules),
-                    ignore_suspended=ignore_suspended,
-                )
+                selected_notes(collection, resolve_sources(collection, rules))
             ),
             success=self._test_finished,
         ).failure(self._test_failed).with_progress("Katanki: test discovery").run_in_background()

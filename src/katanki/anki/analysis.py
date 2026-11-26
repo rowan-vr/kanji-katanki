@@ -17,10 +17,8 @@ def analyze(
     collection,
     selection: ScanSelection | tuple[ScanSelection, ...],
     sources: dict[str, Path] | None = None,
-    *,
-    ignore_suspended: bool = False,
 ) -> DiscoveryReport:
-    scan = scan_notes(selected_notes(collection, selection, ignore_suspended=ignore_suspended))
+    scan = scan_notes(selected_notes(collection, selection))
     return analyze_scan(collection, scan, sources)
 
 
