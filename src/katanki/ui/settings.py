@@ -23,7 +23,7 @@ from ..dictionaries.preferences import dictionary_sources
 from ..generation.discovery import scan_notes
 from .card_settings import CardSettingsPanel
 from .dictionaries import DictionarySettingsPanel
-from .generation_settings import GenerationSettingsPanel
+from .generation_settings import GenerationTab
 from .ignored import IgnoredCardsPanel
 from .sources import SourceSelector
 from .statistics import StatisticsSettingsPanel
@@ -70,23 +70,11 @@ class SettingsDialog(QDialog):
         self.test_status.setWordWrap(True)
         test_row.addWidget(self.test_status, 1)
         discovery_layout.addLayout(test_row)
-        generation = QWidget()
-        generation_layout = QVBoxLayout(generation)
-        self.ignore_suspended = QCheckBox("Ignore suspended cards")
-        self.ignore_suspended.setToolTip(
-            "Don't create new kanji cards from source notes whose cards are all suspended. "
-            "Their words are still used as examples."
-        )
-        self.ignore_suspended.setChecked(settings.ignore_suspended)
-        generation_layout.addWidget(self.ignore_suspended)
-        self.generation_tabs = QTabWidget()
-        generation_layout.addWidget(self.generation_tabs)
+        generation = GenerationTab(mw, settings)
         self.tabs.addTab(generation, "Generation")
-        self.generation_panels = {}
-        for category in GENERATION_CATEGORIES:
-            panel = GenerationSettingsPanel(mw, category, settings.generation_settings(category))
-            self.generation_panels[category] = panel
-            self.generation_tabs.addTab(panel, category.title())
+        self.ignore_suspended = generation.ignore_suspended
+        self.generation_tabs = generation.tabs
+        self.generation_panels = generation.panels
         # Retain the existing controls for integration harnesses and legacy defaults.
         self.deck = self.generation_panels["recognition"].deck
         self.primitives = self.generation_panels["parts"].automatic
