@@ -237,7 +237,7 @@ def test_changed_settings_and_sources_invalidate_refresh_result(setup, monkeypat
     assert outcome.updated == 0 and "Settings changed" in outcome.conflicts[0]
     monkeypatch.setattr(workflow, "load_settings", lambda col: settings)
     monkeypatch.setattr(workflow, "resolve_sources", lambda *args: ())
-    monkeypatch.setattr(workflow, "selected_notes", lambda *args: ())
+    monkeypatch.setattr(workflow, "selected_notes", lambda *args, **kwargs: ())
     outcome = workflow.apply_refresh_examples(collection, result, settings)
     assert outcome.updated == 0 and "Source vocabulary changed" in outcome.conflicts[0]
 

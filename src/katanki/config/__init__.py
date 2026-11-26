@@ -155,8 +155,12 @@ class Settings:
     cards: tuple[CardSettings, ...] = ()
     refresh: RefreshSettings = RefreshSettings()
     statistics_selection: tuple[tuple[str, str | None], ...] = ()
+    # Skip source notes whose cards are all suspended when discovering vocabulary.
+    ignore_suspended: bool = False
 
     def __post_init__(self):
+        if type(self.ignore_suspended) is not bool:
+            raise ValueError("Ignore suspended cards must be enabled or disabled.")
         if not isinstance(self.statistics_selection, tuple) or any(
             not isinstance(item, tuple)
             or len(item) != 2
@@ -232,6 +236,7 @@ class Settings:
             "sources": sources,
             "destination_deck_id": self.destination_deck_id,
             "include_primitives": self.include_primitives,
+            "ignore_suspended": self.ignore_suspended,
         }
 
 
@@ -362,6 +367,7 @@ def from_dict(data) -> Settings:
             refresh.get("update_dictionary_data", False),
         ),
         tuple(tuple(item) for item in selection),
+        data.get("ignore_suspended", False),
     )
 
 

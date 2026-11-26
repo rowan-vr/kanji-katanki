@@ -34,6 +34,7 @@ def prepare_refresh(collection, settings):
         collection,
         resolve_sources(collection, settings.sources),
         dictionary_sources(settings.dictionaries),
+        ignore_suspended=settings.ignore_suspended,
     )
     examples = plan_example_refresh(collection, report, settings)
     return _prepare_report(collection, settings, report, examples=examples)
@@ -186,7 +187,13 @@ def apply_refresh_examples(collection, result, settings, *, migrate=False):
 
     if load_settings(collection) != settings:
         return ExampleRefreshResult(OpChanges(), 0, ("Settings changed; run Refresh again.",))
-    current = scan_notes(selected_notes(collection, resolve_sources(collection, settings.sources)))
+    current = scan_notes(
+        selected_notes(
+            collection,
+            resolve_sources(collection, settings.sources),
+            ignore_suspended=settings.ignore_suspended,
+        )
+    )
     if current != result.report.scan:
         return ExampleRefreshResult(
             OpChanges(), 0, ("Source vocabulary changed; run Refresh again.",)

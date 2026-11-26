@@ -105,7 +105,7 @@ def test_disabled_category_and_ignored_character_never_enter_new_card_plan(monke
         True,
         (),
     )
-    monkeypatch.setattr(refresh, "analyze", lambda *args: report)
+    monkeypatch.setattr(refresh, "analyze", lambda *args, **kwargs: report)
     monkeypatch.setattr(refresh, "resolve_sources", lambda *args: ())
     monkeypatch.setattr(refresh, "dictionary_sources", lambda *args: {})
     owned = Mock(return_value={})

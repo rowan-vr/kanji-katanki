@@ -70,8 +70,18 @@ class SettingsDialog(QDialog):
         self.test_status.setWordWrap(True)
         test_row.addWidget(self.test_status, 1)
         discovery_layout.addLayout(test_row)
+        generation = QWidget()
+        generation_layout = QVBoxLayout(generation)
+        self.ignore_suspended = QCheckBox("Ignore suspended cards")
+        self.ignore_suspended.setToolTip(
+            "Skip source notes whose cards are all suspended when discovering kanji. "
+            "Applies to every category and to Test discovery."
+        )
+        self.ignore_suspended.setChecked(settings.ignore_suspended)
+        generation_layout.addWidget(self.ignore_suspended)
         self.generation_tabs = QTabWidget()
-        self.tabs.addTab(self.generation_tabs, "Generation")
+        generation_layout.addWidget(self.generation_tabs)
+        self.tabs.addTab(generation, "Generation")
         self.generation_panels = {}
         for category in GENERATION_CATEGORIES:
             panel = GenerationSettingsPanel(mw, category, settings.generation_settings(category))
@@ -195,10 +205,15 @@ class SettingsDialog(QDialog):
         self.test_result = None
         self._set_testing(True)
         self.test_status.setText("Scanning current sources…")
+        ignore_suspended = self.ignore_suspended.isChecked()
         QueryOp(
             parent=self.mw,
             op=lambda collection: scan_notes(
-                selected_notes(collection, resolve_sources(collection, rules))
+                selected_notes(
+                    collection,
+                    resolve_sources(collection, rules),
+                    ignore_suspended=ignore_suspended,
+                )
             ),
             success=self._test_finished,
         ).failure(self._test_failed).with_progress("Katanki: test discovery").run_in_background()
@@ -242,6 +257,7 @@ class SettingsDialog(QDialog):
                     self.refresh_dictionary.isChecked(),
                 ),
                 load_settings(self.collection).statistics_selection,
+                self.ignore_suspended.isChecked(),
             )
             dictionary_sources(settings.dictionaries)
             dictionary_sources(settings.dictionaries, capability="target_lists")

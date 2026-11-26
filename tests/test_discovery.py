@@ -229,3 +229,19 @@ def test_adapter_pairs_expression_with_optional_reading():
     collection.models.get.return_value = {"flds": [{"name": "Expression"}]}
     with pytest.raises(ValueError, match="fields no longer exist"):
         list(selected_notes(collection, ScanSelection((10,), 20, ("Expression",), "Reading")))
+
+
+@pytest.mark.parametrize(
+    ("ignore", "query"), [(False, "(did:10) mid:20"), (True, "(did:10) mid:20 -is:suspended")]
+)
+def test_adapter_can_skip_fully_suspended_source_notes(ignore, query):
+    collection = Mock()
+    collection.models.get.return_value = {"flds": [{"name": "Expression"}]}
+    collection.decks.all_names_and_ids.return_value = [SimpleNamespace(id=10)]
+    collection.find_notes.return_value = []
+    list(
+        selected_notes(
+            collection, ScanSelection((10,), 20, ("Expression",)), ignore_suspended=ignore
+        )
+    )
+    collection.find_notes.assert_called_once_with(query)

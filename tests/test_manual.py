@@ -269,7 +269,7 @@ def test_refresh_skips_generation_without_deck_but_keeps_existing_updates(monkey
     from katanki.config import GenerationSettings
 
     collection = Mock()
-    monkeypatch.setattr(refresh, "analyze", lambda *args: report())
+    monkeypatch.setattr(refresh, "analyze", lambda *args, **kwargs: report())
     monkeypatch.setattr(refresh, "resolve_sources", lambda *args: ())
     monkeypatch.setattr(refresh, "load_ignored", lambda _: frozenset())
     examples = Mock()
